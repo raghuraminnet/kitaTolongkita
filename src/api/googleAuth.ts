@@ -6,7 +6,14 @@ import { exchangeCodeAsync, makeRedirectUri } from 'expo-auth-session';
 // Set EXPO_PUBLIC_GOOGLE_CLIENT_ID in app.json (extra field)
 
 const CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? 'YOUR_CLIENT_ID.apps.googleusercontent.com';
-const REDIRECT_URI = makeRedirectUri({ scheme: 'com.kitatolongkita', path: 'oauth2redirect' });
+
+// Safe redirect URI — wrap in try-catch to prevent crashes if scheme not configured
+let REDIRECT_URI = 'https://localhost';
+try {
+  REDIRECT_URI = makeRedirectUri({ scheme: 'com.anonymous.kitaTolongkita', path: 'oauth2redirect' });
+} catch (e) {
+  REDIRECT_URI = 'https://localhost/oauth2redirect';
+}
 
 export async function signInWithGoogle(): Promise<string | null> {
   try {

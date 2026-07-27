@@ -12,7 +12,7 @@ const DEMO_CONFIG = {
     id: 'demo-user-001',
     email: 'admin@demo.com',
     fullName: 'Demo Admin',
-    avatarUrl: null,
+    avatarUrl: undefined,
     emailVerified: true,
     phoneVerified: false,
   },
@@ -316,7 +316,7 @@ export async function demoGetOrders(): Promise<typeof MOCK_ORDERS> {
 }
 
 // ── Demo profile ──────────────────────────────────────────────────────────────
-export async function demoUpdateProfile(data: Partial<typeof DEMO_CONFIG.demoUser>): Promise<typeof DEMO_CONFIG.demoUser> {
+export async function demoUpdateProfile(data: { fullName?: string; phone?: string; avatarUrl?: string }): Promise<{ id: string; email: string; fullName: string; avatarUrl?: string; emailVerified: boolean; phoneVerified: boolean; createdAt?: string }> {
   const user = await getDemoLoggedInUser();
   const updated = { ...(user ?? DEMO_CONFIG.demoUser), ...data };
   await setStored(STORAGE_KEYS.DEMO_USER, updated);
