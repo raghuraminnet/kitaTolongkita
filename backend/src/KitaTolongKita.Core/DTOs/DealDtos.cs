@@ -1,3 +1,5 @@
+using KitaTolongKita.Core.Entities;
+
 namespace KitaTolongKita.Core.DTOs;
 
 public record DealDto(
