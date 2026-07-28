@@ -1,112 +1,107 @@
-# KitaTolongKita — React Native App
+# KitaTolongKita 🇲🇾
 
-A Malaysian community group-buying marketplace built with Expo (React Native).
+Malaysian community group-buying marketplace — "Gotong Royong" for deals.
 
-**Design System:** [KitaTolongKita Design System on Stitch](https://stitch.google.com)
-**Stitch Project ID:** `13309447277577605557`
+## Quick Start
 
----
+### 1. Clone & Deploy Backend
+
+```bash
+# On your VPS
+git clone https://github.com/raghuraminnet/kitaTolongKita.git
+cd kitaTolongKita
+
+# Start all containers
+docker-compose up -d
+
+# Check logs
+docker-compose logs -f api
+```
+
+The API will be live at `http://YOUR_VPS_IP:5000/api`
+
+### 2. Build Mobile App
+
+```bash
+# On your local machine
+git clone https://github.com/raghuraminnet/kitaTolongKita.git
+cd kitaTolongKita/kitaTolongkita
+
+# Install deps
+npx expo install expo-location expo-image-picker expo-slider \
+  i18next react-i18next expo-localization @react-native-async-storage/async-storage
+
+# Build debug APK
+npx expo run:android
+```
+
+### 3. Update App API URL
+
+Edit `kitaTolongkita/src/api/client.ts` and set your VPS IP:
+```ts
+export const API_BASE = 'http://YOUR_VPS_IP:5000/api';
+```
+
+## Docker Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| API | 5000 | .NET Core 8 REST API |
+| PostgreSQL | 5432 | Primary database |
+| Elasticsearch | 9200 | Geo search engine |
+| Redis | 6379 | Token/session cache |
+
+## Environment Variables (optional)
+
+For AI moderation, set in `docker-compose.yml` or `.env`:
+
+```env
+AI__Provider=anthropic          # azure-openai | openai | anthropic
+AI__ApiKey=sk-ant-...
+JWT_SECRET=your-32-char-secret
+POSTGRES_PASSWORD=your-db-pass
+```
+
+Without AI keys, moderation falls back to "manual review" mode — deals are held for review but the app works fully.
+
+## API Endpoints
+
+```
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/forgot-password
+POST /api/auth/reset-password
+
+GET  /api/deals?query=&category=&maxPrice=&radiusKm=&lat=&lon=
+GET  /api/deals/{id}
+POST /api/deals
+GET  /api/deals/suggest-nearby?lat=&lon=
+GET  /api/deals/nearby-pending-verification?lat=&lon=
+POST /api/deals/{id}/upvote
+POST /api/deals/{id}/like
+GET  /api/deals/{id}/reactions
+POST /api/deals/{id}/verify
+POST /api/deals/{id}/join
+
+GET  /api/chat/conversations
+GET  /api/chat/{id}/messages
+POST /api/chat/messages
+
+GET  /api/notifications
+PATCH /api/notifications/{id}/read
+POST /api/notifications/read-all
+GET  /api/notifications/unread-count
+
+GET  /api/admin/moderation/pending
+POST /api/admin/moderation/{id}/approve
+POST /api/admin/moderation/{id}/reject
+```
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React Native (Expo) |
-| Design | Google Stitch (Design System) |
-| Backend | .NET Core 10 (planned) |
-| Search | Elastic Search (planned) |
-| Database | PostgreSQL (planned) |
-
----
-
-## Project Structure
-
-```
-kitaTolongkita/
-├── src/
-│   ├── theme/              # Design tokens (colors, typography, spacing)
-│   ├── components/        # Shared UI components
-│   ├── screens/            # Screen components
-│   │   ├── onboarding/     # OnboardingScreen
-│   │   ├── auth/            # LoginScreen, SignUpScreen
-│   │   ├── home/            # HomeScreen
-│   │   ├── search/          # SearchScreen, SearchFiltersScreen
-│   │   ├── deals/           # DealDetail, Checkout, OrderConfirmed, PostDeal, PostReview
-│   │   ├── orders/          # OrdersScreen
-│   │   ├── profile/         # ProfileScreen, ProfileSetupScreen
-│   │   ├── notifications/   # NotificationsScreen, ChatInboxScreen
-│   │   └── settings/         # SettingsScreen
-│   └── navigation/         # React Navigation setup
-├── App.tsx
-└── README.md
-```
-
----
-
-## Design System
-
-### Brand
-- **Philosophy:** Gotong Royong — mutual cooperation
-- **Vibe:** Warm, friendly, Malaysian community marketplace
-- **Colors:** Amber Orange (#ff7a30) + Deep Teal (#0e6a5b)
-- **Fonts:** Nunito Sans (headlines) + Inter (body)
-
-### Components (7)
-| Component | Description |
-|-----------|-------------|
-| `Button` | Primary (amber fill), Secondary (teal outline), Ghost |
-| `DealCard` | Deal display with image, countdown badge, progress bar |
-| `CategoryChip` | Pill-shaped category selector |
-| `Avatar` | User avatar with verified badge |
-| `BottomTabBar` | Home, Search, Post (FAB), Orders, Profile |
-| `Input` | Styled text input with label, prefix/suffix |
-| `ProgressBar` | Group buy progress indicator |
-
----
-
-## Screens (17 total)
-
-| Screen | Route | Status |
-|--------|-------|--------|
-| Onboarding | Onboarding | ✅ |
-| Login | Login | ✅ |
-| Sign Up | SignUp | ✅ |
-| Profile Setup | ProfileSetup | ✅ |
-| Home Feed | Main → Home | ✅ |
-| Search | Main → Search | ✅ |
-| Search Filters | SearchFilters | ✅ |
-| Deal Detail | DealDetail | ✅ |
-| Checkout | Checkout | ✅ |
-| Order Confirmed | OrderConfirmed | ✅ |
-| Post a Deal | PostDeal | ✅ |
-| Post Under Review | PostReview | ✅ |
-| Orders | Main → Orders | ✅ |
-| Profile | Main → Profile | ✅ |
-| Notifications | Notifications | ✅ |
-| Chat Inbox | ChatInbox | ✅ |
-| Settings | Settings | ✅ |
-
----
-
-## Getting Started
-
-```bash
-cd kitaTolongkita
-npm install
-npx expo start
-```
-
----
-
-## Navigation Flow
-
-```
-Onboarding → Login → ProfileSetup → Main
-                                  ↳ Home
-                                  ↳ Search → SearchFilters
-                                  ↳ DealDetail → Checkout → OrderConfirmed
-                                  ↳ PostDeal → PostReview
-                                  ↳ Orders
-                                  ↳ Profile → Settings
-                                  ↳ Notifications / ChatInbox
-```
+- **App**: Expo React Native (TypeScript)
+- **API**: .NET Core 8 (C#)
+- **Database**: PostgreSQL 16
+- **Search**: Elasticsearch 8.11 (geo-point queries)
+- **Cache**: Redis 7
+- **AI**: Azure OpenAI / OpenAI / Anthropic Claude (optional)
