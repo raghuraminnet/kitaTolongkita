@@ -10,8 +10,8 @@ COPY src/KitaTolongKita.Api/KitaTolongKita.Api.csproj src/KitaTolongKita.Api/
 # Clear NuGet cache so new packages are downloaded fresh
 RUN dotnet nuget locals all --clear
 
-# Restore dependencies
-RUN dotnet restore src/KitaTolongKita.Api/KitaTolongKita.Api.csproj --no-cache
+# Restore all projects — Infrastructure must restore its own packages first
+RUN dotnet restore KitaTolongKita.sln --no-cache
 
 # Copy source code
 COPY src/ src/
