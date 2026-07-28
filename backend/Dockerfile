@@ -16,9 +16,9 @@ RUN dotnet restore KitaTolongKita.sln --no-cache
 # Copy source code
 COPY src/ src/
 
-# Build and publish
+# Build and publish (always restore first to pick up any csproj changes)
 RUN dotnet publish src/KitaTolongKita.Api/KitaTolongKita.Api.csproj \
-    -c Release -o /app/publish --no-restore
+    -c Release -o /app/publish
 
 # ── Runtime ─────────────────────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
