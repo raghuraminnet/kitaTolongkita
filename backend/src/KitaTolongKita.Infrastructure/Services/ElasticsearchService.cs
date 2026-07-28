@@ -134,7 +134,7 @@ public class ElasticsearchService : IElasticsearchService
             mustQueries.Add(q => q.GeoDistance(g => g
                 .Field(f => f.Location)
                 .Distance(request.RadiusKm.Value, DistanceUnit.Kilometers)
-                .Location(request.Latitude.Value, request.Longitude.Value)
+                .Location(new GeoLocation(request.Latitude.Value, request.Longitude.Value))
             ));
         }
 
@@ -223,7 +223,7 @@ public class ElasticsearchService : IElasticsearchService
             q => q.GeoDistance(g => g
                 .Field(f => f.Location)
                 .Distance(radiusKm, DistanceUnit.Kilometers)
-                .Location(lat, lon)
+                .Location(new GeoLocation(lat, lon))
             )
         };
 
