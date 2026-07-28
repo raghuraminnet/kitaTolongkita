@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "kitaTolongkita",
+    "slug": "kitaTolongkita",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.kitaTolongkita"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "extra": {
+      "demoMode": {
+        "enabled": true,
+        "adminEmail": "admin@demo.com",
+        "adminPassword": "demo123",
+        "demoUser": {
+          "id": "demo-user-001",
+          "email": "admin@demo.com",
+          "fullName": "Demo Admin",
+          "avatarUrl": null,
+          "emailVerified": true,
+          "phoneVerified": false
+        }
+      }
+    }
+  }
+}

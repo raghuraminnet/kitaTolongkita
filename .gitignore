@@ -4,3 +4,7 @@ ios/
 .expo/
 *.apk
 dist/
+._.DS_Store
+*.log
+android.bak/
+node_modules/
