@@ -1,4 +1,5 @@
 using KitaTolongKita.Core.DTOs;
+using KitaTolongKita.Core.Entities;
 
 namespace KitaTolongKita.Core.Interfaces;
 
