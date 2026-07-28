@@ -138,65 +138,57 @@ public class ElasticsearchService : IElasticsearchService
             ));
         }
 
-        // Build sort
-        var sortDescriptors = new List<Func<SortDescriptor<EsDeal>, IPromise<IList<ISort>>>();
 
-        if (request.Latitude.HasValue && request.Longitude.HasValue)
+        // Build sort inline — apply geo-distance first if location is available,
+        // then apply the requested sort order
+        var searchResponse = await _client.SearchAsync<EsDeal>(s =>
         {
-            sortDescriptors.Add(s => s
-                .GeoDistance(g => g
-                    .Field(f => f.Location)
-                    .Points(new GeoLocation(request.Latitude.Value, request.Longitude.Value))
-                    .Order(SortOrder.Ascending)
-                    .Unit(DistanceUnit.Kilometers)
-                )
-            );
-        }
+            s.Index(IndexName)
+             .Query(q => q.Bool(b => b.Must(mustQueries)))
+             .From((request.Page - 1) * request.PageSize)
+             .Size(request.PageSize)
+             .ScriptFields(sf => sf
+                 .ScriptField("distance", sc => sc
+                     .Source("doc['location'].arcDistance(params.lat, params.lon) / 1000")
+                     .Params(p => p
+                         .Add("lat", request.Latitude ?? 0)
+                         .Add("lon", request.Longitude ?? 0)
+                     )
+                 )
+             );
 
-        var sortBy = request.SortBy?.ToLowerInvariant() ?? "newest";
-        switch (sortBy)
-        {
-            case "price_asc":
-                sortDescriptors.Add(s => s.Field(f => f.GroupPrice, SortOrder.Ascending));
-                break;
-            case "price_desc":
-                sortDescriptors.Add(s => s.Field(f => f.GroupPrice, SortOrder.Descending));
-                break;
-            case "newest":
-                sortDescriptors.Add(s => s.Field(f => f.CreatedAt, SortOrder.Descending));
-                break;
-            case "popular":
-                sortDescriptors.Add(s => s.Field(f => f.MembersJoined, SortOrder.Descending));
-                break;
-            default:
-                // distance — already sorted above
-                sortDescriptors.Add(s => s.Field(f => f.CreatedAt, SortOrder.Descending));
-                break;
-        }
-
-        var searchResponse = await _client.SearchAsync<EsDeal>(s => s
-            .Index(IndexName)
-            .Query(q => q.Bool(b => b.Must(mustQueries)))
-            .Sort(so => { foreach (var sd in sortDescriptors) sd(so); return so; })
-            .From((request.Page - 1) * request.PageSize)
-            .Size(request.PageSize)
-            .ScriptFields(sf => sf
-                .ScriptField("distance", sc => sc
-                    .Source("doc['location'].arcDistance(params.lat, params.lon) / 1000")
-                    .Params(p => p
-                        .Add("lat", request.Latitude ?? 0)
-                        .Add("lon", request.Longitude ?? 0)
+            // Always apply geo-distance sort first if location is provided
+            if (request.Latitude.HasValue && request.Longitude.HasValue)
+            {
+                s = s.Sort(so => so
+                    .GeoDistance(g => g
+                        .Field(f => f.Location)
+                        .Points(new GeoLocation(request.Latitude.Value, request.Longitude.Value))
+                        .Order(SortOrder.Ascending)
+                        .Unit(DistanceUnit.Kilometers)
                     )
-                )
-            )
-        );
+                );
+            }
 
-        if (!searchResponse.IsValid)
-        {
-            _logger.LogError("ES search failed: {Error}", searchResponse.DebugInformation);
-            return (new List<DealDto>(), 0);
-        }
+            var sortBy = request.SortBy?.ToLowerInvariant() ?? "newest";
+            switch (sortBy)
+            {
+                case "price_asc":
+                    s = s.Sort(so => so.Field(fld => fld.GroupPrice, SortOrder.Ascending));
+                    break;
+                case "price_desc":
+                    s = s.Sort(so => so.Field(fld => fld.GroupPrice, SortOrder.Descending));
+                    break;
+                case "newest":
+                    s = s.Sort(so => so.Field(fld => fld.CreatedAt, SortOrder.Descending));
+                    break;
+                case "popular":
+                    s = s.Sort(so => so.Field(fld => fld.MembersJoined, SortOrder.Descending));
+                    break;
+            }
 
+            return s;
+        });
         var items = searchResponse.Hits.Select(h =>
         {
             var doc = h.Source;
