@@ -16,25 +16,6 @@
 version: "3.8"
 
 services:
-  # ── PostgreSQL ──────────────────────────────────────────────
-  postgres:
-    image: postgres:16-alpine
-    container_name: kita-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: kitatolongkita
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-KitaTolongKita123}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # ── ElasticSearch ───────────────────────────────────────────
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
@@ -65,7 +46,8 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__Default: Host=postgres;Database=kitatolongkita;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
+      # Use host.docker.internal to reach host-bound services (Postgres/Redis)
+      ConnectionStrings__Default: Host=host.docker.internal;Database=kitatolongkita;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
       ElasticSearch__Url: http://elasticsearch:9200
       Jwt__Secret: ${JWT_SECRET:-KitaTolongKita_SuperSecretKey_MinLength32Chars!}
       Jwt__Issuer: KitaTolongKita
@@ -80,22 +62,8 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      postgres:
-        condition: service_healthy
       elasticsearch:
         condition: service_healthy
 
-  # ── Redis (optional, for session/token cache) ──────────────
-  redis:
-    image: redis:7-alpine
-    container_name: kita-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
 volumes:
-  postgres_data:
   elasticsearch_data:
-  redis_data:
