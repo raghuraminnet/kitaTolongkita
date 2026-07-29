@@ -16,7 +16,36 @@
 version: "3.8"
 
 services:
-  # ── ElasticSearch ───────────────────────────────────────────
+  # ── PostgreSQL (internal port 5432, exposed as 5433 to avoid host conflicts) ──
+  postgres:
+    image: postgres:16-alpine
+    container_name: kita-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kitatolongkita
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-KitaTolongKita123}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (internal port 6379, exposed as 6378 to avoid host conflicts) ──────
+  redis:
+    image: redis:7-alpine
+    container_name: kita-redis
+    restart: unless-stopped
+    ports:
+      - "6378:6379"
+    volumes:
+      - redis_data:/data
+
+  # ── ElasticSearch ─────────────────────────────────────────────────────────────
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     container_name: kita-elasticsearch
@@ -37,7 +66,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # ── API ────────────────────────────────────────────────────
+  # ── API ──────────────────────────────────────────────────────────────────────
   api:
     build:
       context: ./backend
@@ -46,24 +75,23 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      # Use host.docker.internal to reach host-bound services (Postgres/Redis)
-      ConnectionStrings__Default: Host=host.docker.internal;Database=kitatolongkita;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
+      # Connect to docker-network service names (not host.docker.internal)
+      ConnectionStrings__Default: Host=postgres;Database=kitatolongkita;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
       ElasticSearch__Url: http://elasticsearch:9200
       Jwt__Secret: ${JWT_SECRET:-KitaTolongKita_SuperSecretKey_MinLength32Chars!}
       Jwt__Issuer: KitaTolongKita
       Jwt__Audience: KitaTolongKitaApp
       Jwt__AccessTokenExpiryMinutes: "60"
       App__Port: "5000"
-      # AI Moderation (optional for demo — leave unset for fallback-only mode)
-      # AI__Provider: azure-openai   # or: openai | anthropic
-      # AI__ApiKey: your-key-here
-      # AI__Endpoint: https://your-resource.openai.azure.com
-      # AI__DeploymentName: gpt-4o
     ports:
       - "5000:5000"
     depends_on:
+      postgres:
+        condition: service_healthy
       elasticsearch:
         condition: service_healthy
 
 volumes:
+  postgres_data:
   elasticsearch_data:
+  redis_data:
