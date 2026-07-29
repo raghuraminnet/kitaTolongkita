@@ -26,11 +26,16 @@ public class DealsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetDeals([FromQuery] DealSearchRequest request)
     {
-        // Inject location from middleware if not provided
-        if (!request.Latitude.HasValue)
-            request.Latitude = HttpContext.GetUserLatitude();
-        if (!request.Longitude.HasValue)
-            request.Longitude = HttpContext.GetUserLongitude();
+        // Inject location from middleware if not provided.
+        // DealSearchRequest is a positional record → its properties are init-only,
+        // so we use `with` to clone a new instance with the additional values.
+        var userLat = HttpContext.GetUserLatitude();
+        var userLon = HttpContext.GetUserLongitude();
+
+        if (!request.Latitude.HasValue && userLat.HasValue)
+            request = request with { Latitude = userLat };
+        if (!request.Longitude.HasValue && userLon.HasValue)
+            request = request with { Longitude = userLon };
 
         var result = await _deals.SearchDealsAsync(request);
         return Ok(result);
@@ -78,11 +83,14 @@ public class DealsController : ControllerBase
 
         try
         {
-            // Use location from header if not in body
-            if (!request.Latitude.HasValue)
-                request.Latitude = HttpContext.GetUserLatitude();
-            if (!request.Longitude.HasValue)
-                request.Longitude = HttpContext.GetUserLongitude();
+            // Use location from header if not in body. Same `with` pattern as above.
+            var userLat = HttpContext.GetUserLatitude();
+            var userLon = HttpContext.GetUserLongitude();
+
+            if (!request.Latitude.HasValue && userLat.HasValue)
+                request = request with { Latitude = userLat };
+            if (!request.Longitude.HasValue && userLon.HasValue)
+                request = request with { Longitude = userLon };
 
             var deal = await _deals.CreateDealAsync(request, userId.Value);
             return CreatedAtAction(nameof(GetDeal), new { id = deal.Id }, deal);

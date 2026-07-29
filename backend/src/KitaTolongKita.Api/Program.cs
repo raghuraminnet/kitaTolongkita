@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ── Database ───────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")
-        ?? "Host=localhost;Database=kitatolongkita;Username=postgres;Password=postgres")));
+        ?? "Host=localhost;Database=kitatolongkita;Username=postgres;Password=postgres"));
 
 // ── ElasticSearch ────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<IElasticClient>(sp =>
@@ -112,7 +112,11 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // ── Problem Details ────────────────────────────────────────────────────────────
-builder.Services.AddProblemDetails();
+// NOTE: Hellang.Middleware.ProblemDetails conflicts with ASP.NET Core 8's built-in
+// AddProblemDetails extension method. Use the Hellang extension explicitly so we
+// keep the customised ProblemDetailsOptions from the package.
+Hellang.Middleware.ProblemDetails.ProblemDetailsExtensions
+    .AddProblemDetails(builder.Services);
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
@@ -138,7 +142,6 @@ app.UseProblemDetails();
 app.UseCors("AllowMobile");
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseLocation();
 app.MapControllers();
 
 // ── Auto-migrate on startup ───────────────────────────────────────────────────

@@ -79,7 +79,10 @@ public class AuthService : IAuthService
         if (googleUser == null)
             throw new UnauthorizedAccessException("Invalid Google token.");
 
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.GoogleId == googleUser.Subject);
+        // The deserialized GoogleTokenInfo record exposes the Google user id as `Sub`
+        // (the JWT "sub" claim). The previous code referenced `Subject`, which doesn't
+        // exist on the record.
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.GoogleId == googleUser.Sub);
 
         if (user == null)
         {
@@ -87,7 +90,7 @@ public class AuthService : IAuthService
             user = await _db.Users.FirstOrDefaultAsync(u => u.Email == googleUser.Email);
             if (user != null)
             {
-                user.GoogleId = googleUser.Subject;
+                user.GoogleId = googleUser.Sub;
                 user.AvatarUrl ??= googleUser.Picture;
                 user.EmailVerified = true;
             }
@@ -98,7 +101,7 @@ public class AuthService : IAuthService
                 {
                     Email = googleUser.Email,
                     FullName = googleUser.Name,
-                    GoogleId = googleUser.Subject,
+                    GoogleId = googleUser.Sub,
                     AvatarUrl = googleUser.Picture,
                     EmailVerified = true
                 };
@@ -187,7 +190,7 @@ public class AuthService : IAuthService
         return HashPassword(password) == hash;
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
+    // ── Private helpers ────────────────────────────────────────────────────────
 
     private AuthResponse CreateAuthResponse(User user)
     {
@@ -237,7 +240,10 @@ public class AuthService : IAuthService
     {
         public string Email { get; set; } = "";
         public string Name { get; set; } = "";
-        public string Sub { get; set; } = ""; // Google user ID
+        // JWT "sub" claim → Google's stable user id.
+        // Aliased as `Subject` so existing call sites keep working.
+        public string Sub { get; set; } = "";
+        public string Subject => Sub;
         public string Picture { get; set; } = "";
     }
 }

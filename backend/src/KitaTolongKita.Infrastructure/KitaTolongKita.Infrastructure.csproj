@@ -5,6 +5,16 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- Global using directives for Microsoft.Extensions.* namespaces.
+       Note: In Microsoft.Extensions.* 8.0+, the "Abstractions" packages
+       only contain types in the parent namespace (e.g. IConfiguration is in
+       Microsoft.Extensions.Configuration, not .Abstractions). -->
+  <ItemGroup>
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="Microsoft.Extensions.Logging.Abstractions" />
+    <Using Include="Microsoft.Extensions.Configuration" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />

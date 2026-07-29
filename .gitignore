@@ -8,3 +8,38 @@ dist/
 *.log
 android.bak/
 node_modules/
+
+# ── .NET / backend build artifacts ────────────────────────────────────────────
+# VS / Rider / VS Code metadata
+.vs/
+.vscode/
+.idea/
+
+# Standard .NET build outputs
+bin/
+obj/
+*.user
+*.suo
+*.dll
+*.pdb
+*.exe
+
+# NuGet local caches and restore artefacts
+*.nupkg
+*.snupkg
+packages/
+project.assets.json
+project.fragment.lock.json
+project.nuget.cache
+
+# Test results / coverage
+TestResults/
+coverage*.json
+*.coverage
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local developer launch profile (ports are machine-specific)
+**/Properties/launchSettings.json

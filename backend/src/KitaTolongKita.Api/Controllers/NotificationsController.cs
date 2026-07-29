@@ -26,24 +26,27 @@ public class NotificationsController : ControllerBase
         var total = await _db.UserNotifications
             .CountAsync(n => n.UserId == userId);
 
-        var notifications = await _db.UserNotifications
+        // Materialize the query first so we can safely call JsonSerializer.Deserialize
+        // (which can't live inside an EF expression tree).
+        var rows = await _db.UserNotifications
             .Where(n => n.UserId == userId)
             .OrderByDescending(n => n.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(n => new
-            {
-                n.Id,
-                n.Type,
-                n.Title,
-                n.Body,
-                n.IsRead,
-                n.CreatedAt,
-                Data = string.IsNullOrEmpty(n.DataJson)
-                    ? null
-                    : JsonSerializer.Deserialize<object>(n.DataJson)
-            })
             .ToListAsync();
+
+        var notifications = rows.Select(n => new
+        {
+            n.Id,
+            n.Type,
+            n.Title,
+            n.Body,
+            n.IsRead,
+            n.CreatedAt,
+            Data = string.IsNullOrEmpty(n.DataJson)
+                ? null
+                : JsonSerializer.Deserialize<object>(n.DataJson)
+        }).ToList();
 
         return Ok(new { items = notifications, total, page, pageSize });
     }

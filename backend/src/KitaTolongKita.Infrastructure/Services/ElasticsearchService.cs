@@ -60,7 +60,9 @@ public class ElasticsearchService : IElasticsearchService
                     .Keyword(k => k.Name(n => n.Status))
                     .Text(t => t.Name(n => n.PickupLocation))
                     .GeoPoint(g => g.Name(n => n.Location))
-                    .Keyword(k => k.Name(n => n.Hashtags).Analyzer("hashtag_analyzer"))
+                    // Hashtags use a custom analyzer → must be Text (not Keyword),
+                    // because NEST's KeywordPropertyDescriptor has no Analyzer().
+                    .Text(t => t.Name(n => n.Hashtags).Analyzer("hashtag_analyzer"))
                     .Keyword(k => k.Name(n => n.OrganizerId))
                     .Number(n => n.Name(n => n.UpvoteCount).Type(NumberType.Integer))
                     .Number(n => n.Name(n => n.LikeCount).Type(NumberType.Integer))
@@ -195,9 +197,11 @@ public class ElasticsearchService : IElasticsearchService
             double? distKm = null;
             if (request.Latitude.HasValue && request.Longitude.HasValue && doc.Location != null)
             {
+                // doc.Location is non-null here (checked above) and its
+                // Latitude/Longitude are non-nullable doubles — no `?? 0`.
                 distKm = Math.Round(HaversineDistance(
                     request.Latitude.Value, request.Longitude.Value,
-                    doc.Location.Latitude ?? 0, doc.Location.Longitude ?? 0), 1);
+                    doc.Location.Latitude, doc.Location.Longitude), 1);
             }
             return ToDealDto(doc, distKm);
         }).ToList();
@@ -242,7 +246,7 @@ public class ElasticsearchService : IElasticsearchService
         {
             var doc = h.Source;
             var distKm = doc.Location != null
-                ? Math.Round(HaversineDistance(lat, lon, doc.Location.Latitude ?? 0, doc.Location.Longitude ?? 0), 1)
+                ? Math.Round(HaversineDistance(lat, lon, doc.Location.Latitude, doc.Location.Longitude), 1)
                 : (double?)null;
             return ToDealDto(doc, distKm);
         }).ToList();
@@ -306,7 +310,8 @@ public class ElasticsearchService : IElasticsearchService
     };
 
     private static DealDto ToDealDto(EsDeal doc, double? distanceKm = null) => new(
-        doc.Id ?? Guid.Empty,
+        // doc.Id is string? — parse to Guid; fall back to Guid.Empty if missing/invalid.
+        Guid.TryParse(doc.Id ?? "", out var id) ? id : Guid.Empty,
         doc.Title ?? "",
         doc.Description ?? "",
         doc.Category ?? "",

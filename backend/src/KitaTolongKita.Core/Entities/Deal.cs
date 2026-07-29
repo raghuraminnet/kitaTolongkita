@@ -81,6 +81,7 @@ public class DealOrder
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid DealId { get; set; }
+    public Deal? Deal { get; set; }
     public Guid BuyerId { get; set; }
     public int Quantity { get; set; } = 1;
     public decimal TotalPrice { get; set; }
