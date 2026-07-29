@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import * as DemoMode from './demoMode';
 
-const API_BASE = 'http://168.235.81.222:5000/api';
+const API_BASE = 'http://76.13.219.191:5000/api';
 
 // Global location ref — set by LocationContext
 export let _globalLat: number | null = null;
