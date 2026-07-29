@@ -5,14 +5,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <!-- Global using directives for Microsoft.Extensions.* namespaces -->
-  <ItemGroup>
-    <Using Include="Microsoft.Extensions.Logging" />
-    <Using Include="Microsoft.Extensions.Logging.Abstractions" />
-    <Using Include="Microsoft.Extensions.Configuration" />
-    <Using Include="Microsoft.Extensions.Configuration.Abstractions" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
