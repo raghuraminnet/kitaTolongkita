@@ -7,18 +7,19 @@ COPY src/KitaTolongKita.Core/KitaTolongKita.Core.csproj src/KitaTolongKita.Core/
 COPY src/KitaTolongKita.Infrastructure/KitaTolongKita.Infrastructure.csproj src/KitaTolongKita.Infrastructure/
 COPY src/KitaTolongKita.Api/KitaTolongKita.Api.csproj src/KitaTolongKita.Api/
 
-# Clear NuGet cache so new packages are downloaded fresh
+# Clear ALL NuGet + build caches so packages are downloaded fresh
 RUN dotnet nuget locals all --clear
+RUN rm -rf ~/.nuget/packages ~/.cache
 
-# Restore all projects — Infrastructure must restore its own packages first
-RUN dotnet restore KitaTolongKita.sln --no-cache
+# Restore all projects — force fresh download of every package
+RUN dotnet restore KitaTolongKita.sln --force --no-cache
 
 # Copy source code
 COPY src/ src/
 
-# Build and publish (always restore first to pick up any csproj changes)
+# Build and publish
 RUN dotnet publish src/KitaTolongKita.Api/KitaTolongKita.Api.csproj \
-    -c Release -o /app/publish
+    -c Release -o /app/publish --no-restore
 
 # ── Runtime ─────────────────────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
