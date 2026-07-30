@@ -136,7 +136,7 @@ export default function DealDetailPage() {
                 ✗ Reject
               </button>
               <button className={`btn ${deal.isFeatured ? 'btn-outline' : 'btn-secondary'}`}
-                onClick={async () => { await api.featureDeal(deal.id, !deal.isFeatured); setDeal(d => ({ ...d, isFeatured: !d.isFeatured })) }}>
+                onClick={async () => { await api.featureDeal(deal.id, !deal.isFeatured); setDeal({ ...deal, isFeatured: !deal.isFeatured }); }}>
                 {deal.isFeatured ? 'Unfeature' : 'Feature'}
               </button>
             </div>
