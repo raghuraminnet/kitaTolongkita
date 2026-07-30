@@ -15,9 +15,15 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 // ── Database ────────────────────────────────────────────────────────────────────
 var connString = builder.Configuration.GetConnectionString("Default")
     ?? "Host=postgres;Database=kitatolongkita_admin;Username=postgres;Password=postgres123";
+var mainConnString = builder.Configuration.GetConnectionString("MainDb")
+    ?? "Host=postgres;Database=kitatolongkita;Username=postgres;Password=postgres123";
 
 builder.Services.AddDbContext<AdminDbContext>(opts =>
     opts.UseNpgsql(connString));
+
+// Read-only connection to main DB for querying users/deals/orders
+builder.Services.AddDbContext<MainDbContext>(opts =>
+    opts.UseNpgsql(mainConnString), ServiceLifetime.Transient);
 
 // ── JWT Auth ────────────────────────────────────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "KitaTolongKita-Admin-Secret-Key-2024!@#$";
@@ -48,6 +54,9 @@ builder.Services.AddAuthorization(opts =>
 
 // ── Services ─────────────────────────────────────────────────────────────────────
 builder.Services.AddHttpClient();
+
+// Register MainDbContext as a factory for injecting into services
+builder.Services.AddDbContextFactory<MainDbContext>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();

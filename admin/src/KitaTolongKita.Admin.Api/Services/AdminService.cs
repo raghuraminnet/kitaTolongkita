@@ -37,20 +37,17 @@ public interface IAdminService
 public class AdminService : IAdminService
 {
     private readonly AdminDbContext _db;
-    private readonly HttpClient _http;
+    private readonly MainDbContext _mainDb;
     private readonly ILogger<AdminService> _logger;
-    private readonly string _mainApiBase;
 
-    public AdminService(AdminDbContext db, IHttpClientFactory httpFactory, IConfiguration config, ILogger<AdminService> logger)
+    public AdminService(AdminDbContext db, MainDbContext mainDb, ILogger<AdminService> logger)
     {
         _db = db;
-        _http = httpFactory.CreateClient("MainApi");
-        _http.BaseAddress = new Uri(config["MainApi:BaseUrl"] ?? "http://kita-api:5000/api");
-        _mainApiBase = config["MainApi:BaseUrl"] ?? "http://kita-api:5000/api";
+        _mainDb = mainDb;
         _logger = logger;
     }
 
-    // ── Audit helper ────────────────────────────────────────────────────────────
+    // ── Audit helper ──────────────────────────────────────────────────────────
     private async Task LogActionAsync(int adminId, string adminEmail, string action, string entityType, int entityId, string? details = null)
     {
         _db.AuditLogs.Add(new AuditLog
@@ -66,6 +63,7 @@ public class AdminService : IAdminService
         await _db.SaveChangesAsync();
     }
 
+    // ── Admin Users ──────────────────────────────────────────────────────────
     public async Task<AdminUser> CreateAdminUserAsync(string email, string password, string fullName, string role)
     {
         var user = new AdminUser
@@ -82,196 +80,250 @@ public class AdminService : IAdminService
         return user;
     }
 
-    // ── Users ──────────────────────────────────────────────────────────────────
+    // ── Users ────────────────────────────────────────────────────────────────
     public async Task<PagedResult<UserListItem>> GetUsersAsync(string? search, string? filter, int page, int pageSize)
     {
-        try
+        var query = _mainDb.Users.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(u => u.Email.Contains(search) || u.FullName.Contains(search));
+
+        if (filter == "verified")
+            query = query.Where(u => u.EmailVerified);
+        else if (filter == "unverified")
+            query = query.Where(u => !u.EmailVerified);
+
+        var total = await query.CountAsync();
+        var users = await query
+            .OrderByDescending(u => u.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var items = new List<UserListItem>();
+        foreach (var u in users)
         {
-            var url = $"{_mainApiBase}/admin/users?search={search ?? ""}&filter={filter ?? ""}&page={page}&pageSize={pageSize}";
-            var resp = await _http.GetAsync(url);
-            if (resp.IsSuccessStatusCode)
-            {
-                var json = await resp.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<PagedResult<UserListItem>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-                    ?? new PagedResult<UserListItem>(new(), 0, page, pageSize, 0);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to fetch users from main API");
+            var dealsPosted = await _mainDb.Deals.CountAsync(d => d.OrganizerId == u.Id);
+            items.Add(new UserListItem(
+                u.Id.GetHashCode(), u.Email, u.FullName, u.AvatarUrl,
+                u.EmailVerified, u.EmailVerified, u.CreatedAt, dealsPosted, 0
+            ));
         }
 
-        return new PagedResult<UserListItem>(new(), 0, page, pageSize, 0);
+        return new PagedResult<UserListItem>(items, total, page, pageSize,
+            (int)Math.Ceiling(total / (double)pageSize));
     }
 
     public async Task<UserDetail?> GetUserDetailAsync(int id)
     {
-        try
-        {
-            var resp = await _http.GetAsync($"{_mainApiBase}/admin/users/{id}");
-            if (resp.IsSuccessStatusCode)
-            {
-                var json = await resp.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<UserDetail>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            }
-        }
-        catch { }
-        return null;
+        var uid = Guid.Empty;
+        try { uid = new Guid(id.ToString()); } catch { return null; }
+        var user = await _mainDb.Users
+            .Include(u => u.OrganizedDeals)
+            .Include(u => u.Orders)
+            .ThenInclude(o => o.Deal)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == uid);
+        if (user == null) return null;
+
+        var deals = user.OrganizedDeals.Select(d =>
+            new DealSummary(d.Id.GetHashCode(), d.Title, d.ModerationStatus, d.CreatedAt)).ToList();
+        var orders = user.Orders.Select(o =>
+            new OrderSummary(o.Id.GetHashCode(), o.Deal?.Title ?? "", o.Status, o.Amount, o.CreatedAt)).ToList();
+
+        return new UserDetail(
+            user.Id.GetHashCode(), user.Email, user.FullName, user.AvatarUrl,
+            user.EmailVerified, user.EmailVerified, user.CreatedAt, user.LastLoginAt,
+            deals, orders
+        );
     }
 
     public async Task<bool> ToggleUserStatusAsync(int id, bool isActive, int adminId)
     {
-        try
-        {
-            var admin = await _db.AdminUsers.FindAsync(adminId);
-            var resp = await _http.PatchAsync($"{_mainApiBase}/admin/users/{id}/status",
-                JsonContent(new { isActive }));
-            if (resp.IsSuccessStatusCode)
-            {
-                await LogActionAsync(adminId, admin!.Email, isActive ? "ENABLED_USER" : "DISABLED_USER", "User", id);
-                return true;
-            }
-        }
-        catch { }
-        return false;
+        var uid = Guid.Empty;
+        try { uid = new Guid(id.ToString()); } catch { return false; }
+        var user = await _mainDb.Users.FindAsync(uid);
+        if (user == null) return false;
+
+        user.EmailVerified = isActive;
+        await _mainDb.SaveChangesAsync();
+
+        var admin = await _db.AdminUsers.FindAsync(adminId);
+        await LogActionAsync(adminId, admin!.Email,
+            isActive ? "ENABLED_USER" : "DISABLED_USER", "User", id);
+        return true;
     }
 
-    // ── Deals ─────────────────────────────────────────────────────────────────
+    // ── Deals ────────────────────────────────────────────────────────────────
     public async Task<PagedResult<DealModerationItem>> GetPendingDealsAsync(int page, int pageSize)
     {
-        try
-        {
-            var resp = await _http.GetAsync($"{_mainApiBase}/admin/moderation/pending?page={page}&pageSize={pageSize}");
-            if (resp.IsSuccessStatusCode)
-            {
-                var json = await resp.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<PagedResult<DealModerationItem>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-                    ?? new PagedResult<DealModerationItem>(new(), 0, page, pageSize, 0);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to fetch pending deals");
-        }
-        return new PagedResult<DealModerationItem>(new(), 0, page, pageSize, 0);
+        var query = _mainDb.Deals
+            .Include(d => d.Organizer)
+            .Where(d => d.ModerationStatus == "UnderReview" || d.ModerationStatus == "PendingReview" || d.ModerationStatus == "Pending")
+            .AsNoTracking();
+
+        var total = await query.CountAsync();
+        var deals = await query
+            .OrderByDescending(d => d.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var items = deals.Select(d => new DealModerationItem(
+            d.Id.GetHashCode(), d.Title, d.Category,
+            d.Organizer?.FullName ?? "", d.Organizer?.Email ?? "",
+            d.GroupPrice, d.OriginalPrice, d.MinGroup, d.CurrentGroup,
+            d.ModerationStatus, d.ModerationScore, d.ModerationRejectReason,
+            d.ImageUrls, d.Hashtags, d.CreatedAt, d.Deadline
+        )).ToList();
+
+        return new PagedResult<DealModerationItem>(items, total, page, pageSize,
+            (int)Math.Ceiling(total / (double)pageSize));
     }
 
     public async Task<PagedResult<DealListItem>> GetAllDealsAsync(string? status, string? search, int page, int pageSize)
     {
-        try
-        {
-            var resp = await _http.GetAsync($"{_mainApiBase}/admin/deals?status={status ?? ""}&search={search ?? ""}&page={page}&pageSize={pageSize}");
-            if (resp.IsSuccessStatusCode)
-            {
-                var json = await resp.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<PagedResult<DealListItem>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-                    ?? new PagedResult<DealListItem>(new(), 0, page, pageSize, 0);
-            }
-        }
-        catch { }
-        return new PagedResult<DealListItem>(new(), 0, page, pageSize, 0);
+        var query = _mainDb.Deals.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(d => d.Title.Contains(search) || d.Category.Contains(search));
+        if (!string.IsNullOrWhiteSpace(status) && status != "All")
+            query = query.Where(d => d.ModerationStatus == status);
+
+        var total = await query.CountAsync();
+        var deals = await query
+            .OrderByDescending(d => d.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var items = deals.Select(d => new DealListItem(
+            d.Id.GetHashCode(), d.Title, d.Category, d.Organizer?.FullName ?? "",
+            d.GroupPrice, d.CurrentGroup, d.MinGroup,
+            d.ModerationStatus, d.IsFeatured, d.CreatedAt
+        )).ToList();
+
+        return new PagedResult<DealListItem>(items, total, page, pageSize,
+            (int)Math.Ceiling(total / (double)pageSize));
     }
 
     public async Task<bool> ApproveDealAsync(int id, int adminId)
     {
-        try
-        {
-            var admin = await _db.AdminUsers.FindAsync(adminId);
-            var resp = await _http.PostAsync($"{_mainApiBase}/admin/moderation/{id}/approve", null);
-            if (resp.IsSuccessStatusCode)
-            {
-                await LogActionAsync(adminId, admin!.Email, "APPROVED_DEAL", "Deal", id);
-                return true;
-            }
-        }
-        catch { }
-        return false;
+        var gid = Guid.Empty;
+        try { gid = new Guid(id.ToString()); } catch { return false; }
+        var deal = await _mainDb.Deals.FindAsync(gid);
+        if (deal == null) return false;
+
+        deal.ModerationStatus = "Approved";
+        deal.ModerationRejectReason = null;
+        await _mainDb.SaveChangesAsync();
+
+        var admin = await _db.AdminUsers.FindAsync(adminId);
+        await LogActionAsync(adminId, admin!.Email, "APPROVED_DEAL", "Deal", id);
+        return true;
     }
 
     public async Task<bool> RejectDealAsync(int id, string reason, int adminId)
     {
-        try
-        {
-            var admin = await _db.AdminUsers.FindAsync(adminId);
-            var resp = await _http.PostAsync($"{_mainApiBase}/admin/moderation/{id}/reject",
-                JsonContent(new { reason }));
-            if (resp.IsSuccessStatusCode)
-            {
-                await LogActionAsync(adminId, admin!.Email, "REJECTED_DEAL", "Deal", id, reason);
-                return true;
-            }
-        }
-        catch { }
-        return false;
+        var gid = Guid.Empty;
+        try { gid = new Guid(id.ToString()); } catch { return false; }
+        var deal = await _mainDb.Deals.FindAsync(gid);
+        if (deal == null) return false;
+
+        deal.ModerationStatus = "Rejected";
+        deal.ModerationRejectReason = reason;
+        await _mainDb.SaveChangesAsync();
+
+        var admin = await _db.AdminUsers.FindAsync(adminId);
+        await LogActionAsync(adminId, admin!.Email, "REJECTED_DEAL", "Deal", id, reason);
+        return true;
     }
 
     public async Task<bool> FeatureDealAsync(int id, bool featured, int adminId)
     {
-        try
-        {
-            var admin = await _db.AdminUsers.FindAsync(adminId);
-            var resp = await _http.PatchAsync($"{_mainApiBase}/admin/deals/{id}/feature",
-                JsonContent(new { featured }));
-            if (resp.IsSuccessStatusCode)
-            {
-                await LogActionAsync(adminId, admin!.Email, featured ? "FEATURED_DEAL" : "UNFEATURED_DEAL", "Deal", id);
-                return true;
-            }
-        }
-        catch { }
-        return false;
+        var gid = Guid.Empty;
+        try { gid = new Guid(id.ToString()); } catch { return false; }
+        var deal = await _mainDb.Deals.FindAsync(gid);
+        if (deal == null) return false;
+
+        deal.IsFeatured = featured;
+        await _mainDb.SaveChangesAsync();
+
+        var admin = await _db.AdminUsers.FindAsync(adminId);
+        await LogActionAsync(adminId, admin!.Email,
+            featured ? "FEATURED_DEAL" : "UNFEATURED_DEAL", "Deal", id);
+        return true;
     }
 
-    // ── Orders ─────────────────────────────────────────────────────────────────
+    // ── Orders ───────────────────────────────────────────────────────────────
     public async Task<PagedResult<OrderListItem>> GetOrdersAsync(string? status, string? search, int page, int pageSize)
     {
-        try
-        {
-            var resp = await _http.GetAsync($"{_mainApiBase}/admin/orders?status={status ?? ""}&search={search ?? ""}&page={page}&pageSize={pageSize}");
-            if (resp.IsSuccessStatusCode)
-            {
-                var json = await resp.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<PagedResult<OrderListItem>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-                    ?? new PagedResult<OrderListItem>(new(), 0, page, pageSize, 0);
-            }
-        }
-        catch { }
-        return new PagedResult<OrderListItem>(new(), 0, page, pageSize, 0);
+        var query = _mainDb.Orders
+            .Include(o => o.User)
+            .Include(o => o.Deal)
+            .AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(status))
+            query = query.Where(o => o.Status == status);
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(o => o.User!.Email.Contains(search) || o.Deal!.Title.Contains(search));
+
+        var total = await query.CountAsync();
+        var orders = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var items = orders.Select(o => new OrderListItem(
+            o.Id.GetHashCode(),
+            o.User?.FullName ?? "", o.User?.Email ?? "",
+            o.Deal?.Title ?? "", o.Status,
+            o.Amount, o.Quantity, o.CreatedAt
+        )).ToList();
+
+        return new PagedResult<OrderListItem>(items, total, page, pageSize,
+            (int)Math.Ceiling(total / (double)pageSize));
     }
 
     public async Task<OrderDetail?> GetOrderDetailAsync(int id)
     {
-        try
-        {
-            var resp = await _http.GetAsync($"{_mainApiBase}/admin/orders/{id}");
-            if (resp.IsSuccessStatusCode)
-            {
-                var json = await resp.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<OrderDetail>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            }
-        }
-        catch { }
-        return null;
+        var oid = Guid.Empty;
+        try { oid = new Guid(id.ToString()); } catch { return null; }
+        var order = await _mainDb.Orders
+            .Include(o => o.User)
+            .Include(o => o.Deal)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == oid);
+        if (order == null) return null;
+
+        return new OrderDetail(
+            order.Id.GetHashCode(),
+            order.User?.FullName ?? "", order.User?.Email ?? "", null, // phone
+            "", // delivery address - not in current schema
+            order.Deal?.Title ?? "", order.Status,
+            order.Amount, order.Quantity, order.CreatedAt, order.UpdatedAt
+        );
     }
 
     public async Task<bool> UpdateOrderStatusAsync(int id, string status, int adminId)
     {
-        try
-        {
-            var admin = await _db.AdminUsers.FindAsync(adminId);
-            var resp = await _http.PatchAsync($"{_mainApiBase}/admin/orders/{id}/status",
-                JsonContent(new { status }));
-            if (resp.IsSuccessStatusCode)
-            {
-                await LogActionAsync(adminId, admin!.Email, $"UPDATE_ORDER_STATUS_{status.ToUpper()}", "Order", id);
-                return true;
-            }
-        }
-        catch { }
-        return false;
+        var oid = Guid.Empty;
+        try { oid = new Guid(id.ToString()); } catch { return false; }
+        var order = await _mainDb.Orders.FindAsync(oid);
+        if (order == null) return false;
+
+        order.Status = status;
+        order.UpdatedAt = DateTime.UtcNow;
+        await _mainDb.SaveChangesAsync();
+
+        var admin = await _db.AdminUsers.FindAsync(adminId);
+        await LogActionAsync(adminId, admin!.Email,
+            $"UPDATE_ORDER_STATUS_{status.ToUpper()}", "Order", id);
+        return true;
     }
 
-    // ── Settings ───────────────────────────────────────────────────────────────
+    // ── Settings ─────────────────────────────────────────────────────────────
     public async Task<List<SettingItem>> GetSettingsAsync()
     {
         return await _db.AppSettings
@@ -295,10 +347,4 @@ public class AdminService : IAdminService
 
         return true;
     }
-}
-
-public static class JsonContent
-{
-    public static StringContent New(object value) =>
-        new StringContent(System.Text.Json.JsonSerializer.Serialize(value), System.Text.Encoding.UTF8, "application/json");
 }

@@ -93,11 +93,11 @@ services:
     restart: unless-stopped
     environment:
       ConnectionStrings__Default: Host=postgres;Database=kitatolongkita_admin;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
+      ConnectionStrings__MainDb: Host=postgres;Database=kitatolongkita;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
       Jwt__Secret: ${JWT_SECRET:-KitaTolongKita_SuperSecretKey_MinLength32Chars!}
       Jwt__Issuer: KitaTolongKitaAdmin
       Jwt__Audience: KitaTolongKitaAdminPortal
       Jwt__AccessTokenExpiryMinutes: "480"
-      MainApi__BaseUrl: http://kita-api:5000/api
       App__Port: "5001"
     ports:
       - "5001:5001"
