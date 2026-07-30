@@ -43,8 +43,6 @@ jobs:
         run: |
           cd kitaTolongkita/android
           ./gradlew assembleRelease
-        env:
-          JAVA_HOME: /opt/java/openjdk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
