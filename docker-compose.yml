@@ -111,11 +111,9 @@ services:
       context: ./admin-portal
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://kita-admin-api:5001/api
+        NEXT_PUBLIC_API_URL: http://76.13.219.191:5001/api
     container_name: kita-admin-portal
     restart: unless-stopped
-    environment:
-      NEXT_PUBLIC_API_URL: http://kita-admin-api:5001/api
     ports:
       - "3005:3005"
     depends_on:
