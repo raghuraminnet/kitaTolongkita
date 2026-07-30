@@ -5,7 +5,7 @@
 
 // ── Hardcoded demo config ─────────────────────────────────────────────────────
 const DEMO_CONFIG = {
-  enabled: true,
+  enabled: false,  // Disabled for production release
   adminEmail: 'admin@demo.com',
   adminPassword: 'demo123',
   demoUser: {

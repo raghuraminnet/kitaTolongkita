@@ -15,8 +15,6 @@ import { Button, Input } from '../../components';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { authApi, setAccessToken } from '../../api/client';
 
-type Step = 'signup' | 'otp';
-
 export const SignUpScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -25,8 +23,6 @@ export const SignUpScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<Step>('signup');
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
@@ -45,30 +41,12 @@ export const SignUpScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      // Sign up — API auto-sends OTP to email
-      await authApi.emailSignup({ email, fullName: name, password });
-      setStep('otp');
-    } catch (err: any) {
-      Alert.alert('Sign up failed', err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) {
-      Alert.alert('Invalid OTP', 'Please enter the 6-digit code.');
-      return;
-    }
-    setLoading(true);
-    try {
-      await authApi.verifyOtp(email, otp, 'EmailVerification');
-      // OTP verified — now log in
-      const res = await authApi.emailLogin({ email, password });
+      // Sign up — for now skip email verification per Raghu's request
+      const res = await authApi.emailSignup({ email, fullName: name, password });
       await setAccessToken(res.accessToken);
       navigation.replace('ProfileSetup');
     } catch (err: any) {
-      Alert.alert('Verification failed', err.message);
+      Alert.alert('Sign up failed', err.message);
     } finally {
       setLoading(false);
     }
@@ -89,105 +67,62 @@ export const SignUpScreen: React.FC = () => {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.backBtn}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {step === 'signup' ? 'Create Account' : 'Verify Email'}
-          </Text>
+          <Text style={styles.headerTitle}>Create Account</Text>
           <View style={{ width: 40 }} />
         </View>
 
         {/* Branding */}
         <View style={styles.branding}>
-          <Text style={styles.brandTitle}>
-            {step === 'signup' ? 'Join KitaTolongKita 🤝' : `Code sent to\n${email}`}
-          </Text>
+          <Text style={styles.brandTitle}>Join KitaTolongKita 🤝</Text>
           <Text style={styles.brandSubtitle}>
-            {step === 'signup'
-              ? 'Create your account to start group buying with your community'
-              : 'Enter the 6-digit code we sent to your email'}
+            Create your account to start group buying with your community
           </Text>
         </View>
 
         {/* Form */}
         <View style={styles.form}>
-          {step === 'signup' ? (
-            <>
-              <Input
-                label="Full Name"
-                placeholder="Ahmad bin Ali"
-                value={name}
-                onChangeText={setName}
-                prefix="👤"
-                containerStyle={styles.input}
-              />
-              <Input
-                label="Email"
-                placeholder="you@example.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                prefix="📧"
-                containerStyle={styles.input}
-              />
-              <Input
-                label="Password"
-                placeholder="Min. 8 characters"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                prefix="🔒"
-                containerStyle={styles.input}
-              />
-              <Input
-                label="Confirm Password"
-                placeholder="Re-enter your password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                prefix="🔒"
-                containerStyle={styles.input}
-              />
-              <Button
-                title="Create Account"
-                onPress={handleSignUp}
-                loading={loading}
-                fullWidth
-              />
-            </>
-          ) : (
-            <>
-              <Input
-                label="Verification Code"
-                placeholder="000000"
-                value={otp}
-                onChangeText={setOtp}
-                keyboardType="number-pad"
-                maxLength={6}
-                prefix="🔐"
-                containerStyle={styles.input}
-              />
-              <Button
-                title="Verify Email"
-                onPress={handleVerifyOtp}
-                loading={loading}
-                fullWidth
-              />
-              <TouchableOpacity
-                style={styles.resendBtn}
-                onPress={() => authApi.sendOtp(email, 'EmailVerification')}
-              >
-                <Text style={styles.resendText}>
-                  Didn't get the code? <Text style={styles.resendLink}>Resend</Text>
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.backLink}
-                onPress={() => setStep('signup')}
-              >
-                <Text style={styles.backLinkText}>← Change email address</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <Input
+            label="Full Name"
+            placeholder="Ahmad bin Ali"
+            value={name}
+            onChangeText={setName}
+            prefix="👤"
+            containerStyle={styles.input}
+          />
+          <Input
+            label="Email"
+            placeholder="you@example.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            prefix="📧"
+            containerStyle={styles.input}
+          />
+          <Input
+            label="Password"
+            placeholder="Min. 8 characters"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            prefix="🔒"
+            containerStyle={styles.input}
+          />
+          <Input
+            label="Confirm Password"
+            placeholder="Re-enter your password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            prefix="🔒"
+            containerStyle={styles.input}
+          />
+          <Button
+            title="Create Account"
+            onPress={handleSignUp}
+            loading={loading}
+            fullWidth
+          />
         </View>
 
         {/* Terms */}
@@ -203,7 +138,7 @@ export const SignUpScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { padding: spacing.md, paddingTop: spacing.sm },
+  scrollContent: { padding: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xl },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: spacing.xl,
@@ -224,16 +159,6 @@ const styles = StyleSheet.create({
   },
   form: { marginBottom: spacing.xl },
   input: { marginBottom: spacing.md },
-  resendBtn: { alignItems: 'center', marginTop: spacing.lg },
-  resendText: {
-    fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
-  },
-  resendLink: { color: colors['primary-container'], fontWeight: '600' },
-  backLink: { alignItems: 'center', marginTop: spacing.sm },
-  backLinkText: {
-    fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['primary-container'],
-    fontWeight: '600',
-  },
   terms: {
     fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'],
     textAlign: 'center', lineHeight: 18,
