@@ -27,6 +27,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-KitaTolongKita123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -68,7 +69,6 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      # Connect to docker-network service names (not host.docker.internal)
       ConnectionStrings__Default: Host=postgres;Database=kitatolongkita;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
       ElasticSearch__Url: http://elasticsearch:9200
       Jwt__Secret: ${JWT_SECRET:-KitaTolongKita_SuperSecretKey_MinLength32Chars!}
@@ -83,6 +83,41 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+
+  # ── Admin API (port 5001 — public) ─────────────────────────────────────────
+  admin-api:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: kita-admin-api
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__Default: Host=postgres;Database=kitatolongkita_admin;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
+      Jwt__Secret: ${JWT_SECRET:-KitaTolongKita_SuperSecretKey_MinLength32Chars!}
+      Jwt__Issuer: KitaTolongKitaAdmin
+      Jwt__Audience: KitaTolongKitaAdminPortal
+      Jwt__AccessTokenExpiryMinutes: "480"
+      MainApi__BaseUrl: http://kita-api:5000/api
+      App__Port: "5001"
+    ports:
+      - "5001:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Admin Portal Web (port 3000 — public) ────────────────────────────────
+  admin-portal:
+    build:
+      context: ./admin-portal
+      dockerfile: Dockerfile
+    container_name: kita-admin-portal
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://kita-admin-api:5001/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - admin-api
 
 volumes:
   postgres_data:
