@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: kitaTolongkita/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -30,13 +30,11 @@ jobs:
         uses: android-actions/setup-android@v2
 
       - name: Install dependencies
-        run: |
-          cd kitaTolongkita
-          npm ci
+        run: npm ci
 
       - name: Build Android Release
         run: |
-          cd kitaTolongkita/android
+          cd android
           ./gradlew assembleRelease
         env:
           JAVA_HOME: /opt/java/openjdk
@@ -44,5 +42,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name:KitaTolongKita-release.apk
-          path: kitaTolongkita/android/app/build/outputs/apk/release/app-release.apk
+          name: KitaTolongKita-release.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
