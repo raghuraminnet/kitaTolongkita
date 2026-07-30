@@ -115,7 +115,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://kita-admin-api:5001/api
     ports:
-      - "3000:3000"
+      - "3005:3005"
     depends_on:
       - admin-api
 
