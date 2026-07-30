@@ -68,7 +68,9 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddControllers();
-builder.Services.AddCors(opts => opts.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+builder.Services.AddCors(opts => opts.AddPolicy("AllowPortal", p =>
+    p.WithOrigins("http://76.13.219.191:3005", "http://76.13.219.191:3000")
+        .AllowAnyMethod().AllowAnyHeader().AllowCredentials()));
 
 var app = builder.Build();
 
@@ -80,7 +82,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseCors("AllowAll");
+app.UseCors("AllowPortal");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
