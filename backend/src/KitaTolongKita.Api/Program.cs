@@ -19,6 +19,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")
         ?? "Host=localhost;Database=kitatolongkita;Username=postgres;Password=postgres"));
 
+builder.Services.AddMemoryCache();
+builder.Services.AddHostedService<Services.ConfigReloadService>();
+
 // ── ElasticSearch ────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<IElasticClient>(sp =>
 {

@@ -70,6 +70,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Default: Host=postgres;Database=kitatolongkita;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
+      Redis__Url: redis://redis:6379
       ElasticSearch__Url: http://elasticsearch:9200
       Jwt__Secret: ${JWT_SECRET:-KitaTolongKita_SuperSecretKey_MinLength32Chars!}
       Jwt__Issuer: KitaTolongKita
@@ -94,6 +95,7 @@ services:
     environment:
       ConnectionStrings__Default: Host=postgres;Database=kitatolongkita_admin;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
       ConnectionStrings__MainDb: Host=postgres;Database=kitatolongkita;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
+      Redis__Url: redis://redis:6379
       Jwt__Secret: ${JWT_SECRET:-KitaTolongKita_SuperSecretKey_MinLength32Chars!}
       Jwt__Issuer: KitaTolongKitaAdmin
       Jwt__Audience: KitaTolongKitaAdminPortal

@@ -1,5 +1,9 @@
 node_modules/
 android/
+
+# ── Admin Portal build artifacts ──────────────────────────────────────────────
+admin-portal/.next/
+admin-portal/node_modules/
 ios/
 .expo/
 *.apk

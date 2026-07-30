@@ -69,9 +69,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-4 text-center text-sm text-muted">
-          Default: admin@kitatolongkita.com / Admin@123
-        </div>
+
       </div>
     </div>
   )

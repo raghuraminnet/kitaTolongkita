@@ -26,7 +26,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (res.status === 401) {
       localStorage.removeItem('admin_token');
       if (typeof window !== 'undefined') window.location.href = '/';
-      throw new Error('Unauthorized');
+      throw new Error(json.message || 'Request failed');
     }
     throw new Error(json.message || 'Request failed');
   }
@@ -40,7 +40,9 @@ export const api = {
     request<ApiResponse<{ accessToken: string; fullName: string; role: string; expiresIn: number }>>(
       '/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }
     ),
-  me: () => request('/auth/me'),
+  me: () => request<any>('/auth/me'),
+  changePassword: (oldPassword: string, newPassword: string) =>
+    request('/auth/change-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) }),
 
   // Dashboard
   dashboard: () => request('/dashboard'),
@@ -50,7 +52,7 @@ export const api = {
     const q = new URLSearchParams(params as any).toString();
     return request(`/users${q ? '?' + q : ''}`);
   },
-  userDetail: (id: number) => request(`/users/${id}`),
+  userDetail: (id: string) => request(`/users/${id}`),
   toggleUserStatus: (id: string, isActive: boolean) =>
     request(`/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ isActive }) }),
 
@@ -77,6 +79,24 @@ export const api = {
   updateOrderStatus: (id: string, status: string) =>
     request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
+  // AI Configs
+  aiConfigs: () => request<ApiResponse<AiConfig[]>>('/ai-configs'),
+  aiConfigsActive: () => request<ApiResponse<AiConfig | null>>('/ai-configs/active'),
+  createAiConfig: (data: AiConfigInput) =>
+    request('/ai-configs', { method: 'POST', body: JSON.stringify(data) }),
+  updateAiConfig: (id: number, data: Partial<AiConfigInput> & { isActive?: boolean }) =>
+    request(`/ai-configs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteAiConfig: (id: number) =>
+    request(`/ai-configs/${id}`, { method: 'DELETE' }),
+  testAiConnection: (data: { provider: string; apiKey?: string; endpoint?: string; deploymentName?: string; modelName?: string }) =>
+    request<{ success: boolean; message: string }>('/ai-configs/test', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Moderation Rules
+  moderationRules: (category?: string) =>
+    request(`/moderation-rules${category ? '?category=' + category : ''}`),
+  updateModerationRule: (id: number, data: { value?: string; isActive?: boolean }) =>
+    request(`/moderation-rules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
   // Settings
   settings: () => request('/settings'),
   updateSetting: (key: string, value: string) =>
@@ -92,6 +112,28 @@ export const api = {
   adminUsers: () => request('/admin-users'),
   createAdminUser: (data: { email: string; password: string; fullName: string; role: string }) =>
     request('/admin-users', { method: 'POST', body: JSON.stringify(data) }),
-  deleteAdminUser: (id: string) =>
+  deleteAdminUser: (id: number) =>
     request(`/admin-users/${id}`, { method: 'DELETE' }),
 };
+
+export interface AiConfig {
+  id: number;
+  name: string;
+  provider: string;
+  apiKeyMasked: string;
+  endpoint?: string;
+  deploymentName?: string;
+  modelName?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AiConfigInput {
+  name: string;
+  provider: string;
+  apiKey?: string;
+  endpoint?: string;
+  deploymentName?: string;
+  modelName?: string;
+}
