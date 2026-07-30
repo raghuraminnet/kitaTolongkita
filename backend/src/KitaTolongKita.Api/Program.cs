@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using KitaTolongKita.Api.Services;
 using Nest;
 using Hellang.Middleware.ProblemDetails;
 using KitaTolongKita.Core.Interfaces;
@@ -20,7 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         ?? "Host=localhost;Database=kitatolongkita;Username=postgres;Password=postgres"));
 
 builder.Services.AddMemoryCache();
-builder.Services.AddHostedService<Services.ConfigReloadService>();
+builder.Services.AddHostedService<ConfigReloadService>();
 
 // ── ElasticSearch ────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<IElasticClient>(sp =>

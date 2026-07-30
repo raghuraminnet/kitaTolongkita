@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Caching.Memory;
 using StackExchange.Redis;
 
 namespace KitaTolongKita.Api.Services;
@@ -51,11 +52,14 @@ public class ConfigReloadService : BackgroundService
                     // Invalidate/update cache
                     if (_cache != null)
                     {
-                        _cache.Set($"config:{payload.key}", payload.value, TimeSpan.FromHours(1));
+                        var entry = _cache.CreateEntry($"config:{payload.key}");
+                        entry.Value = payload.value;
+                        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+                        entry.Dispose();
                     }
 
-                    // Post event for controllers to reload
-                    ConfigChangedEvent?.Set(payload);
+                    // Signal controllers to reload config
+                    ConfigChangedEvent?.Set();
                 }
                 catch (Exception ex)
                 {
