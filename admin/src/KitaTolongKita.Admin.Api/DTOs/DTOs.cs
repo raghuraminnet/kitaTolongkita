@@ -19,7 +19,7 @@ public record DashboardKpis(
 );
 
 public record DailyStat(string Date, int Count, decimal Amount = 0);
-public record RecentActivity(string Action, string EntityType, int EntityId, string Summary, DateTime At);
+public record RecentActivity(string Action, string EntityType, string EntityId, string Summary, DateTime At);
 
 // ── Users ───────────────────────────────────────────────────────────────────────
 public record UserListItem(

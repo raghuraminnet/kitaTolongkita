@@ -53,4 +53,4 @@ public class AuditLogsController : ControllerBase
     }
 }
 
-public record AuditLogItem(string Action, string EntityType, int EntityId, string AdminEmail, string? Details, DateTime At);
+public record AuditLogItem(string Action, string EntityType, string EntityId, string AdminEmail, string? Details, DateTime At);
