@@ -16,7 +16,7 @@
 version: "3.8"
 
 services:
-  # ── PostgreSQL (internal port 5432, exposed as 5433 to avoid host conflicts) ──
+  # ── PostgreSQL (internal only — API connects via docker network) ──
   postgres:
     image: postgres:16-alpine
     container_name: kita-postgres
@@ -25,8 +25,6 @@ services:
       POSTGRES_DB: kitatolongkita
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-KitaTolongKita123}
-    ports:
-      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -35,17 +33,15 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── Redis (internal port 6379, exposed as 6378 to avoid host conflicts) ──────
+  # ── Redis (internal only — API connects via docker network) ──────
   redis:
     image: redis:7-alpine
     container_name: kita-redis
     restart: unless-stopped
-    ports:
-      - "6378:6379"
     volumes:
       - redis_data:/data
 
-  # ── ElasticSearch ─────────────────────────────────────────────────────────────
+  # ── ElasticSearch (internal only — API connects via docker network) ──
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     container_name: kita-elasticsearch
@@ -55,9 +51,6 @@ services:
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - ELASTICSEARCH_URL=http://localhost:9200
-    ports:
-      - "9200:9200"
-      - "9300:9300"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
