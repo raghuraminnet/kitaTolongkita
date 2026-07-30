@@ -34,6 +34,11 @@ jobs:
           cd kitaTolongkita
           npm ci
 
+      - name: Generate Android native project
+        run: |
+          cd kitaTolongkita
+          npx expo prebuild --platform android --clean
+
       - name: Build Android Release
         run: |
           cd kitaTolongkita/android
