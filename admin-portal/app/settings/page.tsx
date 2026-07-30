@@ -55,11 +55,11 @@ export default function SettingsPage() {
     finally { setAdminLoading(false) }
   }
 
-  const deleteAdmin = async (id: number) => {
+  const deleteAdmin = async (id: string) => {
     if (!confirm('Delete this admin user?')) return
     try {
       await api.deleteAdminUser(id)
-      setAdminUsers(a => a.filter(x => x.id !== id))
+      setAdminUsers(a => a.filter(x => String(x.id) !== id))
     } catch (err: any) { alert(err.message) }
   }
 
@@ -187,7 +187,7 @@ export default function SettingsPage() {
                           <td className="text-sm text-muted">{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : 'Never'}</td>
                           <td>
                             {u.id !== 1 && (
-                              <button className="btn btn-sm btn-danger" onClick={() => deleteAdmin(u.id)}>Delete</button>
+                              <button className="btn btn-sm btn-danger" onClick={() => deleteAdmin(String(u.id))}>Delete</button>
                             )}
                           </td>
                         </tr>
