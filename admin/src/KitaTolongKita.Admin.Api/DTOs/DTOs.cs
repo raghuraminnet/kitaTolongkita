@@ -23,23 +23,23 @@ public record RecentActivity(string Action, string EntityType, int EntityId, str
 
 // ── Users ───────────────────────────────────────────────────────────────────────
 public record UserListItem(
-    int Id, string Email, string FullName, string? AvatarUrl,
+    string Id, string Email, string FullName, string? AvatarUrl,
     bool EmailVerified, bool IsActive, DateTime CreatedAt, int DealsPosted, int DealsJoined
 );
 
 public record UserDetail(
-    int Id, string Email, string FullName, string? AvatarUrl,
+    string Id, string Email, string FullName, string? AvatarUrl,
     bool EmailVerified, bool IsActive, DateTime CreatedAt, DateTime? LastLoginAt,
     List<DealSummary> DealsPosted,
     List<OrderSummary> Orders
 );
 
-public record DealSummary(int Id, string Title, string Status, DateTime CreatedAt);
-public record OrderSummary(int Id, string DealTitle, string Status, decimal Amount, DateTime CreatedAt);
+public record DealSummary(string Id, string Title, string Status, DateTime CreatedAt);
+public record OrderSummary(string Id, string DealTitle, string Status, decimal Amount, DateTime CreatedAt);
 
 // ── Deals ───────────────────────────────────────────────────────────────────────
 public record DealModerationItem(
-    int Id, string Title, string Category, string OrganizerName, string OrganizerEmail,
+    string Id, string Title, string Category, string OrganizerName, string OrganizerEmail,
     decimal GroupPrice, decimal OriginalPrice, int MinGroup, int CurrentGroup,
     string Status, double? ModerationScore, string? ModerationReason,
     List<string> ImageUrls, List<string> Hashtags,
@@ -47,21 +47,21 @@ public record DealModerationItem(
 );
 
 public record DealListItem(
-    int Id, string Title, string Category, string OrganizerName,
+    string Id, string Title, string Category, string OrganizerName,
     decimal GroupPrice, int CurrentGroup, int MinGroup,
     string Status, bool IsFeatured, DateTime CreatedAt
 );
 
 // ── Orders ─────────────────────────────────────────────────────────────────────
 public record OrderListItem(
-    int Id, string BuyerName, string BuyerEmail,
+    string Id, string BuyerName, string BuyerEmail,
     string DealTitle, string Status,
     decimal Amount, int Quantity,
     DateTime CreatedAt
 );
 
 public record OrderDetail(
-    int Id, string BuyerName, string BuyerEmail, string? BuyerPhone,
+    string Id, string BuyerName, string BuyerEmail, string? BuyerPhone,
     string DeliveryAddress, string DealTitle, string Status,
     decimal Amount, int Quantity,
     DateTime CreatedAt, DateTime? UpdatedAt

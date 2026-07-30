@@ -27,7 +27,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetOrder(int id)
+    public async Task<IActionResult> GetOrder(string id)
     {
         var order = await _svc.GetOrderDetailAsync(id);
         if (order == null) return NotFound(new ApiResponse(false, "Order not found"));
@@ -36,7 +36,7 @@ public class OrdersController : ControllerBase
 
     [Authorize(Policy = "Moderator")]
     [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateOrderStatusRequest req)
+    public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateOrderStatusRequest req)
     {
         var adminId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var ok = await _svc.UpdateOrderStatusAsync(id, req.Status, adminId);

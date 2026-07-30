@@ -51,7 +51,7 @@ export const api = {
     return request(`/users${q ? '?' + q : ''}`);
   },
   userDetail: (id: number) => request(`/users/${id}`),
-  toggleUserStatus: (id: number, isActive: boolean) =>
+  toggleUserStatus: (id: string, isActive: boolean) =>
     request(`/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ isActive }) }),
 
   // Deals
@@ -61,11 +61,11 @@ export const api = {
     const q = new URLSearchParams(params as any).toString();
     return request(`/deals${q ? '?' + q : ''}`);
   },
-  approveDeal: (id: number) =>
+  approveDeal: (id: string) =>
     request(`/deals/moderation/${id}/approve`, { method: 'POST' }),
-  rejectDeal: (id: number, reason: string) =>
+  rejectDeal: (id: string, reason: string) =>
     request(`/deals/moderation/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
-  featureDeal: (id: number, featured: boolean) =>
+  featureDeal: (id: string, featured: boolean) =>
     request(`/deals/${id}/feature`, { method: 'PATCH', body: JSON.stringify({ featured }) }),
 
   // Orders
@@ -73,8 +73,8 @@ export const api = {
     const q = new URLSearchParams(params as any).toString();
     return request(`/orders${q ? '?' + q : ''}`);
   },
-  orderDetail: (id: number) => request(`/orders/${id}`),
-  updateOrderStatus: (id: number, status: string) =>
+  orderDetail: (id: string) => request(`/orders/${id}`),
+  updateOrderStatus: (id: string, status: string) =>
     request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   // Settings
@@ -92,6 +92,6 @@ export const api = {
   adminUsers: () => request('/admin-users'),
   createAdminUser: (data: { email: string; password: string; fullName: string; role: string }) =>
     request('/admin-users', { method: 'POST', body: JSON.stringify(data) }),
-  deleteAdminUser: (id: number) =>
+  deleteAdminUser: (id: string) =>
     request(`/admin-users/${id}`, { method: 'DELETE' }),
 };

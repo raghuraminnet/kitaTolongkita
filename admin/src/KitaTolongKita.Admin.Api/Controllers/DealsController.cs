@@ -37,7 +37,7 @@ public class DealsController : ControllerBase
 
     [Authorize(Policy = "Moderator")]
     [HttpPost("moderation/{id}/approve")]
-    public async Task<IActionResult> Approve(int id)
+    public async Task<IActionResult> Approve(string id)
     {
         var adminId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var ok = await _svc.ApproveDealAsync(id, adminId);
@@ -47,7 +47,7 @@ public class DealsController : ControllerBase
 
     [Authorize(Policy = "Moderator")]
     [HttpPost("moderation/{id}/reject")]
-    public async Task<IActionResult> Reject(int id, [FromBody] RejectRequest req)
+    public async Task<IActionResult> Reject(string id, [FromBody] RejectRequest req)
     {
         var adminId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var ok = await _svc.RejectDealAsync(id, req.Reason ?? "", adminId);
@@ -57,7 +57,7 @@ public class DealsController : ControllerBase
 
     [Authorize(Policy = "Moderator")]
     [HttpPatch("{id}/feature")]
-    public async Task<IActionResult> Feature(int id, [FromBody] FeatureRequest req)
+    public async Task<IActionResult> Feature(string id, [FromBody] FeatureRequest req)
     {
         var adminId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var ok = await _svc.FeatureDealAsync(id, req.Featured, adminId);

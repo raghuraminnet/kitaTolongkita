@@ -9,27 +9,18 @@ namespace KitaTolongKita.Admin.Api.Services;
 
 public interface IAdminService
 {
-    // Auth
     Task<AdminUser> CreateAdminUserAsync(string email, string password, string fullName, string role);
-
-    // Users
     Task<PagedResult<UserListItem>> GetUsersAsync(string? search, string? filter, int page, int pageSize);
-    Task<UserDetail?> GetUserDetailAsync(int id);
-    Task<bool> ToggleUserStatusAsync(int id, bool isActive, int adminId);
-
-    // Deals
+    Task<UserDetail?> GetUserDetailAsync(string id);
+    Task<bool> ToggleUserStatusAsync(string id, bool isActive, int adminId);
     Task<PagedResult<DealModerationItem>> GetPendingDealsAsync(int page, int pageSize);
     Task<PagedResult<DealListItem>> GetAllDealsAsync(string? status, string? search, int page, int pageSize);
-    Task<bool> ApproveDealAsync(int id, int adminId);
-    Task<bool> RejectDealAsync(int id, string reason, int adminId);
-    Task<bool> FeatureDealAsync(int id, bool featured, int adminId);
-
-    // Orders
+    Task<bool> ApproveDealAsync(string id, int adminId);
+    Task<bool> RejectDealAsync(string id, string reason, int adminId);
+    Task<bool> FeatureDealAsync(string id, bool featured, int adminId);
     Task<PagedResult<OrderListItem>> GetOrdersAsync(string? status, string? search, int page, int pageSize);
-    Task<OrderDetail?> GetOrderDetailAsync(int id);
-    Task<bool> UpdateOrderStatusAsync(int id, string status, int adminId);
-
-    // Settings
+    Task<OrderDetail?> GetOrderDetailAsync(string id);
+    Task<bool> UpdateOrderStatusAsync(string id, string status, int adminId);
     Task<List<SettingItem>> GetSettingsAsync();
     Task<bool> UpdateSettingAsync(UpdateSettingRequest req, int adminId);
 }
@@ -48,7 +39,7 @@ public class AdminService : IAdminService
     }
 
     // ── Audit helper ──────────────────────────────────────────────────────────
-    private async Task LogActionAsync(int adminId, string adminEmail, string action, string entityType, int entityId, string? details = null)
+    private async Task LogActionAsync(int adminId, string adminEmail, string action, string entityType, string entityId, string? details = null)
     {
         _db.AuditLogs.Add(new AuditLog
         {
@@ -105,7 +96,7 @@ public class AdminService : IAdminService
         {
             var dealsPosted = await _mainDb.Deals.CountAsync(d => d.OrganizerId == u.Id);
             items.Add(new UserListItem(
-                u.Id.GetHashCode(), u.Email, u.FullName, u.AvatarUrl,
+                u.Id.ToString(), u.Email, u.FullName, u.AvatarUrl,
                 u.EmailVerified, u.EmailVerified, u.CreatedAt, dealsPosted, 0
             ));
         }
@@ -114,34 +105,31 @@ public class AdminService : IAdminService
             (int)Math.Ceiling(total / (double)pageSize));
     }
 
-    public async Task<UserDetail?> GetUserDetailAsync(int id)
+    public async Task<UserDetail?> GetUserDetailAsync(string id)
     {
-        var uid = Guid.Empty;
-        try { uid = new Guid(id.ToString()); } catch { return null; }
+        if (!Guid.TryParse(id, out var uid)) return null;
         var user = await _mainDb.Users
             .Include(u => u.OrganizedDeals)
-            .Include(u => u.Orders)
-            .ThenInclude(o => o.Deal)
+            .Include(u => u.Orders).ThenInclude(o => o.Deal)
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == uid);
         if (user == null) return null;
 
         var deals = user.OrganizedDeals.Select(d =>
-            new DealSummary(d.Id.GetHashCode(), d.Title, d.ModerationStatus, d.CreatedAt)).ToList();
+            new DealSummary(d.Id.ToString(), d.Title, d.ModerationStatus, d.CreatedAt)).ToList();
         var orders = user.Orders.Select(o =>
-            new OrderSummary(o.Id.GetHashCode(), o.Deal?.Title ?? "", o.Status, o.Amount, o.CreatedAt)).ToList();
+            new OrderSummary(o.Id.ToString(), o.Deal?.Title ?? "", o.Status, o.Amount, o.CreatedAt)).ToList();
 
         return new UserDetail(
-            user.Id.GetHashCode(), user.Email, user.FullName, user.AvatarUrl,
+            user.Id.ToString(), user.Email, user.FullName, user.AvatarUrl,
             user.EmailVerified, user.EmailVerified, user.CreatedAt, user.LastLoginAt,
             deals, orders
         );
     }
 
-    public async Task<bool> ToggleUserStatusAsync(int id, bool isActive, int adminId)
+    public async Task<bool> ToggleUserStatusAsync(string id, bool isActive, int adminId)
     {
-        var uid = Guid.Empty;
-        try { uid = new Guid(id.ToString()); } catch { return false; }
+        if (!Guid.TryParse(id, out var uid)) return false;
         var user = await _mainDb.Users.FindAsync(uid);
         if (user == null) return false;
 
@@ -170,7 +158,7 @@ public class AdminService : IAdminService
             .ToListAsync();
 
         var items = deals.Select(d => new DealModerationItem(
-            d.Id.GetHashCode(), d.Title, d.Category,
+            d.Id.ToString(), d.Title, d.Category,
             d.Organizer?.FullName ?? "", d.Organizer?.Email ?? "",
             d.GroupPrice, d.OriginalPrice, d.MinGroup, d.CurrentGroup,
             d.ModerationStatus, d.ModerationScore, d.ModerationRejectReason,
@@ -198,7 +186,7 @@ public class AdminService : IAdminService
             .ToListAsync();
 
         var items = deals.Select(d => new DealListItem(
-            d.Id.GetHashCode(), d.Title, d.Category, d.Organizer?.FullName ?? "",
+            d.Id.ToString(), d.Title, d.Category, d.Organizer?.FullName ?? "",
             d.GroupPrice, d.CurrentGroup, d.MinGroup,
             d.ModerationStatus, d.IsFeatured, d.CreatedAt
         )).ToList();
@@ -207,10 +195,9 @@ public class AdminService : IAdminService
             (int)Math.Ceiling(total / (double)pageSize));
     }
 
-    public async Task<bool> ApproveDealAsync(int id, int adminId)
+    public async Task<bool> ApproveDealAsync(string id, int adminId)
     {
-        var gid = Guid.Empty;
-        try { gid = new Guid(id.ToString()); } catch { return false; }
+        if (!Guid.TryParse(id, out var gid)) return false;
         var deal = await _mainDb.Deals.FindAsync(gid);
         if (deal == null) return false;
 
@@ -223,10 +210,9 @@ public class AdminService : IAdminService
         return true;
     }
 
-    public async Task<bool> RejectDealAsync(int id, string reason, int adminId)
+    public async Task<bool> RejectDealAsync(string id, string reason, int adminId)
     {
-        var gid = Guid.Empty;
-        try { gid = new Guid(id.ToString()); } catch { return false; }
+        if (!Guid.TryParse(id, out var gid)) return false;
         var deal = await _mainDb.Deals.FindAsync(gid);
         if (deal == null) return false;
 
@@ -239,10 +225,9 @@ public class AdminService : IAdminService
         return true;
     }
 
-    public async Task<bool> FeatureDealAsync(int id, bool featured, int adminId)
+    public async Task<bool> FeatureDealAsync(string id, bool featured, int adminId)
     {
-        var gid = Guid.Empty;
-        try { gid = new Guid(id.ToString()); } catch { return false; }
+        if (!Guid.TryParse(id, out var gid)) return false;
         var deal = await _mainDb.Deals.FindAsync(gid);
         if (deal == null) return false;
 
@@ -276,7 +261,7 @@ public class AdminService : IAdminService
             .ToListAsync();
 
         var items = orders.Select(o => new OrderListItem(
-            o.Id.GetHashCode(),
+            o.Id.ToString(),
             o.User?.FullName ?? "", o.User?.Email ?? "",
             o.Deal?.Title ?? "", o.Status,
             o.Amount, o.Quantity, o.CreatedAt
@@ -286,10 +271,9 @@ public class AdminService : IAdminService
             (int)Math.Ceiling(total / (double)pageSize));
     }
 
-    public async Task<OrderDetail?> GetOrderDetailAsync(int id)
+    public async Task<OrderDetail?> GetOrderDetailAsync(string id)
     {
-        var oid = Guid.Empty;
-        try { oid = new Guid(id.ToString()); } catch { return null; }
+        if (!Guid.TryParse(id, out var oid)) return null;
         var order = await _mainDb.Orders
             .Include(o => o.User)
             .Include(o => o.Deal)
@@ -298,18 +282,17 @@ public class AdminService : IAdminService
         if (order == null) return null;
 
         return new OrderDetail(
-            order.Id.GetHashCode(),
-            order.User?.FullName ?? "", order.User?.Email ?? "", null, // phone
-            "", // delivery address - not in current schema
+            order.Id.ToString(),
+            order.User?.FullName ?? "", order.User?.Email ?? "", null,
+            "",
             order.Deal?.Title ?? "", order.Status,
             order.Amount, order.Quantity, order.CreatedAt, order.UpdatedAt
         );
     }
 
-    public async Task<bool> UpdateOrderStatusAsync(int id, string status, int adminId)
+    public async Task<bool> UpdateOrderStatusAsync(string id, string status, int adminId)
     {
-        var oid = Guid.Empty;
-        try { oid = new Guid(id.ToString()); } catch { return false; }
+        if (!Guid.TryParse(id, out var oid)) return false;
         var order = await _mainDb.Orders.FindAsync(oid);
         if (order == null) return false;
 
@@ -343,7 +326,7 @@ public class AdminService : IAdminService
         await _db.SaveChangesAsync();
 
         var admin = await _db.AdminUsers.FindAsync(adminId);
-        await LogActionAsync(adminId, admin!.Email, "UPDATED_SETTING", "Setting", 0, $"{req.Key} = {req.Value}");
+        await LogActionAsync(adminId, admin!.Email, "UPDATED_SETTING", "Setting", req.Key, $"{req.Key} = {req.Value}");
 
         return true;
     }

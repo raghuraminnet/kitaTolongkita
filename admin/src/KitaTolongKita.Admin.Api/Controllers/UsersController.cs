@@ -27,7 +27,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetUser(int id)
+    public async Task<IActionResult> GetUser(string id)
     {
         var user = await _svc.GetUserDetailAsync(id);
         if (user == null) return NotFound(new ApiResponse(false, "User not found"));
@@ -36,7 +36,7 @@ public class UsersController : ControllerBase
 
     [Authorize(Policy = "Moderator")]
     [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(int id, [FromBody] dynamic body)
+    public async Task<IActionResult> ToggleStatus(string id, [FromBody] dynamic body)
     {
         var adminId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         bool isActive = body.isActive;
