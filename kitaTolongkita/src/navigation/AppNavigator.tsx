@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBar } from '../components';
-import { colors } from '../theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 import { OnboardingScreen } from '../screens/onboarding';
 import { LoginScreen } from '../screens/auth';
@@ -92,6 +92,7 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
+  const { colors } = useTheme();
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -165,5 +166,5 @@ export default function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  tabContainer: { flex: 1, backgroundColor: colors.background },
+  tabContainer: { flex: 1 },
 });

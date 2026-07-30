@@ -12,7 +12,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
+import { typography, spacing, borderRadius } from '../../theme';
 import { authApi, setAccessToken } from '../../api/client';
 import { signInWithGoogle } from '../../api/googleAuth';
 import * as DemoMode from '../../api/demoMode';
@@ -22,8 +23,8 @@ type Step = 'login' | 'otp';
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
-  // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
@@ -33,6 +34,93 @@ export const LoginScreen: React.FC = () => {
   const isDemo = DemoMode.isDemoMode();
   const demoCreds = isDemo ? DemoMode.getDemoCredentials() : null;
 
+  const s = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    scrollContent: { padding: spacing.md, paddingTop: spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.xl) },
+    demoBanner: {
+      backgroundColor: '#FF7A30',
+      borderRadius: borderRadius.lg,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.lg,
+      alignItems: 'center',
+    },
+    demoBannerText: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.white,
+      textAlign: 'center',
+    },
+    branding: {
+      alignItems: 'center', marginBottom: spacing.xl, paddingTop: spacing.xl,
+    },
+    logoContainer: {
+      width: 80, height: 80, borderRadius: 40,
+      backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center',
+      marginBottom: spacing.md,
+    },
+    logo: { fontSize: 40 },
+    appName: {
+      fontFamily: 'NunitoSans_800ExtraBold', fontSize: 24, fontWeight: '800',
+      color: colors['primary-container'], marginBottom: spacing.xs,
+    },
+    tagline: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'] },
+    demoBadge: {
+      marginTop: spacing.xs,
+      backgroundColor: '#FF7A30',
+      color: colors.white,
+      fontFamily: 'Inter_700Bold',
+      fontSize: 10,
+      fontWeight: '700',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    form: { marginBottom: spacing.xl },
+    formTitle: {
+      fontFamily: 'NunitoSans_700Bold', fontSize: 24, fontWeight: '700',
+      color: colors['on-background'], marginBottom: spacing.xs,
+    },
+    formSubtitle: {
+      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
+      marginBottom: spacing.xl,
+    },
+    input: { marginBottom: spacing.md },
+    forgotBtn: { alignItems: 'center', marginTop: spacing.md },
+    forgotText: {
+      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['primary-container'],
+      fontWeight: '600',
+    },
+    dividerContainer: {
+      flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl,
+    },
+    dividerLine: { flex: 1, height: 1, backgroundColor: colors['outline-variant'] },
+    dividerText: {
+      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
+      paddingHorizontal: spacing.md,
+    },
+    socialButtons: { gap: spacing.md, marginBottom: spacing.xl },
+    socialBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      paddingVertical: 14, borderRadius: borderRadius.lg,
+      borderWidth: 1.5, borderColor: colors['outline-variant'],
+      backgroundColor: colors['surface-container-lowest'],
+    },
+    socialBtnDisabled: { opacity: 0.5 },
+    socialIcon: { fontSize: 20, marginRight: spacing.sm },
+    socialText: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600',
+      color: colors['on-surface'],
+    },
+    terms: {
+      fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'],
+      textAlign: 'center', lineHeight: 18,
+    },
+    termsLink: { color: colors['primary-container'], fontWeight: '600' },
+  });
+
   // ── Email login ────────────────────────────────────────────────────────────
   const handleEmailLogin = async () => {
     if (!email || !password) {
@@ -41,7 +129,6 @@ export const LoginScreen: React.FC = () => {
     }
     setLoading(true);
     try {
-      // Demo mode check
       if (isDemo) {
         const result = await DemoMode.demoLogin(email, password);
         if (result) {
@@ -52,7 +139,11 @@ export const LoginScreen: React.FC = () => {
       }
       const res = await authApi.emailLogin({ email, password });
       await setAccessToken(res.accessToken);
-      navigation.replace('ProfileSetup');
+      if (res.user?.fullName) {
+        navigation.replace('Main');
+      } else {
+        navigation.replace('ProfileSetup');
+      }
     } catch (err: any) {
       if (err.message === 'EMAIL_NOT_VERIFIED') {
         setStep('otp');
@@ -93,7 +184,6 @@ export const LoginScreen: React.FC = () => {
     try {
       const idToken = await signInWithGoogle();
       if (!idToken) { setLoading(false); return; }
-
       const res = await authApi.googleAuth(idToken);
       await setAccessToken(res.accessToken);
       navigation.replace('Main');
@@ -104,7 +194,7 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  // ── Send OTP (for email verification) ────────────────────────────────────
+  // ── Send OTP ──────────────────────────────────────────────────────────────
   const handleSendOtp = async () => {
     if (!email) {
       Alert.alert('Email required', 'Please enter your email first.');
@@ -136,7 +226,11 @@ export const LoginScreen: React.FC = () => {
       await authApi.verifyOtp(email, otp, 'EmailVerification');
       const res = await authApi.emailLogin({ email, password });
       await setAccessToken(res.accessToken);
-      navigation.replace('ProfileSetup');
+      if (res.user?.fullName) {
+        navigation.replace('Main');
+      } else {
+        navigation.replace('ProfileSetup');
+      }
     } catch (err: any) {
       Alert.alert('Verification failed', err.message);
     } finally {
@@ -147,37 +241,34 @@ export const LoginScreen: React.FC = () => {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top }]}
+      style={s.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, spacing.xl) }]}
+        contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Demo Mode Banner */}
         {isDemo && (
-          <TouchableOpacity style={styles.demoBanner} onPress={handleDemoLogin} activeOpacity={0.8}>
-            <Text style={styles.demoBannerText}>🎮 Demo Mode — Tap here to explore all screens instantly</Text>
+          <TouchableOpacity style={s.demoBanner} onPress={handleDemoLogin} activeOpacity={0.8}>
+            <Text style={s.demoBannerText}>🎮 Demo Mode — Tap here to explore all screens instantly</Text>
           </TouchableOpacity>
         )}
 
-        {/* Logo & Branding */}
-        <View style={styles.branding}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logo}>🤝</Text>
+        <View style={s.branding}>
+          <View style={s.logoContainer}>
+            <Text style={s.logo}>🤝</Text>
           </View>
-          <Text style={styles.appName}>KitaTolongKita</Text>
-          <Text style={styles.tagline}>Gotong Royong, Lebih Jimat!</Text>
-          {isDemo && <Text style={styles.demoBadge}>DEMO</Text>}
+          <Text style={s.appName}>KitaTolongKita</Text>
+          <Text style={s.tagline}>Gotong Royong, Lebih Jimat!</Text>
+          {isDemo && <Text style={s.demoBadge}>DEMO</Text>}
         </View>
 
-        {/* Form */}
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>
+        <View style={s.form}>
+          <Text style={s.formTitle}>
             {step === 'login' ? 'Welcome Back!' : 'Enter OTP'}
           </Text>
-          <Text style={styles.formSubtitle}>
+          <Text style={s.formSubtitle}>
             {step === 'login'
               ? 'Sign in to your account'
               : `We sent a code to ${email}`}
@@ -187,22 +278,20 @@ export const LoginScreen: React.FC = () => {
             <>
               <Input
                 label="Email"
-                placeholder="you@example.com"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 prefix="📧"
-                containerStyle={styles.input}
+                containerStyle={s.input}
               />
               <Input
                 label="Password"
-                placeholder="••••••••"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 prefix="🔒"
-                containerStyle={styles.input}
+                containerStyle={s.input}
               />
 
               <Button
@@ -213,23 +302,22 @@ export const LoginScreen: React.FC = () => {
               />
 
               <TouchableOpacity
-                style={styles.forgotBtn}
+                style={s.forgotBtn}
                 onPress={() => navigation.navigate('ForgotPassword')}
               >
-                <Text style={styles.forgotText}>Forgot password?</Text>
+                <Text style={s.forgotText}>Forgot password?</Text>
               </TouchableOpacity>
             </>
           ) : (
             <>
               <Input
                 label="Verification Code"
-                placeholder="000000"
                 value={otp}
                 onChangeText={setOtp}
                 keyboardType="number-pad"
                 maxLength={6}
                 prefix="🔐"
-                containerStyle={styles.input}
+                containerStyle={s.input}
               />
 
               <Button
@@ -240,50 +328,47 @@ export const LoginScreen: React.FC = () => {
               />
 
               <TouchableOpacity
-                style={styles.forgotBtn}
+                style={s.forgotBtn}
                 onPress={() => setStep('login')}
               >
-                <Text style={styles.forgotText}>← Back to login</Text>
+                <Text style={s.forgotText}>← Back to login</Text>
               </TouchableOpacity>
             </>
           )}
         </View>
 
-        {/* Divider */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
+        <View style={s.dividerContainer}>
+          <View style={s.dividerLine} />
+          <Text style={s.dividerText}>or</Text>
+          <View style={s.dividerLine} />
         </View>
 
-        {/* Social Login */}
-        <View style={styles.socialButtons}>
+        <View style={s.socialButtons}>
           <TouchableOpacity
-            style={[styles.socialBtn, isDemo && styles.socialBtnDisabled]}
+            style={[s.socialBtn, isDemo && s.socialBtnDisabled]}
             onPress={handleGoogleLogin}
             activeOpacity={0.7}
             disabled={isDemo}
           >
-            <Text style={styles.socialIcon}>🍎</Text>
-            <Text style={styles.socialText}>Continue with Apple</Text>
+            <Text style={s.socialIcon}>🍎</Text>
+            <Text style={s.socialText}>Continue with Apple</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.socialBtn, isDemo && styles.socialBtnDisabled]}
+            style={[s.socialBtn, isDemo && s.socialBtnDisabled]}
             onPress={handleGoogleLogin}
             activeOpacity={0.7}
             disabled={isDemo}
           >
-            <Text style={styles.socialIcon}>📘</Text>
-            <Text style={styles.socialText}>Continue with Google</Text>
+            <Text style={s.socialIcon}>📘</Text>
+            <Text style={s.socialText}>Continue with Google</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Sign up link */}
-        <Text style={styles.terms}>
+        <Text style={s.terms}>
           Don't have an account?{' '}
           <Text
-            style={styles.termsLink}
+            style={s.termsLink}
             onPress={() => !isDemo && navigation.navigate('SignUp')}
           >
             Sign Up
@@ -293,92 +378,3 @@ export const LoginScreen: React.FC = () => {
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { padding: spacing.md, paddingTop: spacing.xl },
-  demoBanner: {
-    backgroundColor: '#FF7A30',
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-    alignItems: 'center',
-  },
-  demoBannerText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.white,
-    textAlign: 'center',
-  },
-  branding: {
-    alignItems: 'center', marginBottom: spacing.xl, paddingTop: spacing.xl,
-  },
-  logoContainer: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  logo: { fontSize: 40 },
-  appName: {
-    fontFamily: 'NunitoSans_800ExtraBold', fontSize: 24, fontWeight: '800',
-    color: colors['primary-container'], marginBottom: spacing.xs,
-  },
-  tagline: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'] },
-  demoBadge: {
-    marginTop: spacing.xs,
-    backgroundColor: '#FF7A30',
-    color: colors.white,
-    fontFamily: 'Inter_700Bold',
-    fontSize: 10,
-    fontWeight: '700',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  form: { marginBottom: spacing.xl },
-  formTitle: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 24, fontWeight: '700',
-    color: colors['on-background'], marginBottom: spacing.xs,
-  },
-  formSubtitle: {
-    fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
-    marginBottom: spacing.xl,
-  },
-  input: { marginBottom: spacing.md },
-  forgotBtn: { alignItems: 'center', marginTop: spacing.md },
-  forgotText: {
-    fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['primary-container'],
-    fontWeight: '600',
-  },
-  dividerContainer: {
-    flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl,
-  },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors['outline-variant'] },
-  dividerText: {
-    fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
-    paddingHorizontal: spacing.md,
-  },
-  socialButtons: { gap: spacing.md, marginBottom: spacing.xl },
-  socialBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 14, borderRadius: borderRadius.lg,
-    borderWidth: 1.5, borderColor: colors['outline-variant'],
-    backgroundColor: colors['surface-container-lowest'],
-  },
-  socialBtnDisabled: {
-    opacity: 0.5,
-  },
-  socialIcon: { fontSize: 20, marginRight: spacing.sm },
-  socialText: {
-    fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600',
-    color: colors['on-surface'],
-  },
-  terms: {
-    fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'],
-    textAlign: 'center', lineHeight: 18,
-  },
-  termsLink: { color: colors['primary-container'], fontWeight: '600' },
-});

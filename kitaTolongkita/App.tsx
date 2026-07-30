@@ -1,9 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { StatusBar, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { StatusBar, View, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { LocationProvider } from './src/contexts/LocationContext';
+import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { initLanguage } from './src/i18n';
+
+function AppContent() {
+  const { isDark } = useTheme();
+
+  return (
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <LocationProvider>
+        <AppNavigator />
+      </LocationProvider>
+    </>
+  );
+}
 
 function App() {
   const [langReady, setLangReady] = useState(false);
@@ -22,10 +36,9 @@ function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <LocationProvider>
-        <AppNavigator />
-      </LocationProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

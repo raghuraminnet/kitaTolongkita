@@ -8,12 +8,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
+  ActionSheetIOS,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
 import { colors, typography, spacing, borderRadius } from '../../theme';
-import { authApi, setAccessToken } from '../../api/client';
+import { authApi, setAccessToken, getAccessToken, API_BASE } from '../../api/client';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 export const SignUpScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -24,6 +28,95 @@ export const SignUpScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+
+  const processImage = async (uri: string): Promise<string> => {
+    const manipResult = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 200, height: 200 } }],
+      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    return manipResult.uri;
+  };
+
+  const pickAvatar = async () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Gallery'],
+          cancelButtonIndex: 0,
+        },
+        async (buttonIndex) => {
+          if (buttonIndex === 1) {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Camera access is required to take photos.');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              quality: 1,
+            });
+            if (!result.canceled && result.assets?.[0]) {
+              const processed = await processImage(result.assets[0].uri);
+              setAvatarUri(processed);
+            }
+          } else if (buttonIndex === 2) {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Gallery access is required to select photos.');
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              quality: 1,
+            });
+            if (!result.canceled && result.assets?.[0]) {
+              const processed = await processImage(result.assets[0].uri);
+              setAvatarUri(processed);
+            }
+          }
+        }
+      );
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Gallery access is required.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 1,
+      });
+      if (!result.canceled && result.assets?.[0]) {
+        const processed = await processImage(result.assets[0].uri);
+        setAvatarUri(processed);
+      }
+    }
+  };
+
+  const uploadAvatar = async (userId: string) => {
+    if (!avatarUri) return;
+    try {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: avatarUri,
+        name: 'avatar.jpg',
+        type: 'image/jpeg',
+      } as any);
+      const token = await getAccessToken();
+      await fetch(`${API_BASE}/uploads/avatar`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+    } catch {
+      // Avatar upload is non-critical, don't block user
+    }
+  };
 
   const handleSignUp = async () => {
     if (!name || !email || !password) {
@@ -41,9 +134,11 @@ export const SignUpScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      // Sign up — for now skip email verification per Raghu's request
       const res = await authApi.emailSignup({ email, fullName: name, password });
       await setAccessToken(res.accessToken);
+      if (avatarUri) {
+        await uploadAvatar(res.user?.id ?? '');
+      }
       navigation.replace('ProfileSetup');
     } catch (err: any) {
       Alert.alert('Sign up failed', err.message);
@@ -79,11 +174,27 @@ export const SignUpScreen: React.FC = () => {
           </Text>
         </View>
 
+        {/* Avatar Upload */}
+        <View style={styles.avatarSection}>
+          <TouchableOpacity style={styles.avatarWrapper} onPress={pickAvatar} activeOpacity={0.8}>
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarPlaceholderIcon}>📷</Text>
+              </View>
+            )}
+            <View style={styles.avatarCameraBadge}>
+              <Text style={styles.avatarCameraIcon}>📸</Text>
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.avatarHint}>Tap to add profile photo</Text>
+        </View>
+
         {/* Form */}
         <View style={styles.form}>
           <Input
             label="Full Name"
-            placeholder="Ahmad bin Ali"
             value={name}
             onChangeText={setName}
             prefix="👤"
@@ -91,7 +202,6 @@ export const SignUpScreen: React.FC = () => {
           />
           <Input
             label="Email"
-            placeholder="you@example.com"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -101,7 +211,6 @@ export const SignUpScreen: React.FC = () => {
           />
           <Input
             label="Password"
-            placeholder="Min. 8 characters"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -110,7 +219,6 @@ export const SignUpScreen: React.FC = () => {
           />
           <Input
             label="Confirm Password"
-            placeholder="Re-enter your password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
@@ -148,7 +256,7 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700',
     color: colors['on-background'],
   },
-  branding: { marginBottom: spacing.xl },
+  branding: { marginBottom: spacing.lg },
   brandTitle: {
     fontFamily: 'NunitoSans_800ExtraBold', fontSize: 28, fontWeight: '800',
     color: colors['on-background'], marginBottom: spacing.sm, lineHeight: 36,
@@ -156,6 +264,31 @@ const styles = StyleSheet.create({
   brandSubtitle: {
     fontFamily: 'Inter_400Regular', fontSize: 15, color: colors['on-surface-variant'],
     lineHeight: 22,
+  },
+  avatarSection: { alignItems: 'center', marginBottom: spacing.xl },
+  avatarWrapper: {
+    width: 88, height: 88, borderRadius: 44,
+    position: 'relative',
+  },
+  avatarImage: { width: 88, height: 88, borderRadius: 44 },
+  avatarPlaceholder: {
+    width: 88, height: 88, borderRadius: 44,
+    backgroundColor: colors['surface-container'],
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderStyle: 'dashed', borderColor: colors['outline-variant'],
+  },
+  avatarPlaceholderIcon: { fontSize: 28 },
+  avatarCameraBadge: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: colors['primary-container'],
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: colors.background,
+  },
+  avatarCameraIcon: { fontSize: 12 },
+  avatarHint: {
+    ...typography['body-sm'], color: colors['on-surface-variant'],
+    marginTop: spacing.xs,
   },
   form: { marginBottom: spacing.xl },
   input: { marginBottom: spacing.md },

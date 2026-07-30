@@ -11,6 +11,7 @@ import {
   Alert,
   TextInput,
   FlatList,
+  ActionSheetIOS,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -20,8 +21,11 @@ import { dealsApi } from '../../api/client';
 import { getAccessToken } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
 import { request as apiRequest } from '../../api/client';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-const API_BASE = 'http://168.235.81.222:5000/api';
+const API_BASE = 'http://76.13.219.191:5000/api';
 const CATEGORIES = ['Food', 'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Drinks'];
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -47,8 +51,9 @@ export const PostDealScreen: React.FC = () => {
   const [originalPrice, setOriginalPrice] = useState('');
   const [minMembers, setMinMembers] = useState('');
   const [maxMembers, setMaxMembers] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [deadline, setDeadline] = useState<Date>(new Date());
   const [pickupLocation, setPickupLocation] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [hashtagInput, setHashtagInput] = useState('');
@@ -116,6 +121,88 @@ export const PostDealScreen: React.FC = () => {
     setImages(images.filter((i) => i !== uri));
   };
 
+  const processImage = async (uri: string): Promise<string> => {
+    const manipResult = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 1024, height: 1024 } }],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    return manipResult.uri;
+  };
+
+  const pickImages = async () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Gallery'],
+          cancelButtonIndex: 0,
+        },
+        async (buttonIndex) => {
+          if (buttonIndex === 1) {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Camera access is required to take photos.');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              allowsMultipleSelection: true,
+              quality: 1,
+              selectionLimit: 4 - images.length,
+            });
+            if (!result.canceled && result.assets) {
+              const processed = await Promise.all(result.assets.map((a) => processImage(a.uri)));
+              setImages((prev) => [...prev, ...processed].slice(0, 4));
+            }
+          } else if (buttonIndex === 2) {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Gallery access is required to select photos.');
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              allowsMultipleSelection: true,
+              quality: 1,
+              selectionLimit: 4 - images.length,
+            });
+            if (!result.canceled && result.assets) {
+              const processed = await Promise.all(result.assets.map((a) => processImage(a.uri)));
+              setImages((prev) => [...prev, ...processed].slice(0, 4));
+            }
+          }
+        }
+      );
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Gallery access is required to select photos.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        quality: 1,
+        selectionLimit: 4 - images.length,
+      });
+      if (!result.canceled && result.assets) {
+        const processed = await Promise.all(result.assets.map((a) => processImage(a.uri)));
+        setImages((prev) => [...prev, ...processed].slice(0, 4));
+      }
+    }
+  };
+
+  const onDateChange = (_: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios' ? true : false);
+    if (selectedDate) {
+      setDeadline(selectedDate);
+    }
+  };
+
+  const formatDate = (d: Date) => {
+    return d.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
   const handleSubmit = async () => {
     // Validate required fields
     if (!title.trim()) { Alert.alert('Required', 'Please enter a deal title.'); return; }
@@ -124,7 +211,7 @@ export const PostDealScreen: React.FC = () => {
     if (!originalPrice) { Alert.alert('Required', 'Please enter an original price.'); return; }
     if (!minMembers) { Alert.alert('Required', 'Please enter minimum members.'); return; }
     if (!maxMembers) { Alert.alert('Required', 'Please enter maximum members.'); return; }
-    if (!deadline) { Alert.alert('Required', 'Please enter a deadline date.'); return; }
+    if (!deadline) { Alert.alert('Required', 'Please set a deadline date.'); return; }
     if (!pickupLocation.trim()) { Alert.alert('Required', 'Please set a pickup location.'); return; }
 
     setSubmitting(true);
@@ -162,7 +249,7 @@ export const PostDealScreen: React.FC = () => {
         groupPrice: parseFloat(groupPrice),
         minMembers: parseInt(minMembers, 10),
         maxMembers: parseInt(maxMembers, 10),
-        deadline,
+        deadline: deadline.toISOString().split('T')[0],
         pickupLocation: pickupLocation.trim(),
         latitude: capturedLat ?? undefined,
         longitude: capturedLon ?? undefined,
@@ -271,7 +358,7 @@ export const PostDealScreen: React.FC = () => {
             {/* Title */}
             <Input
               label="Deal Title"
-              placeholder="e.g. Premium Kuih Muih Set for Ramadan"
+              
               value={title}
               onChangeText={setTitle}
               containerStyle={styles.input}
@@ -315,7 +402,7 @@ export const PostDealScreen: React.FC = () => {
             <View style={styles.priceRow}>
               <Input
                 label="Group Buy Price (MYR)"
-                placeholder="25.00"
+                
                 value={groupPrice}
                 onChangeText={setGroupPrice}
                 keyboardType="decimal-pad"
@@ -324,7 +411,7 @@ export const PostDealScreen: React.FC = () => {
               />
               <Input
                 label="Original Price (MYR)"
-                placeholder="38.00"
+                
                 value={originalPrice}
                 onChangeText={setOriginalPrice}
                 keyboardType="decimal-pad"
@@ -342,7 +429,7 @@ export const PostDealScreen: React.FC = () => {
 
             <Input
               label="Minimum Members to Unlock"
-              placeholder="50"
+              
               value={minMembers}
               onChangeText={setMinMembers}
               keyboardType="number-pad"
@@ -351,7 +438,7 @@ export const PostDealScreen: React.FC = () => {
 
             <Input
               label="Maximum Members"
-              placeholder="100"
+              
               value={maxMembers}
               onChangeText={setMaxMembers}
               keyboardType="number-pad"
@@ -370,7 +457,7 @@ export const PostDealScreen: React.FC = () => {
           <>
             <Input
               label="Description"
-              placeholder="Describe your deal — what's included, quantity, pickup details..."
+              
               value={description}
               onChangeText={setDescription}
               multiline
@@ -398,7 +485,7 @@ export const PostDealScreen: React.FC = () => {
             {/* Manual location override */}
             <Input
               label="Or enter address manually"
-              placeholder="e.g. Pasar Malam, Kuala Lumpur"
+              
               value={pickupLocation}
               onChangeText={setPickupLocation}
               prefix="📍"
@@ -406,13 +493,25 @@ export const PostDealScreen: React.FC = () => {
             />
 
             {/* Deadline */}
-            <Input
-              label="Deal End Date (YYYY-MM-DD)"
-              placeholder="2025-12-31"
-              value={deadline}
-              onChangeText={setDeadline}
-              containerStyle={styles.input}
-            />
+            <View style={styles.input}>
+              <Text style={styles.inputLabel}>Deal End Date</Text>
+              <TouchableOpacity
+                style={styles.datePickerTrigger}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={styles.datePickerText}>{formatDate(deadline)}</Text>
+                <Text style={styles.datePickerIcon}>📅</Text>
+              </TouchableOpacity>
+            </View>
+            {showDatePicker && (
+              <DateTimePicker
+                value={deadline}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onDateChange}
+                minimumDate={new Date()}
+              />
+            )}
 
             {/* Enable Lookup Toggle */}
             <View style={styles.toggleRow}>
@@ -476,35 +575,7 @@ export const PostDealScreen: React.FC = () => {
   );
 };
 
-// ── Image Picker stub ──────────────────────────────────────────────────────────
-// If expo-image-picker is installed, call pickImagesAsync().
-// If not yet installed, show an alert prompting install (handled by NOTES-DEPS2.md).
-async function pickImages() {
-  try {
-    const { launchImageLibraryAsync } = await import('expo-image-picker');
-    const result = await launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      quality: 0.8,
-      selectionLimit: 4,
-    });
-    if (!result.canceled && result.assets) {
-      // Merge with existing images, cap at 4
-      // Parent component will handle this via a callback or ref
-      // For now, dispatch a custom event
-      (global as any).__postDealImages = [
-        ...((global as any).__postDealImages ?? []),
-        ...result.assets.map((a: any) => a.uri),
-      ].slice(0, 4);
-      // Force re-render by briefly navigating
-    }
-  } catch {
-    Alert.alert(
-      'Image Picker Required',
-      'Please install expo-image-picker to enable photo uploads: npx expo install expo-image-picker'
-    );
-  }
-}
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
@@ -574,6 +645,26 @@ const styles = StyleSheet.create({
   categoryName: { ...typography['label-sm'], color: colors['on-surface'] },
   categoryNameSelected: { color: colors.white },
   input: { marginBottom: spacing.md },
+  inputLabel: {
+    ...typography['label-sm'],
+    color: colors['on-surface-variant'],
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.xs,
+  },
+  datePickerTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors['surface-container'],
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    height: 52,
+  },
+  datePickerText: {
+    ...typography['body-lg'],
+    color: colors['on-surface'],
+  },
+  datePickerIcon: { fontSize: 18 },
   hashtagInputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   hashtagInput: {
     flex: 1, backgroundColor: colors['surface-container'], borderRadius: borderRadius.md,

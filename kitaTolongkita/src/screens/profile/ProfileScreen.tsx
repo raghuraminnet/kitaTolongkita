@@ -15,20 +15,12 @@ import { authApi, clearTokens, getAccessToken } from '../../api/client';
 import { useAuth } from '../../api/authContext';
 import type { User } from '../../api/client';
 
-const MOCK_USER: User = {
-  id: '1',
-  email: 'ahmad@example.com',
-  fullName: 'Ahmad bin Ali',
-  avatarUrl: undefined,
-  emailVerified: true,
-  phoneVerified: false,
-};
-
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ordersCount, setOrdersCount] = useState(0);
 
   useEffect(() => {
     loadProfile();
@@ -40,9 +32,10 @@ export const ProfileScreen: React.FC = () => {
       if (!token) { setLoading(false); return; }
       const me = await authApi.getMe();
       setUser(me);
+      const orders = await dealsApi.getOrders();
+      setOrdersCount(orders.length);
     } catch {
-      // Token invalid or API down — use mock
-      setUser(MOCK_USER);
+      // Token invalid or API down — silently fail, user can still see UI
     } finally {
       setLoading(false);
     }
@@ -65,9 +58,9 @@ export const ProfileScreen: React.FC = () => {
   };
 
   const stats = [
-    { label: 'Orders', value: '12' },
-    { label: 'Deals Joined', value: '28' },
-    { label: 'Reviews', value: '5' },
+    { label: 'Orders', value: String(ordersCount) },
+    { label: 'Deals Joined', value: '-' },
+    { label: 'Reviews', value: '-' },
   ];
 
   const menuItems = [
@@ -78,7 +71,7 @@ export const ProfileScreen: React.FC = () => {
     { icon: '⚙️', label: 'Settings', onPress: () => navigation.navigate('Settings') },
   ];
 
-  const displayUser = user ?? MOCK_USER;
+  const displayUser = user;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -94,12 +87,12 @@ export const ProfileScreen: React.FC = () => {
         {/* Avatar + Name */}
         <View style={styles.profileCard}>
           <Avatar
-            name={displayUser.fullName}
-            uri={displayUser.avatarUrl}
+            name={displayUser?.fullName ?? 'User'}
+            uri={displayUser?.avatarUrl}
             size={80}
           />
-          <Text style={styles.userName}>{displayUser.fullName}</Text>
-          <Text style={styles.userEmail}>{displayUser.email}</Text>
+          <Text style={styles.userName}>{displayUser?.fullName ?? 'Your Name'}</Text>
+          <Text style={styles.userEmail}>{displayUser?.email ?? ''}</Text>
           {!loading && !user && (
             <View style={styles.demoBadge}>
               <Text style={styles.demoBadgeText}>Demo Mode</Text>

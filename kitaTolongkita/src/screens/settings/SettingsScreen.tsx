@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
 import { clearTokens } from '../../api/client';
 import { useAuth } from '../../api/authContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface SettingsScreenProps {
   navigation?: any;
@@ -36,8 +37,8 @@ export const SettingsScreen: React.FC = () => {
   const { i18n } = useTranslation();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [langRefresh, setLangRefresh] = useState(0);
+  const { isDark, toggleTheme } = useTheme();
 
   const Section: React.FC<{ title: string; children: React.ReactNode }> = ({
     title,
@@ -133,8 +134,8 @@ export const SettingsScreen: React.FC = () => {
             icon="🌙"
             label="Dark Mode"
             type="toggle"
-            value={darkMode}
-            onToggle={setDarkMode}
+            value={isDark}
+            onToggle={toggleTheme}
           />
           <Row icon="🔤" label="Text Size" type="value" value="Medium" />
         </Section>

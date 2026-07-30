@@ -146,7 +146,7 @@ export const ForgotPasswordScreen: React.FC = () => {
             <>
               <Input
                 label="Email"
-                placeholder="you@example.com"
+                
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -167,7 +167,7 @@ export const ForgotPasswordScreen: React.FC = () => {
             <>
               <Input
                 label="Reset Code"
-                placeholder="000000"
+                
                 value={otp}
                 onChangeText={setOtp}
                 keyboardType="number-pad"
@@ -199,7 +199,7 @@ export const ForgotPasswordScreen: React.FC = () => {
             <>
               <Input
                 label="New Password"
-                placeholder="Min. 8 characters"
+                
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
@@ -208,7 +208,7 @@ export const ForgotPasswordScreen: React.FC = () => {
               />
               <Input
                 label="Confirm Password"
-                placeholder="Re-enter your password"
+                
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry

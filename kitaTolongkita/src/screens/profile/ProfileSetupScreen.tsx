@@ -69,7 +69,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
 
             <Input
               label="Display Name"
-              placeholder="e.g. Ahmad Razif"
+              
               value={name}
               onChangeText={setName}
               prefix="✏️"
@@ -78,7 +78,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
 
             <Input
               label="Bio (optional)"
-              placeholder="Tell your community a bit about yourself..."
+              
               value={bio}
               onChangeText={setBio}
               multiline
@@ -113,7 +113,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
 
               <Input
                 label="Enter Your Area"
-                placeholder="e.g. Taman Melawati, Kuala Lumpur"
+                
                 value={location}
                 onChangeText={setLocation}
                 prefix="🏠"
