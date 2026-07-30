@@ -29,7 +29,7 @@ export default function UsersPage() {
       .finally(() => setLoading(false))
   }
 
-  const toggleStatus = async (id: number, currentActive: boolean) => {
+  const toggleStatus = async (id: string, currentActive: boolean) => {
     try {
       await api.toggleUserStatus(id, !currentActive)
       setUsers(u => u.map(x => x.id === id ? { ...x, emailVerified: !currentActive } : x))

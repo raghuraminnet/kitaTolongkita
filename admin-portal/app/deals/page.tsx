@@ -12,9 +12,9 @@ export default function DealsPage() {
   const [status, setStatus] = useState('PendingReview')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
-  const [rejectDealId, setRejectDealId] = useState<number | null>(null)
+  const [rejectDealId, setRejectDealId] = useState<string | null>(null)
 
   const pageSize = 20
   const totalPages = Math.ceil(total / pageSize)
@@ -39,7 +39,7 @@ export default function DealsPage() {
     }).catch(() => {}).finally(() => setLoading(false))
   }
 
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (id: string) => {
     setActionLoading(id)
     try {
       await api.approveDeal(id)

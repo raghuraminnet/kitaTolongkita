@@ -14,7 +14,7 @@ export default function OrdersPage() {
   const [status, setStatus] = useState('')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState<number | null>(null)
+  const [updating, setUpdating] = useState<string | null>(null)
   const pageSize = 20
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export default function OrdersPage() {
       .finally(() => setLoading(false))
   }
 
-  const updateStatus = async (id: number, newStatus: string) => {
+  const updateStatus = async (id: string, newStatus: string) => {
     setUpdating(id)
     try {
       await api.updateOrderStatus(id, newStatus)
