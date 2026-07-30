@@ -105,11 +105,13 @@ services:
       postgres:
         condition: service_healthy
 
-  # ── Admin Portal Web (port 3000 — public) ────────────────────────────────
+  # ── Admin Portal Web (port 3005 — public) ────────────────────────────────
   admin-portal:
     build:
       context: ./admin-portal
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://kita-admin-api:5001/api
     container_name: kita-admin-portal
     restart: unless-stopped
     environment:
