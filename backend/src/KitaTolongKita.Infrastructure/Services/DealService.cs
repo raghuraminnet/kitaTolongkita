@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Core.Interfaces;
@@ -12,17 +13,22 @@ public class DealService : IDealService
     private readonly IElasticsearchService _es;
     private readonly ModerationQueueService _moderationQueue;
     private readonly ILogger<DealService> _logger;
+    private readonly bool _pilotModeEnabled;
+    private readonly bool _autoApproveDeals;
 
     public DealService(
         AppDbContext db,
         IElasticsearchService es,
         ModerationQueueService moderationQueue,
-        ILogger<DealService> logger)
+        ILogger<DealService> logger,
+        IConfiguration configuration)
     {
         _db = db;
         _es = es;
         _moderationQueue = moderationQueue;
         _logger = logger;
+        _pilotModeEnabled = configuration.GetValue<bool>("PilotMode:Enabled", false);
+        _autoApproveDeals = configuration.GetValue<bool>("PilotMode:AutoApproveDeals", false);
     }
 
     // ── Search & Listing ──────────────────────────────────────────────────────
@@ -136,7 +142,9 @@ public class DealService : IDealService
             Hashtags = request.Hashtags ?? new(),
             Status = DealStatus.Active,
             PublishedAt = DateTime.UtcNow,
-            ModerationStatus = ModerationStatus.Pending
+            ModerationStatus = (_pilotModeEnabled && _autoApproveDeals)
+                ? ModerationStatus.Approved
+                : ModerationStatus.Pending
         };
 
         _db.Deals.Add(deal);
@@ -149,8 +157,11 @@ public class DealService : IDealService
             catch (Exception ex) { _logger.LogWarning(ex, "Failed to index deal {DealId}", deal.Id); }
         });
 
-        // Enqueue for AI moderation (background)
-        _moderationQueue.Enqueue(deal.Id);
+        // Enqueue for AI moderation (background) only if NOT in pilot auto-approve mode
+        if (!(_pilotModeEnabled && _autoApproveDeals))
+        {
+            _moderationQueue.Enqueue(deal.Id);
+        }
 
         return ToDealDto(deal);
     }

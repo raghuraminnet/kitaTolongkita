@@ -9,6 +9,9 @@ using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
 using KitaTolongKita.Infrastructure.Services;
 
+// ── PostgreSQL DateTime fix: allow UTC DateTime without Kind=Utc ───────────────────────
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Database ───────────────────────────────────────────────────────────────

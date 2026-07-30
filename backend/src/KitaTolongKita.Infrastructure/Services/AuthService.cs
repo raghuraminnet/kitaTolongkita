@@ -16,17 +16,22 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokenService;
     private readonly IOtpService _otpService;
     private readonly ILogger<AuthService> _logger;
+    private readonly bool _pilotModeEnabled;
+    private readonly bool _skipEmailVerification;
 
     public AuthService(
         AppDbContext db,
         ITokenService tokenService,
         IOtpService otpService,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IConfiguration configuration)
     {
         _db = db;
         _tokenService = tokenService;
         _otpService = otpService;
         _logger = logger;
+        _pilotModeEnabled = configuration.GetValue<bool>("PilotMode:Enabled", false);
+        _skipEmailVerification = configuration.GetValue<bool>("PilotMode:SkipEmailVerification", false);
     }
 
     public async Task<AuthResponse> EmailSignupAsync(EmailSignupRequest request)
@@ -40,14 +45,17 @@ public class AuthService : IAuthService
             Email = request.Email,
             FullName = request.FullName,
             PasswordHash = HashPassword(request.Password),
-            EmailVerified = false
+            EmailVerified = _pilotModeEnabled && _skipEmailVerification  // Auto-verify in pilot mode
         };
 
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        // Send verification OTP
-        await _otpService.GenerateOtpAsync(user.Email, user.Phone ?? "", OtpPurpose.EmailVerification);
+        // Send verification OTP only if NOT in pilot mode
+        if (!(_pilotModeEnabled && _skipEmailVerification))
+        {
+            await _otpService.GenerateOtpAsync(user.Email, user.Phone ?? "", OtpPurpose.EmailVerification);
+        }
 
         return CreateAuthResponse(user);
     }
@@ -62,8 +70,17 @@ public class AuthService : IAuthService
 
         if (!user.EmailVerified)
         {
-            await _otpService.GenerateOtpAsync(user.Email, user.Phone ?? "", OtpPurpose.EmailVerification);
-            throw new InvalidOperationException("EMAIL_NOT_VERIFIED");
+            // In pilot mode, auto-verify the user so they can proceed
+            if (_pilotModeEnabled && _skipEmailVerification)
+            {
+                user.EmailVerified = true;
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                await _otpService.GenerateOtpAsync(user.Email, user.Phone ?? "", OtpPurpose.EmailVerification);
+                throw new InvalidOperationException("EMAIL_NOT_VERIFIED");
+            }
         }
 
         user.LastLoginAt = DateTime.UtcNow;
