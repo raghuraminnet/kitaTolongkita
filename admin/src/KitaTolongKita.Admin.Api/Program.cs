@@ -90,9 +90,9 @@ using (var scope = app.Services.CreateScope())
     catch { /* columns may already exist */ }
 }
 
+app.UseCors("AllowPortal"); // ← MUST be first to handle OPTIONS preflight before routing
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseCors("AllowPortal");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
