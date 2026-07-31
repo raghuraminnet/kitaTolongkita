@@ -8,12 +8,14 @@ namespace KitaTolongKita.Api.Services;
 /// <summary>
 /// Provides the active AI config to moderation services.
 /// Read order: memory cache (hot-reloaded from Redis pub/sub) → environment variables.
+/// Cached for up to 1 hour; refreshed on Redis pub/sub event from admin API.
 /// </summary>
 public class AiConfigProvider : IAiConfigProvider
 {
     private readonly IConfiguration _config;
-    private readonly IMemoryCache _cache;
     private readonly ILogger<AiConfigProvider> _logger;
+    private readonly IMemoryCache _cache;
+
     private const string CacheKey = "ai:config:live";
 
     public AiConfigProvider(IConfiguration config, IMemoryCache cache, ILogger<AiConfigProvider> logger)
