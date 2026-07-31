@@ -144,7 +144,7 @@ public class AdminService : IAdminService
             var dealsPosted = await _mainDb.Deals.CountAsync(d => d.OrganizerId == u.Id);
             items.Add(new UserListItem(
                 u.Id.ToString(), u.Email, u.FullName, u.AvatarUrl,
-                u.EmailVerified, u.EmailVerified, u.CreatedAt, dealsPosted, 0));
+                u.EmailVerified, u.IsActive, u.CreatedAt, dealsPosted, 0));
         }
         return new PagedResult<UserListItem>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize));
     }
@@ -158,9 +158,9 @@ public class AdminService : IAdminService
 
         return new UserDetail(
             user.Id.ToString(), user.Email, user.FullName, user.AvatarUrl,
-            user.EmailVerified, user.EmailVerified, user.CreatedAt, user.LastLoginAt,
+            user.EmailVerified, user.IsActive, user.CreatedAt, user.LastLoginAt,
             user.OrganizedDeals.Select(d => new DealSummary(d.Id.ToString(), d.Title, d.ModerationStatus, d.CreatedAt)).ToList(),
-            user.Orders.Select(o => new OrderSummary(o.Id.ToString(), o.Deal?.Title ?? "", o.Status, o.Amount, o.CreatedAt)).ToList());
+            user.Orders.Select(o => new OrderSummary(o.Id.ToString(), o.Deal?.Title ?? "", o.Status, o.TotalPrice, o.CreatedAt)).ToList());
     }
 
     public async Task<bool> ToggleUserStatusAsync(string id, bool isActive, int adminId)
@@ -185,9 +185,9 @@ public class AdminService : IAdminService
         var deals = await q.OrderByDescending(d => d.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         var items = deals.Select(d => new DealModerationItem(
             d.Id.ToString(), d.Title, d.Category, d.Organizer?.FullName ?? "", d.Organizer?.Email ?? "",
-            d.GroupPrice, d.OriginalPrice, d.MinGroup, d.CurrentGroup,
+            d.GroupPrice, d.OriginalPrice, d.MinMembers, d.MembersJoined,
             d.ModerationStatus, d.ModerationScore, d.ModerationRejectReason,
-            d.ImageUrls, d.Hashtags, d.CreatedAt, d.Deadline)).ToList();
+            d.ImageUrls, d.Hashtags?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>(), d.CreatedAt, d.Deadline)).ToList();
         return new PagedResult<DealModerationItem>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize));
     }
 
@@ -202,7 +202,7 @@ public class AdminService : IAdminService
         var deals = await q.OrderByDescending(d => d.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         var items = deals.Select(d => new DealListItem(
             d.Id.ToString(), d.Title, d.Category, d.Organizer?.FullName ?? "",
-            d.GroupPrice, d.CurrentGroup, d.MinGroup, d.ModerationStatus, d.IsFeatured, d.CreatedAt)).ToList();
+            d.GroupPrice, d.MembersJoined, d.MinMembers, d.ModerationStatus, d.IsFeatured, d.CreatedAt)).ToList();
         return new PagedResult<DealListItem>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize));
     }
 
@@ -257,7 +257,7 @@ public class AdminService : IAdminService
         var orders = await q.OrderByDescending(o => o.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         var items = orders.Select(o => new OrderListItem(
             o.Id.ToString(), o.User?.FullName ?? "", o.User?.Email ?? "",
-            o.Deal?.Title ?? "", o.Status, o.Amount, o.Quantity, o.CreatedAt)).ToList();
+            o.Deal?.Title ?? "", o.Status, o.TotalPrice, o.Quantity, o.CreatedAt)).ToList();
         return new PagedResult<OrderListItem>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize));
     }
 
@@ -267,7 +267,7 @@ public class AdminService : IAdminService
         var order = await _mainDb.Orders.Include(o => o.User).Include(o => o.Deal).AsNoTracking().FirstOrDefaultAsync(o => o.Id == oid);
         if (order == null) return null;
         return new OrderDetail(order.Id.ToString(), order.User?.FullName ?? "", order.User?.Email ?? "", null, "",
-            order.Deal?.Title ?? "", order.Status, order.Amount, order.Quantity, order.CreatedAt, order.UpdatedAt);
+            order.Deal?.Title ?? "", order.Status, order.TotalPrice, order.Quantity, order.CreatedAt, order.UpdatedAt);
     }
 
     public async Task<bool> UpdateOrderStatusAsync(string id, string status, int adminId)

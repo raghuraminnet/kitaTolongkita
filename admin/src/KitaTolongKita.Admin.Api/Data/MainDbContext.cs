@@ -3,8 +3,9 @@ using Microsoft.EntityFrameworkCore;
 namespace KitaTolongKita.Admin.Api.Data;
 
 /// <summary>
-/// Read-only EF context for the main KitaTolongKita database.
-/// Admin API uses this to query users, deals, and orders directly.
+/// EF context for the main KitaTolongKita database.
+/// Used by AdminService for moderation actions (approve/reject deals).
+/// Read-only queries for deals/users should go through MainDbService instead.
 /// </summary>
 public class MainDbContext : DbContext
 {
@@ -16,10 +17,30 @@ public class MainDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder m)
     {
-        // Map to actual table/column names in kitatolongkita DB
         m.Entity<MainUser>(e => e.ToTable("users", "public"));
         m.Entity<MainDeal>(e => e.ToTable("deals", "public"));
         m.Entity<MainDealOrder>(e => e.ToTable("deal_orders", "public"));
+
+        // Navigation: deal → organizer
+        m.Entity<MainDeal>()
+            .HasOne(d => d.Organizer)
+            .WithMany()
+            .HasForeignKey(d => d.OrganizerId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Navigation: order → user
+        m.Entity<MainDealOrder>()
+            .HasOne(o => o.User)
+            .WithMany()
+            .HasForeignKey(o => o.BuyerId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Navigation: order → deal
+        m.Entity<MainDealOrder>()
+            .HasOne(o => o.Deal)
+            .WithMany()
+            .HasForeignKey(o => o.DealId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         base.OnModelCreating(m);
     }
@@ -36,6 +57,9 @@ public class MainUser
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public bool IsActive { get; set; } = true;
+
+    public ICollection<MainDeal> OrganizedDeals { get; set; } = new List<MainDeal>();
+    public ICollection<MainDealOrder> Orders { get; set; } = new List<MainDealOrder>();
 }
 
 public class MainDeal
@@ -53,18 +77,27 @@ public class MainDeal
     public DateTime Deadline { get; set; }
     public string PickupLocation { get; set; } = "";
     public string? ImageUrl { get; set; }
-    public string Status { get; set; } = "Draft";       // stored as string in PG
+    // ImageUrls stored as string '["url1","url2"]' in DB; deserialized lazily
+    [System.ComponentModel.DataAnnotations.NotMapped]
+    public List<string> ImageUrls =>
+        string.IsNullOrEmpty(ImageUrl) ? new List<string>()
+        : System.Text.Json.JsonSerializer.Deserialize<List<string>>(ImageUrl) ?? new List<string>();
+    public string Status { get; set; } = "Draft";
     public DateTime CreatedAt { get; set; }
     public DateTime? PublishedAt { get; set; }
     public string? LocationName { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
-    public string? Hashtags { get; set; }   // stored as string "tag1,tag2" in PG
+    public string? Hashtags { get; set; }
     public int UpvoteCount { get; set; }
     public int LikeCount { get; set; }
     public string ModerationStatus { get; set; } = "Pending";
     public int? ModerationScore { get; set; }
     public string? ModerationRejectReason { get; set; }
+    public bool IsFeatured { get; set; }
+
+    public MainUser? Organizer { get; set; }
+    public ICollection<MainDealOrder> Orders { get; set; } = new List<MainDealOrder>();
 }
 
 public class MainDealOrder
@@ -76,4 +109,7 @@ public class MainDealOrder
     public decimal TotalPrice { get; set; }
     public string Status { get; set; } = "Pending";
     public DateTime CreatedAt { get; set; }
+
+    public MainUser? User { get; set; }
+    public MainDeal? Deal { get; set; }
 }

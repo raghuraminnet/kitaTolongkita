@@ -37,7 +37,7 @@ public class DashboardService : IDashboardService
         var todayOrders = await _mainDb.Orders
             .Where(o => o.CreatedAt >= today)
             .ToListAsync();
-        var todayRevenue = todayOrders.Sum(o => o.Amount * o.Quantity);
+        var todayRevenue = todayOrders.Sum(o => o.TotalPrice);
 
         // 7-day user growth
         var weekAgoUsers = await _mainDb.Users.CountAsync(u => u.CreatedAt < weekAgo);
