@@ -319,6 +319,14 @@ public class AdminService : IAdminService
         var count = await _db.AiConfigs.CountAsync();
         if (count == 1) { config.IsActive = true; await _db.SaveChangesAsync(); }
 
+        // Sync active AI config to Redis for main API to pick up
+        if (config.IsActive)
+        {
+            await _configSync.SetConfigAsync("ai:active_provider", config.Provider);
+            await _configSync.SetConfigAsync("ai:active_config_id", config.Id.ToString());
+            await _configSync.PublishAiConfigAsync(config);
+        }
+
         await LogActionAsync(adminId, (await _db.AdminUsers.FindAsync(adminId))!.Email,
             "CREATED_AI_CONFIG", "AiConfig", config.Id.ToString(), $"Created {config.Name} ({config.Provider})");
         return new AiConfigItem(config.Id, config.Name, config.Provider, MaskApiKey(config.ApiKey),
@@ -356,6 +364,8 @@ public class AdminService : IAdminService
         // Publish config change to Redis
         await _configSync.SetConfigAsync("ai:active_provider", config.Provider);
         await _configSync.SetConfigAsync("ai:active_config_id", config.Id.ToString());
+        if (config.IsActive)
+            await _configSync.PublishAiConfigAsync(config);
 
         return new AiConfigItem(config.Id, config.Name, config.Provider, MaskApiKey(config.ApiKey),
             config.Endpoint, config.BaseUrl, config.DeploymentName, config.ModelName, config.IsActive, config.CreatedAt, config.UpdatedAt);

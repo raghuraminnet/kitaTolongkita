@@ -40,12 +40,28 @@ public class ConfigReloadService : BackgroundService
         try
         {
             var sub = _redis.GetSubscriber();
+
+            // General config changes
             await sub.SubscribeAsync(RedisChannel.Literal("config:changed"), (ch, msg) =>
             {
                 try
                 {
                     var payload = JsonSerializer.Deserialize<ConfigChangePayload>(msg!);
                     if (payload == null) return;
+
+                    // If it's an AI config update, parse and update AiConfigProvider
+                    if (payload.key == "ai:config:live" && !string.IsNullOrEmpty(payload.value))
+                    {
+                        var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(payload.value);
+                        if (dict != null && _cache != null)
+                        {
+                            _cache.Set("ai:config:live", dict, TimeSpan.FromHours(1));
+                            _logger.LogInformation("AI config hot-reloaded from Redis: provider={Provider}, baseUrl={BaseUrl}",
+                                dict.GetValueOrDefault("provider"), dict.GetValueOrDefault("baseUrl"));
+                            AiConfigHotReloadEvent?.Set();
+                        }
+                        return;
+                    }
 
                     _logger.LogInformation("Config change received from admin: {Key} = {Value}", payload.key, payload.value);
 
@@ -67,7 +83,7 @@ public class ConfigReloadService : BackgroundService
                 }
             });
 
-            _logger.LogInformation("Subscribed to Redis config:changed channel");
+            _logger.LogInformation("Subscribed to Redis config:changed and ai:config:updated channels");
         }
         catch (Exception ex)
         {
@@ -78,6 +94,7 @@ public class ConfigReloadService : BackgroundService
     }
 
     public static readonly AutoResetEvent ConfigChangedEvent = new(false);
+    public static readonly AutoResetEvent AiConfigHotReloadEvent = new(false);
 }
 
 public class ConfigChangePayload

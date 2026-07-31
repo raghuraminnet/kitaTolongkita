@@ -1,8 +1,8 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using KitaTolongKita.Api.Services;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Core.Interfaces;
 
@@ -10,27 +10,20 @@ namespace KitaTolongKita.Infrastructure.Services;
 
 /// <summary>
 /// Anthropic Claude implementation of IModerationService.
-/// Configure: AI__Provider=anthropic, AI__ApiKey=sk-ant-..., AI__Model=claude-3-5-sonnet
+/// Uses IAiConfigProvider for hot-reloadable config (env vars + Redis pub/sub from admin).
+/// Configure: AI__Provider=anthropic, AI__ApiKey=sk-ant-..., AI__Model=claude-3-5-sonnet, AI__BaseUrl=https://api.anthropic.com/v1
 /// </summary>
 public class AnthropicModerationService : IModerationService
 {
     private readonly HttpClient _http;
     private readonly ILogger<AnthropicModerationService> _logger;
-    private readonly string _apiKey;
-    private readonly string _model;
-    private readonly string _baseUrl;
+    private readonly IAiConfigProvider _cfg;
 
-    public AnthropicModerationService(HttpClient http, IConfiguration config, ILogger<AnthropicModerationService> logger)
+    public AnthropicModerationService(HttpClient http, IAiConfigProvider config, ILogger<AnthropicModerationService> logger)
     {
         _http = http;
         _logger = logger;
-        _apiKey = config["AI:ApiKey"] ?? "";
-        _model = config["AI:Model"] ?? "claude-3-5-sonnet-20241022";
-        _baseUrl = config["AI:BaseUrl"] ?? "https://api.anthropic.com/v1";
-
-        _http.DefaultRequestHeaders.Clear();
-        _http.DefaultRequestHeaders.Add("x-api-key", _apiKey);
-        _http.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+        _cfg = config;
     }
 
     public async Task<ModerationResult> AnalyseDealAsync(Deal deal)
@@ -42,26 +35,28 @@ Deal: Title={deal.Title}, Description={deal.Description}, Category={deal.Categor
 OriginalPrice={deal.OriginalPrice:C}, GroupPrice={deal.GroupPrice:C},
 PickupLocation={deal.PickupLocation}, Hashtags={string.Join(",", deal.Hashtags ?? new())}";
 
+        var apiKey = _cfg.ApiKey;
+        var baseUrl = _cfg.BaseUrl.TrimEnd('/');
+        var model = string.IsNullOrEmpty(_cfg.Model) ? "claude-sonnet-4-20250514" : _cfg.Model;
+
         try
         {
-            var body = new
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/messages");
+            request.Headers.Add("x-api-key", apiKey);
+            request.Headers.Add("anthropic-version", "2023-06-01");
+            request.Content = new StringContent(JsonSerializer.Serialize(new
             {
-                model = _model,
+                model,
                 max_tokens = 500,
-                messages = new[]
-                {
-                    new { role = "user", content = prompt }
-                }
-            };
+                messages = new[] { new { role = "user", content = prompt } }
+            }), Encoding.UTF8, "application/json");
 
-            var json = JsonSerializer.Serialize(body);
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-            using var response = await _http.PostAsync($"{_baseUrl}/messages", content);
+            using var response = await _http.SendAsync(request);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Anthropic returned {StatusCode}: {Body}", response.StatusCode, responseBody);
+                _logger.LogWarning("Anthropic returned {StatusCode}: {Body}", response.StatusCode, responseBody[..Math.Min(200, responseBody.Length)]);
                 return MakeFallback(deal.Id, "anthropic");
             }
 
@@ -82,7 +77,7 @@ PickupLocation={deal.PickupLocation}, Hashtags={string.Join(",", deal.Hashtags ?
 
     public Task<Guid?> FindDuplicateDealIdAsync(Deal deal) => Task.FromResult<Guid?>(null);
 
-    private ModerationResult ParseResponse(Guid dealId, string reply, string raw, string provider)
+    private static ModerationResult ParseResponse(Guid dealId, string reply, string raw, string provider)
     {
         try
         {
@@ -98,8 +93,8 @@ PickupLocation={deal.PickupLocation}, Hashtags={string.Join(",", deal.Hashtags ?
 
             var flags = new List<ModerationFlag>();
             if (root.TryGetProperty("flags", out var f))
-                foreach (var flag in f.EnumerateArray())
-                    if (Enum.TryParse<ModerationFlag>(flag.GetString() ?? "", true, out var parsed))
+                foreach (var el in f.EnumerateArray())
+                    if (Enum.TryParse<ModerationFlag>(el.GetString() ?? "", true, out var parsed))
                         flags.Add(parsed);
 
             var decision = score >= 80 ? ModerationDecision.AutoApproved
@@ -114,14 +109,15 @@ PickupLocation={deal.PickupLocation}, Hashtags={string.Join(",", deal.Hashtags ?
                 RawResponse = raw.Length > 2000 ? raw[..2000] : raw
             };
         }
-        catch (Exception ex)
+        catch
         {
-            _logger.LogWarning(ex, "Parse error in Anthropic moderation");
             return MakeFallback(dealId, provider);
         }
     }
 
-    private ModerationResult MakeFallback(Guid dealId, string provider) =>
-        new() { DealId = dealId, Score = 60, Decision = ModerationDecision.PendingReview,
-            Summary = "AI unavailable — manual review required.", AiProvider = provider };
+    private static ModerationResult MakeFallback(Guid dealId, string provider) => new()
+    {
+        DealId = dealId, Score = 60, Decision = ModerationDecision.PendingReview,
+        Summary = "AI unavailable — manual review required.", AiProvider = provider
+    };
 }

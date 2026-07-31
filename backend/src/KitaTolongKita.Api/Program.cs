@@ -36,21 +36,26 @@ builder.Services.AddSingleton<IElasticClient>(sp =>
 // ── HTTP Client for AI providers ───────────────────────────────────────────────
 builder.Services.AddHttpClient();
 
+// ── AI Config Provider (hot-reload from env + Redis) ───────────────────────────
+builder.Services.AddSingleton<IAiConfigProvider, AiConfigProvider>();
+
 // ── AI Moderation ──────────────────────────────────────────────────────────────
 // Provider is selected via AI__Provider config: azure-openai | openai | anthropic
+// Moderation services read config via IAiConfigProvider which supports hot-reload from Redis.
 builder.Services.AddScoped<IModerationService>(sp =>
 {
     var httpFactory = sp.GetRequiredService<IHttpClientFactory>();
     var http = httpFactory.CreateClient();
+    var aiCfg = sp.GetRequiredService<IAiConfigProvider>();
     var config = sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
     var logger = sp.GetRequiredService<ILogger<AzureOpenAiModerationService>>();
-    var provider = config["AI:Provider"]?.ToLowerInvariant() ?? "azure-openai";
+    var provider = (aiCfg.Provider ?? config["AI:Provider"] ?? "azure-openai").ToLowerInvariant();
 
     return provider switch
     {
-        "openai" => (IModerationService)new OpenAiModerationService(http, config,
+        "openai" => (IModerationService)new OpenAiModerationService(http, aiCfg,
             sp.GetRequiredService<ILogger<OpenAiModerationService>>()),
-        "anthropic" => new AnthropicModerationService(http, config,
+        "anthropic" => new AnthropicModerationService(http, aiCfg,
             sp.GetRequiredService<ILogger<AnthropicModerationService>>()),
         _ => new AzureOpenAiModerationService(http, config, logger)
     };

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using KitaTolongKita.Admin.Api.Entities;
 using StackExchange.Redis;
 
 namespace KitaTolongKita.Admin.Api.Services;
@@ -8,6 +9,7 @@ public interface IConfigSyncService
     Task PublishConfigChangeAsync(string channel, object payload);
     Task SetConfigAsync(string key, string value);
     Task<Dictionary<string, string>> GetAllAppConfigAsync();
+    Task PublishAiConfigAsync(AiConfig config); // Publish full AI config to Redis for main API
 }
 
 public class RedisConfigSyncService : IConfigSyncService
@@ -83,5 +85,31 @@ public class RedisConfigSyncService : IConfigSyncService
             _logger.LogError(ex, "Failed to get all app config from Redis");
         }
         return result;
+    }
+
+    public async Task PublishAiConfigAsync(AiConfig config)
+    {
+        if (_db == null) { _logger.LogWarning("Redis not connected — skipping AI config publish"); return; }
+        try
+        {
+            // Store full config as JSON in Redis
+            var configData = new Dictionary<string, string>
+            {
+                ["provider"] = config.Provider,
+                ["apiKey"] = config.ApiKey ?? "",
+                ["baseUrl"] = config.BaseUrl ?? "",
+                ["model"] = config.ModelName ?? "",
+                ["endpoint"] = config.Endpoint ?? "",
+                ["deploymentName"] = config.DeploymentName ?? ""
+            };
+            var json = JsonSerializer.Serialize(configData);
+            await _db.StringSetAsync("ai:config:live", json);
+            await PublishConfigChangeAsync("ai:config:updated", new { key = "ai:config:live", value = json });
+            _logger.LogInformation("Published AI config to Redis: provider={Provider}, baseUrl={BaseUrl}", config.Provider, config.BaseUrl);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish AI config to Redis");
+        }
     }
 }

@@ -63,6 +63,7 @@ public class AiTestService : IAiTestService
         if (string.IsNullOrWhiteSpace(req.ApiKey))
             return new TestAiConnectionResponse(false, "API key is required");
         var model = req.ModelName ?? "gpt-4o-mini";
+        var baseUrl = req.BaseUrl?.TrimEnd('/') ?? "https://api.openai.com/v1";
 
         try
         {
@@ -74,7 +75,7 @@ public class AiTestService : IAiTestService
                 messages = new[] { new { role = "user", content = "Hi" } },
                 max_tokens = 5
             };
-            var resp = await client.PostAsync("https://api.openai.com/v1/chat/completions",
+            var resp = await client.PostAsync($"{baseUrl}/chat/completions",
                 new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"));
             var content = await resp.Content.ReadAsStringAsync();
             if (resp.IsSuccessStatusCode)
@@ -92,6 +93,7 @@ public class AiTestService : IAiTestService
         if (string.IsNullOrWhiteSpace(req.ApiKey))
             return new TestAiConnectionResponse(false, "API key is required");
         var model = req.ModelName ?? "claude-sonnet-4-20250514";
+        var baseUrl = req.BaseUrl?.TrimEnd('/') ?? "https://api.anthropic.com/v1";
 
         try
         {
@@ -104,7 +106,7 @@ public class AiTestService : IAiTestService
                 max_tokens = 10,
                 messages = new[] { new { role = "user", content = "Hi" } }
             };
-            var resp = await client.PostAsync("https://api.anthropic.com/v1/messages",
+            var resp = await client.PostAsync($"{baseUrl}/messages",
                 new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"));
             var content = await resp.Content.ReadAsStringAsync();
             if (resp.IsSuccessStatusCode)
