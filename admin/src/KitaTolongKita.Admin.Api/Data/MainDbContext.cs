@@ -109,6 +109,7 @@ public class MainDealOrder
     public decimal TotalPrice { get; set; }
     public string Status { get; set; } = "Pending";
     public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
     public MainUser? User { get; set; }
     public MainDeal? Deal { get; set; }
