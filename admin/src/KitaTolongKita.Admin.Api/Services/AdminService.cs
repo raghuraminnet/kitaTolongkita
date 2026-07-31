@@ -187,7 +187,7 @@ public class AdminService : IAdminService
             d.Id.ToString(), d.Title, d.Category, d.Organizer?.FullName ?? "", d.Organizer?.Email ?? "",
             d.GroupPrice, d.OriginalPrice, d.MinMembers, d.MembersJoined,
             d.ModerationStatus, d.ModerationScore, d.ModerationRejectReason,
-            d.ImageUrls, d.Hashtags?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>(), d.CreatedAt, d.Deadline)).ToList();
+            (string.IsNullOrEmpty(d.ImageUrl) ? new List<string>() : System.Text.Json.JsonSerializer.Deserialize<List<string>>(d.ImageUrl) ?? new List<string>()), d.Hashtags?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? new List<string>(), d.CreatedAt, d.Deadline)).ToList();
         return new PagedResult<DealModerationItem>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize));
     }
 

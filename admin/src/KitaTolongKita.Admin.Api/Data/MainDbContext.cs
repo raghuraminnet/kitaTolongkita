@@ -77,11 +77,6 @@ public class MainDeal
     public DateTime Deadline { get; set; }
     public string PickupLocation { get; set; } = "";
     public string? ImageUrl { get; set; }
-    // ImageUrls stored as string '["url1","url2"]' in DB; deserialized lazily
-    [System.ComponentModel.DataAnnotations.NotMapped]
-    public List<string> ImageUrls =>
-        string.IsNullOrEmpty(ImageUrl) ? new List<string>()
-        : System.Text.Json.JsonSerializer.Deserialize<List<string>>(ImageUrl) ?? new List<string>();
     public string Status { get; set; } = "Draft";
     public DateTime CreatedAt { get; set; }
     public DateTime? PublishedAt { get; set; }
