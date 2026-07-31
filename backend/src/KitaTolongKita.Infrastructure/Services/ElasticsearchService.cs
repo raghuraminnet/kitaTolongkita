@@ -335,7 +335,8 @@ public class ElasticsearchService : IElasticsearchService
         doc.LikeCount,
         Enum.TryParse<ModerationStatus>(doc.ModerationStatus ?? "Pending", out var ms) ? ms : ModerationStatus.Pending,
         null,
-        distanceKm
+        distanceKm,
+        null // OrganizerId — not stored in ES
     );
 
     /// <summary>Calculate distance between two lat/lon points in km using Haversine formula.</summary>
