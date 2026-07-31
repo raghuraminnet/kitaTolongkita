@@ -187,6 +187,8 @@ export const dealsApi = {
     }
     return request<Order[]>('GET', '/deals/orders', undefined, true);
   },
+
+  getMyDeals: () => request<Deal[]>('GET', '/deals/mine', undefined, true),
 };
 
 // ── Notifications API (non-standard, handled locally in demo) ────────────────
@@ -238,6 +240,11 @@ export interface Deal {
   latitude?: number;
   longitude?: number;
   hashtags?: string[];
+  upvoteCount?: number;
+  likeCount?: number;
+  moderationStatus?: string;
+  moderationRejectReason?: string;
+  organizerId?: string;
 }
 
 export interface CreateDealPayload {

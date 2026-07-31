@@ -18,7 +18,7 @@ public class OpenAiModerationService : IModerationService
     private readonly ILogger<OpenAiModerationService> _logger;
     private readonly string _apiKey;
     private readonly string _model;
-    private const string BaseUrl = "https://api.openai.com/v1";
+    private readonly string _baseUrl;
 
     public OpenAiModerationService(HttpClient http, IConfiguration config, ILogger<OpenAiModerationService> logger)
     {
@@ -26,6 +26,7 @@ public class OpenAiModerationService : IModerationService
         _logger = logger;
         _apiKey = config["AI:ApiKey"] ?? "";
         _model = config["AI:Model"] ?? "gpt-4o";
+        _baseUrl = config["AI:BaseUrl"] ?? "https://api.openai.com/v1";
 
         if (!string.IsNullOrEmpty(_apiKey))
             _http.DefaultRequestHeaders.Authorization =
@@ -52,7 +53,7 @@ public class OpenAiModerationService : IModerationService
 
             var json = JsonSerializer.Serialize(requestBody);
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
-            using var response = await _http.PostAsync($"{BaseUrl}/chat/completions", content);
+            using var response = await _http.PostAsync($"{_baseUrl}/chat/completions", content);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)

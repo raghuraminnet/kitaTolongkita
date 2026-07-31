@@ -61,18 +61,18 @@ public record OrderDetail(
 // ── AI Config ─────────────────────────────────────────────────────────────────
 public record AiConfigItem(
     int Id, string Name, string Provider, string? ApiKeyMasked,
-    string? Endpoint, string? DeploymentName, string? ModelName,
+    string? Endpoint, string? BaseUrl, string? DeploymentName, string? ModelName,
     bool IsActive, DateTime CreatedAt, DateTime UpdatedAt
 );
 public record CreateAiConfigRequest(
-    string Name, string Provider, string? ApiKey, string? Endpoint,
+    string Name, string Provider, string? ApiKey, string? Endpoint, string? BaseUrl,
     string? DeploymentName, string? ModelName
 );
 public record UpdateAiConfigRequest(
-    string? Name, string? Provider, string? ApiKey, string? Endpoint,
+    string? Name, string? Provider, string? ApiKey, string? Endpoint, string? BaseUrl,
     string? DeploymentName, string? ModelName, bool? IsActive
 );
-public record TestAiConnectionRequest(string Provider, string? ApiKey, string? Endpoint, string? DeploymentName, string? ModelName);
+public record TestAiConnectionRequest(string Provider, string? ApiKey, string? Endpoint, string? DeploymentName, string? ModelName, string? BaseUrl);
 public record TestAiConnectionResponse(bool Success, string Message);
 
 // ── Moderation Rules ─────────────────────────────────────────────────────────

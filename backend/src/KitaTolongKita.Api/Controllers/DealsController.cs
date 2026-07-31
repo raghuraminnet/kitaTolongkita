@@ -62,6 +62,18 @@ public class DealsController : ControllerBase
         return Ok(deals);
     }
 
+    /// <summary>Get all deals posted by the authenticated user (organizer).</summary>
+    [Authorize]
+    [HttpGet("mine")]
+    public async Task<IActionResult> GetMyDeals()
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var deals = await _deals.GetMyDealsAsync(userId.Value);
+        return Ok(deals);
+    }
+
     /// <summary>Get deals similar to a location — shown when user posts a deal to warn about duplicates.</summary>
     [HttpGet("suggest-nearby")]
     public async Task<IActionResult> SuggestNearby([FromQuery] NearbyDealRequest request)

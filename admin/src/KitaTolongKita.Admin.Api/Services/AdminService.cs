@@ -289,7 +289,7 @@ public class AdminService : IAdminService
         return await _db.AiConfigs.AsNoTracking().OrderBy(x => x.Name)
             .Select(x => new AiConfigItem(
                 x.Id, x.Name, x.Provider, MaskApiKey(x.ApiKey),
-                x.Endpoint, x.DeploymentName, x.ModelName,
+                x.Endpoint, x.BaseUrl, x.DeploymentName, x.ModelName,
                 x.IsActive, x.CreatedAt, x.UpdatedAt)).ToListAsync();
     }
 
@@ -304,6 +304,7 @@ public class AdminService : IAdminService
             Provider = req.Provider,
             ApiKey = req.ApiKey,
             Endpoint = req.Endpoint,
+            BaseUrl = req.BaseUrl,
             DeploymentName = req.DeploymentName,
             ModelName = req.ModelName,
             IsActive = false, // New configs default inactive
@@ -321,7 +322,7 @@ public class AdminService : IAdminService
         await LogActionAsync(adminId, (await _db.AdminUsers.FindAsync(adminId))!.Email,
             "CREATED_AI_CONFIG", "AiConfig", config.Id.ToString(), $"Created {config.Name} ({config.Provider})");
         return new AiConfigItem(config.Id, config.Name, config.Provider, MaskApiKey(config.ApiKey),
-            config.Endpoint, config.DeploymentName, config.ModelName, config.IsActive, config.CreatedAt, config.UpdatedAt);
+            config.Endpoint, config.BaseUrl, config.DeploymentName, config.ModelName, config.IsActive, config.CreatedAt, config.UpdatedAt);
     }
 
     public async Task<AiConfigItem?> UpdateAiConfigAsync(int id, UpdateAiConfigRequest req, int adminId)
@@ -333,6 +334,7 @@ public class AdminService : IAdminService
         if (req.Provider != null) config.Provider = req.Provider;
         if (req.ApiKey != null) config.ApiKey = req.ApiKey;
         if (req.Endpoint != null) config.Endpoint = req.Endpoint;
+        if (req.BaseUrl != null) config.BaseUrl = req.BaseUrl;
         if (req.DeploymentName != null) config.DeploymentName = req.DeploymentName;
         if (req.ModelName != null) config.ModelName = req.ModelName;
 
@@ -356,7 +358,7 @@ public class AdminService : IAdminService
         await _configSync.SetConfigAsync("ai:active_config_id", config.Id.ToString());
 
         return new AiConfigItem(config.Id, config.Name, config.Provider, MaskApiKey(config.ApiKey),
-            config.Endpoint, config.DeploymentName, config.ModelName, config.IsActive, config.CreatedAt, config.UpdatedAt);
+            config.Endpoint, config.BaseUrl, config.DeploymentName, config.ModelName, config.IsActive, config.CreatedAt, config.UpdatedAt);
     }
 
     public async Task<bool> DeleteAiConfigAsync(int id, int adminId)
@@ -376,7 +378,7 @@ public class AdminService : IAdminService
         var config = await _db.AiConfigs.FirstOrDefaultAsync(x => x.IsActive);
         if (config == null) return null;
         return new AiConfigItem(config.Id, config.Name, config.Provider, MaskApiKey(config.ApiKey),
-            config.Endpoint, config.DeploymentName, config.ModelName, config.IsActive, config.CreatedAt, config.UpdatedAt);
+            config.Endpoint, config.BaseUrl, config.DeploymentName, config.ModelName, config.IsActive, config.CreatedAt, config.UpdatedAt);
     }
 
     // ── Moderation Rules ────────────────────────────────────────────────────

@@ -46,7 +46,8 @@ public class AiConfig
     public string Name { get; set; } = string.Empty;
     public string Provider { get; set; } = string.Empty; // azure-openai | openai | anthropic
     public string? ApiKey { get; set; }
-    public string? Endpoint { get; set; }
+    public string? Endpoint { get; set; }     // Azure OpenAI endpoint URL
+    public string? BaseUrl { get; set; }      // OpenAI/Anthropic compatible base URL (e.g. https://api.groq.com, https://openrouter.ai)
     public string? DeploymentName { get; set; } // Azure OpenAI deployment
     public string? ModelName { get; set; }      // OpenAI/Anthropic model
     public bool IsActive { get; set; }

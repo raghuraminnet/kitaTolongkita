@@ -22,7 +22,7 @@ export default function SettingsPage() {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
   const [testLoading, setTestLoading] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
-  const [createForm, setCreateForm] = useState<AiConfigInput>({ name: '', provider: 'azure-openai', apiKey: '', endpoint: '', deploymentName: '', modelName: '' })
+  const [createForm, setCreateForm] = useState<AiConfigInput>({ name: '', provider: 'azure-openai', apiKey: '', endpoint: '', baseUrl: '', deploymentName: '', modelName: '' })
   const [createLoading, setCreateLoading] = useState(false)
 
   // Moderation Rules
@@ -92,7 +92,7 @@ export default function SettingsPage() {
     try {
       await api.createAiConfig(createForm)
       setShowCreate(false)
-      setCreateForm({ name: '', provider: 'azure-openai', apiKey: '', endpoint: '', deploymentName: '', modelName: '' })
+      setCreateForm({ name: '', provider: 'azure-openai', apiKey: '', endpoint: '', baseUrl: '', deploymentName: '', modelName: '' })
       const res = await api.aiConfigs() as { data: AiConfig[] }
       if (res.data) setConfigs(res.data)
     } catch (err: any) { alert(err.message) }
@@ -245,12 +245,21 @@ export default function SettingsPage() {
                         </>
                       )}
                       {(createForm.provider === 'openai' || createForm.provider === 'anthropic') && (
-                        <div className="form-group">
-                          <label>Model Name</label>
-                          <input value={createForm.modelName || ''}
-                            onChange={e => setCreateForm(f => ({ ...f, modelName: e.target.value }))}
-                            placeholder={createForm.provider === 'openai' ? 'gpt-4o-mini' : 'claude-sonnet-4-20250514'} />
-                        </div>
+                        <>
+                          <div className="form-group">
+                            <label>Model Name</label>
+                            <input value={createForm.modelName || ''}
+                              onChange={e => setCreateForm(f => ({ ...f, modelName: e.target.value }))}
+                              placeholder={createForm.provider === 'openai' ? 'gpt-4o-mini' : 'claude-sonnet-4-20250514'} />
+                          </div>
+                          <div className="form-group">
+                            <label>Base URL (optional)</label>
+                            <input value={createForm.baseUrl || ''}
+                              onChange={e => setCreateForm(f => ({ ...f, baseUrl: e.target.value }))}
+                              placeholder={createForm.provider === 'openai' ? 'https://api.openai.com/v1' : 'https://api.anthropic.com/v1'} />
+                            <small className="text-muted">Override for OpenAI-compatible providers (e.g. Groq, OpenRouter, LM Studio)</small>
+                          </div>
+                        </>
                       )}
                     </div>
                     <div className="flex gap-2 mt-4">
@@ -269,7 +278,7 @@ export default function SettingsPage() {
                 <div className="table-wrap">
                   <table>
                     <thead>
-                      <tr><th>Name</th><th>Provider</th><th>Model/Deployment</th><th>Status</th><th>Actions</th></tr>
+                      <tr><th>Name</th><th>Provider</th><th>Model/Deployment</th><th>Base URL</th><th>Status</th><th>Actions</th></tr>
                     </thead>
                     <tbody>
                       {configs.map(c => (
@@ -277,6 +286,7 @@ export default function SettingsPage() {
                           <td className="font-bold">{c.name}</td>
                           <td><span className="badge badge-pending">{c.provider}</span></td>
                           <td className="text-sm text-muted">{c.deploymentName || c.modelName || '-'}</td>
+                          <td className="text-sm text-muted">{(c as any).baseUrl ? <span title={(c as any).baseUrl}>{((c as any).baseUrl as string).substring(0, 20)}...</span> : '-'}</td>
                           <td>
                             <span className={`badge ${c.isActive ? 'badge-active' : 'badge-inactive'}`}>
                               {c.isActive ? '✓ Active' : 'Inactive'}
@@ -290,7 +300,7 @@ export default function SettingsPage() {
                                 </button>
                               )}
                               <button className="btn btn-sm btn-outline"
-                                onClick={() => { const form = { name: c.name, provider: c.provider, apiKey: '', endpoint: c.endpoint || '', deploymentName: c.deploymentName || '', modelName: c.modelName || '' }; setCreateForm(form); setShowCreate(true); }}>
+                                onClick={() => { const form = { name: c.name, provider: c.provider, apiKey: '', endpoint: c.endpoint || '', baseUrl: (c as any).baseUrl || '', deploymentName: c.deploymentName || '', modelName: c.modelName || '' }; setCreateForm(form); setShowCreate(true); }}>
                                 Edit
                               </button>
                               <button className="btn btn-sm btn-danger"

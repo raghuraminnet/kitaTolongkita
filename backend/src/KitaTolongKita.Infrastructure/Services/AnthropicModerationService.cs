@@ -18,7 +18,7 @@ public class AnthropicModerationService : IModerationService
     private readonly ILogger<AnthropicModerationService> _logger;
     private readonly string _apiKey;
     private readonly string _model;
-    private const string BaseUrl = "https://api.anthropic.com/v1";
+    private readonly string _baseUrl;
 
     public AnthropicModerationService(HttpClient http, IConfiguration config, ILogger<AnthropicModerationService> logger)
     {
@@ -26,6 +26,7 @@ public class AnthropicModerationService : IModerationService
         _logger = logger;
         _apiKey = config["AI:ApiKey"] ?? "";
         _model = config["AI:Model"] ?? "claude-3-5-sonnet-20241022";
+        _baseUrl = config["AI:BaseUrl"] ?? "https://api.anthropic.com/v1";
 
         _http.DefaultRequestHeaders.Clear();
         _http.DefaultRequestHeaders.Add("x-api-key", _apiKey);
@@ -55,7 +56,7 @@ PickupLocation={deal.PickupLocation}, Hashtags={string.Join(",", deal.Hashtags ?
 
             var json = JsonSerializer.Serialize(body);
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
-            using var response = await _http.PostAsync($"{BaseUrl}/messages", content);
+            using var response = await _http.PostAsync($"{_baseUrl}/messages", content);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)

@@ -31,7 +31,9 @@ public record DealDto(
     ModerationStatus ModerationStatus,
     string? ModerationRejectReason,
     // Computed
-    double? DistanceKm
+    double? DistanceKm,
+    // Organizer
+    Guid? OrganizerId
 );
 
 public record CreateDealRequest(

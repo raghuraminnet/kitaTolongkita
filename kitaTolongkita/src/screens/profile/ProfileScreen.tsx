@@ -64,6 +64,7 @@ export const ProfileScreen: React.FC = () => {
   ];
 
   const menuItems = [
+    { icon: '📋', label: 'My Deals', onPress: () => navigation.navigate('MyDeals') },
     { icon: '👤', label: 'Edit Profile', onPress: () => navigation.navigate('ProfileSetup') },
     { icon: '📍', label: 'My Addresses', onPress: () => {} },
     { icon: '🔔', label: 'Notifications', onPress: () => navigation.navigate('Notifications') },

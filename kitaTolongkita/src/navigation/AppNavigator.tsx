@@ -19,6 +19,7 @@ import { CheckoutScreen } from '../screens/deals';
 import { OrderConfirmedScreen } from '../screens/deals';
 import { PostDealScreen } from '../screens/deals';
 import { PostReviewScreen } from '../screens/deals';
+import { MyDealsScreen } from '../screens/deals';
 import { OrdersScreen } from '../screens/orders';
 import { ProfileScreen } from '../screens/profile';
 import { ProfileSetupScreen } from '../screens/profile';
@@ -140,6 +141,11 @@ export default function AppNavigator() {
           name="PostReview"
           component={PostReviewScreen}
           options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="MyDeals"
+          component={MyDealsScreen}
+          options={{ animation: 'slide_from_right' }}
         />
 
         {/* Notifications & Chat */}

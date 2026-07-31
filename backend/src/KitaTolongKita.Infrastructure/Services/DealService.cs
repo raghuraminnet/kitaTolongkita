@@ -177,6 +177,16 @@ public class DealService : IDealService
         return ToDealDto(deal);
     }
 
+    public async Task<List<DealDto>> GetMyDealsAsync(Guid organizerId)
+    {
+        var deals = await _db.Deals
+            .Where(d => d.OrganizerId == organizerId)
+            .OrderByDescending(d => d.CreatedAt)
+            .ToListAsync();
+
+        return deals.Select(d => ToDealDto(d)).ToList();
+    }
+
     // ── Orders ─────────────────────────────────────────────────────────────────
 
     public async Task<DealOrderDto> JoinDealAsync(Guid dealId, Guid buyerId, int quantity, string? notes)
@@ -397,7 +407,7 @@ public class DealService : IDealService
         d.Latitude, d.Longitude, d.LocationName,
         d.Hashtags, d.UpvoteCount, d.LikeCount,
         d.ModerationStatus, d.ModerationRejectReason,
-        distanceKm
+        distanceKm, d.OrganizerId
     );
 
     private static DealOrderDto ToOrderDto(DealOrder o, Deal d) => new(

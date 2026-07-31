@@ -92,7 +92,7 @@ export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
         />
         <Button
           title="Back to Home"
-          onPress={() => navigation?.replace('Main')}
+          onPress={() => navigation?.popToTop()}
           variant="primary"
           fullWidth
         />

@@ -134,6 +134,7 @@ export interface AiConfigInput {
   provider: string;
   apiKey?: string;
   endpoint?: string;
+  baseUrl?: string;
   deploymentName?: string;
   modelName?: string;
 }

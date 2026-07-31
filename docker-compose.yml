@@ -76,6 +76,7 @@ services:
       Jwt__Issuer: KitaTolongKita
       Jwt__Audience: KitaTolongKitaApp
       Jwt__AccessTokenExpiryMinutes: "60"
+      AI__BaseUrl: "" # Override for OpenAI-compatible APIs (e.g. https://api.groq.com, https://openrouter.ai)
       App__Port: "5000"
     ports:
       - "5000:5000"
