@@ -1,0 +1,219 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.AspNetCore.Authentication.Google</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties">
+            <summary>
+            <see cref="T:Microsoft.AspNetCore.Authentication.AuthenticationProperties"/> for a Google OAuth challenge.
+            </summary>
+        </member>
+        <member name="F:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.AccessTypeKey">
+            <summary>
+            The parameter key for the "access_type" argument being used for a challenge request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.ApprovalPromptKey">
+            <summary>
+            The parameter key for the "approval_prompt" argument being used for a challenge request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.IncludeGrantedScopesKey">
+            <summary>
+            The parameter key for the "include_granted_scopes" argument being used for a challenge request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.LoginHintKey">
+            <summary>
+            The parameter key for the "login_hint" argument being used for a challenge request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.PromptParameterKey">
+            <summary>
+            The parameter key for the "prompt" argument being used for a challenge request.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.#ctor">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.#ctor(System.Collections.Generic.IDictionary{System.String,System.String})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties"/>.
+            </summary>
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.#ctor(System.Collections.Generic.IDictionary{System.String,System.String},System.Collections.Generic.IDictionary{System.String,System.Object})">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties"/>.
+            </summary>
+            <inheritdoc />
+        </member>
+        <member name="P:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.AccessType">
+            <summary>
+            The "access_type" parameter value being used for a challenge request.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.ApprovalPrompt">
+            <summary>
+            The "approval_prompt" parameter value being used for a challenge request.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.IncludeGrantedScopes">
+            <summary>
+            The "include_granted_scopes" parameter value being used for a challenge request.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.LoginHint">
+            <summary>
+            The "login_hint" parameter value being used for a challenge request.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Authentication.Google.GoogleChallengeProperties.Prompt">
+            <summary>
+            The "prompt" parameter value being used for a challenge request.
+            </summary>
+        </member>
+        <member name="T:Microsoft.AspNetCore.Authentication.Google.GoogleDefaults">
+            <summary>
+            Default values for Google authentication
+            </summary>
+        </member>
+        <member name="F:Microsoft.AspNetCore.Authentication.Google.GoogleDefaults.AuthenticationScheme">
+            <summary>
+            The default scheme for Google authentication. Defaults to <c>Google</c>.
+            </summary>
+        </member>
+        <member name="F:Microsoft.AspNetCore.Authentication.Google.GoogleDefaults.DisplayName">
+            <summary>
+            The default display name for Google authentication. Defaults to <c>Google</c>.
+            </summary>
+        </member>
+        <member name="F:Microsoft.AspNetCore.Authentication.Google.GoogleDefaults.AuthorizationEndpoint">
+            <summary>
+            The default endpoint used to perform Google authentication.
+            </summary>
+            <remarks>
+            For more details about this endpoint, see <see href="https://developers.google.com/identity/protocols/oauth2/web-server#httprest"/>.
+            </remarks>
+        </member>
+        <member name="F:Microsoft.AspNetCore.Authentication.Google.GoogleDefaults.TokenEndpoint">
+            <summary>
+            The OAuth endpoint used to exchange access tokens.
+            </summary>
+        </member>
+        <member name="F:Microsoft.AspNetCore.Authentication.Google.GoogleDefaults.UserInformationEndpoint">
+            <summary>
+            The Google endpoint that is used to gather additional user information.
+            </summary>
+        </member>
+        <member name="T:Microsoft.AspNetCore.Authentication.Google.GoogleHandler">
+            <summary>
+            Authentication handler for Google's OAuth based authentication.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Authentication.Google.GoogleHandler.#ctor(Microsoft.Extensions.Options.IOptionsMonitor{Microsoft.AspNetCore.Authentication.Google.GoogleOptions},Microsoft.Extensions.Logging.ILoggerFactory,System.Text.Encodings.Web.UrlEncoder,Microsoft.AspNetCore.Authentication.ISystemClock)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.AspNetCore.Authentication.Google.GoogleHandler"/>.
+            </summary>
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.AspNetCore.Authentication.Google.GoogleHandler.#ctor(Microsoft.Extensions.Options.IOptionsMonitor{Microsoft.AspNetCore.Authentication.Google.GoogleOptions},Microsoft.Extensions.Logging.ILoggerFactory,System.Text.Encodings.Web.UrlEncoder)">
+            <summary>
+            Initializes a new instance of <see cref="T:Microsoft.AspNetCore.Authentication.Google.GoogleHandler"/>.
+            </summary>
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.AspNetCore.Authentication.Google.GoogleHandler.CreateTicketAsync(System.Security.Claims.ClaimsIdentity,Microsoft.AspNetCore.Authentication.AuthenticationProperties,Microsoft.AspNetCore.Authentication.OAuth.OAuthTokenResponse)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.AspNetCore.Authentication.Google.GoogleHandler.BuildChallengeUrl(Microsoft.AspNetCore.Authentication.AuthenticationProperties,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="T:Microsoft.AspNetCore.Authentication.Google.GoogleOptions">
+            <summary>
+            Configuration options for <see cref="T:Microsoft.AspNetCore.Authentication.Google.GoogleHandler"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Authentication.Google.GoogleOptions.#ctor">
+            <summary>
+            Initializes a new <see cref="T:Microsoft.AspNetCore.Authentication.Google.GoogleOptions"/>.
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Authentication.Google.GoogleOptions.AccessType">
+            <summary>
+            Indicates whether your application can refresh access tokens when the user is not present at the browser.
+            Valid values are <c>online</c>, which is the default value, and <c>offline</c>.
+            <para>
+            Set the value to offline if your application needs to refresh access tokens when the user is not present at the browser.
+            </para>
+            </summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Authentication.Google.Resources.Exception_OptionMustBeProvided">
+            <summary>The '{0}' option must be provided.</summary>
+        </member>
+        <member name="M:Microsoft.AspNetCore.Authentication.Google.Resources.FormatException_OptionMustBeProvided(System.Object)">
+            <summary>The '{0}' option must be provided.</summary>
+        </member>
+        <member name="P:Microsoft.AspNetCore.Authentication.Google.Resources.Exception_ValidatorHandlerMismatch">
+            <summary>An ICertificateValidator cannot be specified at the same time as an HttpMessageHandler unless it is a WebRequestHandler.</summary>
+        </member>
+        <member name="T:Microsoft.Extensions.DependencyInjection.GoogleExtensions">
+            <summary>
+            Extension methods to configure Google OAuth authentication.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.GoogleExtensions.AddGoogle(Microsoft.AspNetCore.Authentication.AuthenticationBuilder)">
+            <summary>
+            Adds Google OAuth-based authentication to <see cref="T:Microsoft.AspNetCore.Authentication.AuthenticationBuilder"/> using the default scheme.
+            The default scheme is specified by <see cref="F:Microsoft.AspNetCore.Authentication.Google.GoogleDefaults.AuthenticationScheme"/>.
+            <para>
+            Google authentication allows application users to sign in with their Google account.
+            </para>
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.AspNetCore.Authentication.AuthenticationBuilder"/>.</param>
+            <returns>A reference to <paramref name="builder"/> after the operation has completed.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.GoogleExtensions.AddGoogle(Microsoft.AspNetCore.Authentication.AuthenticationBuilder,System.Action{Microsoft.AspNetCore.Authentication.Google.GoogleOptions})">
+            <summary>
+            Adds Google OAuth-based authentication to <see cref="T:Microsoft.AspNetCore.Authentication.AuthenticationBuilder"/> using the default scheme.
+            The default scheme is specified by <see cref="F:Microsoft.AspNetCore.Authentication.Google.GoogleDefaults.AuthenticationScheme"/>.
+            <para>
+            Google authentication allows application users to sign in with their Google account.
+            </para>
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.AspNetCore.Authentication.AuthenticationBuilder"/>.</param>
+            <param name="configureOptions">A delegate to configure <see cref="T:Microsoft.AspNetCore.Authentication.Google.GoogleOptions"/>.</param>
+            <returns>A reference to <paramref name="builder"/> after the operation has completed.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.GoogleExtensions.AddGoogle(Microsoft.AspNetCore.Authentication.AuthenticationBuilder,System.String,System.Action{Microsoft.AspNetCore.Authentication.Google.GoogleOptions})">
+            <summary>
+            Adds Google OAuth-based authentication to <see cref="T:Microsoft.AspNetCore.Authentication.AuthenticationBuilder"/> using the default scheme.
+            The default scheme is specified by <see cref="F:Microsoft.AspNetCore.Authentication.Google.GoogleDefaults.AuthenticationScheme"/>.
+            <para>
+            Google authentication allows application users to sign in with their Google account.
+            </para>
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.AspNetCore.Authentication.AuthenticationBuilder"/>.</param>
+            <param name="authenticationScheme">The authentication scheme.</param>
+            <param name="configureOptions">A delegate to configure <see cref="T:Microsoft.AspNetCore.Authentication.Google.GoogleOptions"/>.</param>
+            <returns>A reference to <paramref name="builder"/> after the operation has completed.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.GoogleExtensions.AddGoogle(Microsoft.AspNetCore.Authentication.AuthenticationBuilder,System.String,System.String,System.Action{Microsoft.AspNetCore.Authentication.Google.GoogleOptions})">
+            <summary>
+            Adds Google OAuth-based authentication to <see cref="T:Microsoft.AspNetCore.Authentication.AuthenticationBuilder"/> using the default scheme.
+            The default scheme is specified by <see cref="F:Microsoft.AspNetCore.Authentication.Google.GoogleDefaults.AuthenticationScheme"/>.
+            <para>
+            Google authentication allows application users to sign in with their Google account.
+            </para>
+            </summary>
+            <param name="builder">The <see cref="T:Microsoft.AspNetCore.Authentication.AuthenticationBuilder"/>.</param>
+            <param name="authenticationScheme">The authentication scheme.</param>
+            <param name="displayName">A display name for the authentication handler.</param>
+            <param name="configureOptions">A delegate to configure <see cref="T:Microsoft.AspNetCore.Authentication.Google.GoogleOptions"/>.</param>
+            <returns>A reference to <paramref name="builder"/> after the operation has completed.</returns>
+        </member>
+    </members>
+</doc>

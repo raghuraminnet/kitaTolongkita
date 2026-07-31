@@ -78,6 +78,16 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
     db.Database.EnsureCreated();
+
+    // Migrate: add missing columns to existing admin_users table
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS ""PasswordResetToken"" VARCHAR(500);
+            ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS ""PasswordResetTokenExpiry"" TIMESTAMP;
+        ");
+    }
+    catch { /* columns may already exist */ }
 }
 
 app.UseSwagger();
