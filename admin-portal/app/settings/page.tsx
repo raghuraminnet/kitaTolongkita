@@ -77,6 +77,7 @@ export default function SettingsPage() {
         provider: form.provider,
         apiKey: form.apiKey || undefined,
         endpoint: form.endpoint || undefined,
+        baseUrl: form.baseUrl || undefined,
         deploymentName: form.deploymentName || undefined,
         modelName: form.modelName || undefined,
       })
