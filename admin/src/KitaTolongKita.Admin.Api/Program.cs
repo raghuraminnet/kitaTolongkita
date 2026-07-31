@@ -19,6 +19,7 @@ var mainConnString = builder.Configuration.GetConnectionString("MainDb")
 
 builder.Services.AddDbContext<AdminDbContext>(opts => opts.UseNpgsql(connString));
 builder.Services.AddDbContext<MainDbContext>(opts => opts.UseNpgsql(mainConnString), ServiceLifetime.Transient);
+builder.Services.AddScoped<IMainDbService, MainDbService>();
 
 // ── Redis ────────────────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<IConfigSyncService, RedisConfigSyncService>();

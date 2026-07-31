@@ -34,6 +34,21 @@ public record UserDetail(
 public record DealSummary(string Id, string Title, string Status, DateTime CreatedAt);
 public record OrderSummary(string Id, string DealTitle, string Status, decimal Amount, DateTime CreatedAt);
 
+// ── App Deals (from main DB) ─────────────────────────────────────────────────────
+public record AppDealItem(
+    Guid Id, string Title, string Description, string Category,
+    decimal OriginalPrice, decimal GroupPrice,
+    int MinMembers, int MaxMembers, int MembersJoined,
+    DateTime Deadline, string PickupLocation, string? ImageUrl,
+    string Status, string ModerationStatus, int? ModerationScore, string? ModerationRejectReason,
+    int UpvoteCount, int LikeCount,
+    Guid OrganizerId, DateTime CreatedAt, DateTime? PublishedAt
+);
+public record AppUserItem(
+    Guid Id, string Email, string FullName, string? Phone, string? AvatarUrl,
+    bool EmailVerified, DateTime CreatedAt, DateTime? LastLoginAt, bool IsActive
+);
+
 // ── Deals ─────────────────────────────────────────────────────────────────────
 public record DealModerationItem(
     string Id, string Title, string Category, string OrganizerName, string OrganizerEmail,

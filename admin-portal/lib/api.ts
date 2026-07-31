@@ -70,6 +70,22 @@ export const api = {
   featureDeal: (id: string, featured: boolean) =>
     request(`/deals/${id}/feature`, { method: 'PATCH', body: JSON.stringify({ featured }) }),
 
+  // App Deals (from main DB — read-only view for all deals in the app)
+  appDeals: (params?: { status?: string; search?: string }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/app-deals${q ? '?' + q : ''}`);
+  },
+  appDealById: (id: string) =>
+    request(`/app-deals/${id}`),
+
+  // App Users (from main DB — read-only view for all app users)
+  appUsers: (params?: { search?: string }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/app-users${q ? '?' + q : ''}`);
+  },
+  appUserById: (id: string) =>
+    request(`/app-users/${id}`),
+
   // Orders
   orders: (params?: { status?: string; search?: string; page?: number; pageSize?: number }) => {
     const q = new URLSearchParams(params as any).toString();

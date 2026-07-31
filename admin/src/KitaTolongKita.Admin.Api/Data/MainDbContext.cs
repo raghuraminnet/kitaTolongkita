@@ -12,13 +12,15 @@ public class MainDbContext : DbContext
 
     public DbSet<MainUser> Users => Set<MainUser>();
     public DbSet<MainDeal> Deals => Set<MainDeal>();
-    public DbSet<MainOrder> Orders => Set<MainOrder>();
+    public DbSet<MainDealOrder> Orders => Set<MainDealOrder>();
 
     protected override void OnModelCreating(ModelBuilder m)
     {
+        // Map to actual table/column names in kitatolongkita DB
         m.Entity<MainUser>(e => e.ToTable("users", "public"));
         m.Entity<MainDeal>(e => e.ToTable("deals", "public"));
-        m.Entity<MainOrder>(e => e.ToTable("orders", "public"));
+        m.Entity<MainDealOrder>(e => e.ToTable("deal_orders", "public"));
+
         base.OnModelCreating(m);
     }
 }
@@ -28,47 +30,50 @@ public class MainUser
     public Guid Id { get; set; }
     public string Email { get; set; } = "";
     public string FullName { get; set; } = "";
+    public string? Phone { get; set; }
     public string? AvatarUrl { get; set; }
     public bool EmailVerified { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
-    public ICollection<MainDeal> OrganizedDeals { get; set; } = new List<MainDeal>();
-    public ICollection<MainOrder> Orders { get; set; } = new List<MainOrder>();
+    public bool IsActive { get; set; } = true;
 }
 
 public class MainDeal
 {
     public Guid Id { get; set; }
+    public Guid OrganizerId { get; set; }
     public string Title { get; set; } = "";
-    public string Category { get; set; } = "";
     public string Description { get; set; } = "";
+    public string Category { get; set; } = "";
     public decimal OriginalPrice { get; set; }
     public decimal GroupPrice { get; set; }
-    public int MinGroup { get; set; }
-    public int CurrentGroup { get; set; }
-    public Guid OrganizerId { get; set; }
-    public MainUser? Organizer { get; set; }
-    public string ModerationStatus { get; set; } = "Pending";
-    public double? ModerationScore { get; set; }
-    public string? ModerationRejectReason { get; set; }
-    public bool IsFeatured { get; set; }
+    public int MinMembers { get; set; }
+    public int MaxMembers { get; set; }
+    public int MembersJoined { get; set; }
+    public DateTime Deadline { get; set; }
+    public string PickupLocation { get; set; } = "";
+    public string? ImageUrl { get; set; }
+    public string Status { get; set; } = "Draft";       // stored as string in PG
     public DateTime CreatedAt { get; set; }
-    public DateTime? Deadline { get; set; }
-    public List<string> ImageUrls { get; set; } = new();
-    public List<string> Hashtags { get; set; } = new();
-    public ICollection<MainOrder> Orders { get; set; } = new List<MainOrder>();
+    public DateTime? PublishedAt { get; set; }
+    public string? LocationName { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public string? Hashtags { get; set; }   // stored as string "tag1,tag2" in PG
+    public int UpvoteCount { get; set; }
+    public int LikeCount { get; set; }
+    public string ModerationStatus { get; set; } = "Pending";
+    public int? ModerationScore { get; set; }
+    public string? ModerationRejectReason { get; set; }
 }
 
-public class MainOrder
+public class MainDealOrder
 {
     public Guid Id { get; set; }
-    public Guid UserId { get; set; }
-    public MainUser? User { get; set; }
     public Guid DealId { get; set; }
-    public MainDeal? Deal { get; set; }
+    public Guid BuyerId { get; set; }
+    public int Quantity { get; set; } = 1;
+    public decimal TotalPrice { get; set; }
     public string Status { get; set; } = "Pending";
-    public decimal Amount { get; set; }
-    public int Quantity { get; set; }
     public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
 }
