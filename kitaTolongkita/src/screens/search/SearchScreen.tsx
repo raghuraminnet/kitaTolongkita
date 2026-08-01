@@ -22,9 +22,9 @@ import type { Deal } from '../../api/client';
 const API_BASE = 'http://76.13.219.191:5000/api';
 const CATEGORIES = ['All', 'Food', 'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Drinks'];
 const SORT_OPTIONS = [
-  { key: 'distance', label: 'Distance' },
-  { key: 'price_asc', label: 'Price (Low-High)' },
   { key: 'newest', label: 'Newest' },
+  { key: 'price_asc', label: 'Price (Low-High)' },
+  { key: 'popular', label: 'Most Popular' },
 ];
 
 const MOCK_DEALS: Deal[] = [
@@ -81,7 +81,7 @@ export const SearchScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [searching, setSearching] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
-  const [sortBy, setSortBy] = useState('distance');
+  const [sortBy, setSortBy] = useState('newest');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -97,7 +97,9 @@ export const SearchScreen: React.FC = () => {
 
     try {
       let results: Deal[] = [];
+
       if (userLat && userLon) {
+        // Geo-aware search: backend sorts by distance automatically
         const params = new URLSearchParams({
           lat: String(userLat),
           lon: String(userLon),
@@ -115,12 +117,28 @@ export const SearchScreen: React.FC = () => {
             results = data.items ?? data ?? [];
           }
         } catch { /* fall through to fallback */ }
+      } else {
+        // No location — search without geo filters
+        const params = new URLSearchParams({
+          page: String(currentPage),
+          pageSize: '20',
+          ...(query.trim() ? { query: query.trim() } : {}),
+          ...(activeCategory !== 'All' ? { category: activeCategory } : {}),
+          sortBy,
+        });
+        try {
+          const res = await fetch(`${API_BASE}/deals?${params.toString()}`);
+          if (res.ok) {
+            const data = await res.json();
+            results = data.items ?? data ?? [];
+          }
+        } catch { /* fall through to fallback */ }
       }
 
       if (results.length === 0) {
-        // Fallback to dealsApi.search
+        // Fallback to dealsApi (no location)
         const fallbackParams: Record<string, string | number> = {
-          sortBy: sortBy === 'distance' ? 'Newest' : sortBy === 'price_asc' ? 'LowestPrice' : 'Newest',
+          sortBy,
           page: currentPage,
           pageSize: 20,
           ...(query.trim() ? { query: query.trim() } : {}),

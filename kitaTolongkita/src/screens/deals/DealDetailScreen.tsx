@@ -7,6 +7,8 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  Platform,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -167,6 +169,51 @@ export const DealDetailScreen: React.FC = () => {
 
   const handleShare = () => {
     Alert.alert(t('deals.shareDeal'), t('deals.shareComingSoon'));
+  };
+
+  const handleOpenDirections = () => {
+    if (!dealLat || !dealLon) {
+      Alert.alert('No Coordinates', 'This deal does not have location coordinates yet.');
+      return;
+    }
+    const label = encodeURIComponent(displayDeal.title);
+    const coords = `${dealLat},${dealLon}`;
+
+    if (Platform.OS === 'ios') {
+      Linking.openURL(`http://maps.apple.com/?daddr=${coords}&q=${label}`);
+    } else {
+      // Android — offer choice between Google Maps and default
+      Linking.openURL(`geo:${dealLat},${dealLon}?q=${coords}(${label})`);
+    }
+  };
+
+  const handleOpenGoogleMaps = () => {
+    if (!dealLat || !dealLon) return;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${dealLat},${dealLon}`;
+    Linking.openURL(url);
+  };
+
+  const handleOpenWaze = () => {
+    if (!dealLat || !dealLon) return;
+    const url = `https://waze.com/ul?ll=${dealLat},${dealLon}&navigate=yes`;
+    Linking.openURL(url);
+  };
+
+  const handleShowMapOptions = () => {
+    if (!dealLat || !dealLon) {
+      Alert.alert('No Coordinates', 'This deal does not have location coordinates yet.');
+      return;
+    }
+    Alert.alert(
+      'Open in Maps',
+      'Choose an app to navigate to this pickup location',
+      [
+        { text: 'Apple Maps', onPress: handleOpenDirections },
+        { text: 'Google Maps', onPress: handleOpenGoogleMaps },
+        { text: 'Waze', onPress: handleOpenWaze },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
   };
 
   if (loading) {
@@ -348,6 +395,11 @@ export const DealDetailScreen: React.FC = () => {
                   </Text>
                 )}
               </View>
+              {dealLat && dealLon && (
+                <TouchableOpacity style={styles.directionsBtn} onPress={handleShowMapOptions}>
+                  <Text style={styles.directionsBtnText}>🧭</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
@@ -492,6 +544,12 @@ const styles = StyleSheet.create({
   locationName: { fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600', color: colors['on-surface'], marginBottom: 2 },
   locationAddress: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors['on-surface-variant'], lineHeight: 20 },
   locationDistance: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors['primary-container'], marginTop: 4 },
+  directionsBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center',
+    marginLeft: spacing.sm,
+  },
+  directionsBtnText: { fontSize: 18 },
   // Bottom CTA
   bottomCta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,

@@ -12,7 +12,9 @@ import {
   TextInput,
   FlatList,
   ActionSheetIOS,
+  Linking,
 } from 'react-native';
+import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
@@ -41,7 +43,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 export const PostDealScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const { latitude, longitude, isLoading: locLoading } = useLocation();
+  const { latitude, longitude, accuracy, isLoading: locLoading, permissionStatus, updateLocation } = useLocation();
 
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState('');
@@ -64,27 +66,60 @@ export const PostDealScreen: React.FC = () => {
   const [capturedLat, setCapturedLat] = useState<number | null>(null);
   const [capturedLon, setCapturedLon] = useState<number | null>(null);
 
+  // Reverse geocode GPS coords to a readable address
+  const reverseGeocode = async (lat: number, lon: number): Promise<string> => {
+    try {
+      const results = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+      if (results.length > 0) {
+        const r = results[0];
+        const parts = [r.street, r.city, r.region, r.country].filter(Boolean);
+        return parts.length > 0 ? parts.join(', ') : `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      }
+    } catch { /* fall through */ }
+    return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  };
+
   // Capture location when user taps location card
   const handleLocationCapture = async () => {
+    // If permission denied, prompt user to open settings
+    if (permissionStatus === 'denied') {
+      Alert.alert(
+        'Location Permission Required',
+        'Please enable location access in your device settings to use this feature.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ]
+      );
+      return;
+    }
+
+    // Request fresh location if not yet granted
+    if (permissionStatus !== 'granted') {
+      await updateLocation();
+    }
+
     if (latitude && longitude) {
       setCapturedLat(latitude);
       setCapturedLon(longitude);
-      setPickupLocation(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
-      // Fetch nearby suggestions
-      await fetchNearbyDeals(latitude, longitude, selectedCategory);
+      const address = await reverseGeocode(latitude, longitude);
+      setPickupLocation(address);
+      // Fetch nearby suggestions only when lookup is already enabled
+      if (enableLookup) {
+        await fetchNearbyDeals(latitude, longitude);
+      }
     } else {
-      Alert.alert('Location Unavailable', 'Could not get your current location. Please enable location services.');
+      Alert.alert('Location Unavailable', 'Could not get your current location. Please ensure location services are enabled.');
     }
   };
 
-  const fetchNearbyDeals = async (lat: number, lon: number, category: string) => {
+  const fetchNearbyDeals = async (lat: number, lon: number) => {
     setNearbyLoading(true);
     try {
       const params = new URLSearchParams({
-        lat: String(lat),
-        lon: String(lon),
+        latitude: String(lat),
+        longitude: String(lon),
         radiusKm: '2',
-        ...(category && category !== 'All' ? { category } : {}),
       });
       const res = await fetch(`${API_BASE}/deals/suggest-nearby?${params.toString()}`);
       if (res.ok) {
@@ -251,8 +286,8 @@ export const PostDealScreen: React.FC = () => {
         maxMembers: parseInt(maxMembers, 10),
         deadline: deadline.toISOString().split('T')[0],
         pickupLocation: pickupLocation.trim(),
-        latitude: capturedLat ?? undefined,
-        longitude: capturedLon ?? undefined,
+        latitude: enableLookup ? (capturedLat ?? undefined) : undefined,
+        longitude: enableLookup ? (capturedLon ?? undefined) : undefined,
         hashtags: hashtags.length > 0 ? hashtags : undefined,
         imageUrls: uploadedUrls,
       };
@@ -471,12 +506,15 @@ export const PostDealScreen: React.FC = () => {
               <Text style={styles.locationIcon}>📍</Text>
               <View style={styles.locationInfo}>
                 <Text style={styles.locationName}>
-                  {capturedLat && capturedLon ? 'Location captured ✓' : 'Tap to use current location'}
+                  {capturedLat && capturedLon ? 'Location captured ✓' : locLoading ? 'Getting location...' : 'Tap to use current location'}
                 </Text>
                 {capturedLat && capturedLon && (
-                  <Text style={styles.locationCoords}>
-                    {capturedLat.toFixed(4)}, {capturedLon.toFixed(4)}
+                  <Text style={styles.locationCoords} numberOfLines={1}>
+                    {pickupLocation}
                   </Text>
+                )}
+                {accuracy != null && capturedLat && (
+                  <Text style={styles.accuracyText}>±{accuracy.toFixed(0)}m accuracy</Text>
                 )}
               </View>
               <Text style={styles.changeBtn}>{capturedLat ? 'Update' : 'Add'}</Text>
@@ -516,13 +554,25 @@ export const PostDealScreen: React.FC = () => {
             {/* Enable Lookup Toggle */}
             <View style={styles.toggleRow}>
               <View style={styles.toggleInfo}>
-                <Text style={styles.toggleLabel}>Enable Lookup</Text>
-                <Text style={styles.toggleHint}>Help buyers find your deal nearby</Text>
+                <Text style={styles.toggleLabel}>Enable Location Lookup</Text>
+                <Text style={styles.toggleHint}>Share your exact pickup location so buyers can find you nearby</Text>
               </View>
-              <View style={styles.comingSoonBadge}>
-                <Text style={styles.comingSoonText}>Coming Soon</Text>
+              <View
+                style={[styles.toggleSwitch, enableLookup && styles.toggleSwitchActive]}
+                onTouchEnd={() => {
+                  if (!capturedLat && !enableLookup) {
+                    Alert.alert('Capture Location First', 'Please tap "Add" to capture your location before enabling lookup.');
+                    return;
+                  }
+                  setEnableLookup(v => !v);
+                }}
+              >
+                <View style={[styles.toggleThumb, enableLookup && styles.toggleThumbActive]} />
               </View>
             </View>
+            {enableLookup && capturedLat && (
+              <Text style={styles.lookupActiveText}>📍 Location will be shared with buyers within 2km radius</Text>
+            )}
 
             {/* Nearby Similar Deals */}
             {nearbyDeals.length > 0 && (
@@ -705,19 +755,26 @@ const styles = StyleSheet.create({
   locationName: { ...typography['body-lg'], color: colors['on-surface'], fontWeight: '600' },
   locationCoords: { ...typography['body-sm'], color: colors['on-surface-variant'] },
   changeBtn: { ...typography['body-md'], color: colors.primary, fontWeight: '600' },
+  accuracyText: { ...typography['label-xs'], color: colors.secondary, marginTop: 2 },
   toggleRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: colors['surface-container'], padding: spacing.md, borderRadius: borderRadius.lg,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   toggleInfo: { flex: 1 },
   toggleLabel: { ...typography['body-lg'], color: colors['on-surface'], fontWeight: '600' },
   toggleHint: { ...typography['body-sm'], color: colors['on-surface-variant'] },
-  comingSoonBadge: {
-    backgroundColor: colors['surface-variant'], paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
+  toggleSwitch: {
+    width: 50, height: 30, borderRadius: 15, backgroundColor: colors['outline-variant'],
+    justifyContent: 'center', paddingHorizontal: 2,
   },
-  comingSoonText: { ...typography['label-sm'], color: colors['on-surface-variant'], fontStyle: 'italic' },
+  toggleSwitchActive: { backgroundColor: colors.secondary },
+  toggleThumb: {
+    width: 26, height: 26, borderRadius: 13, backgroundColor: colors.white,
+    alignSelf: 'flex-end',
+  },
+  toggleThumbActive: { alignSelf: 'flex-start', backgroundColor: colors.white },
+  lookupActiveText: { ...typography['label-xs'], color: colors.secondary, marginBottom: spacing.md, marginLeft: spacing.xs },
   nearbySection: { marginBottom: spacing.md },
   nearbyLoading: { ...typography['body-md'], color: colors['on-surface-variant'] },
   nearbyCard: {
