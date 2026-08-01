@@ -78,6 +78,7 @@ export const HomeScreen: React.FC = () => {
         countdown={formatCountdown(item.deadline)}
         membersJoined={item.membersJoined}
         membersTarget={item.maxMembers}
+        isSaved={item.isSaved}
         onPress={() => navigation.navigate('DealDetail', { dealId: item.id })}
       />
     </View>

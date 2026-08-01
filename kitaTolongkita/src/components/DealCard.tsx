@@ -11,6 +11,7 @@ interface DealCardProps {
   countdown?: string;
   membersJoined: number;
   membersTarget: number;
+  isSaved?: boolean;
   onPress?: () => void;
 }
 
@@ -43,6 +44,13 @@ export const DealCard: React.FC<DealCardProps> = ({
         {countdown && (
           <View style={styles.countdownBadge}>
             <Text style={styles.countdownText}>{countdown}</Text>
+          </View>
+        )}
+
+        {/* Saved Bookmark */}
+        {isSaved && (
+          <View style={styles.savedBadge}>
+            <Text style={{ fontSize: 12 }}>📌</Text>
           </View>
         )}
       </View>
@@ -121,6 +129,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: borderRadius.full,
+  },
+  savedBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   countdownText: {
     ...typography['label-sm'],

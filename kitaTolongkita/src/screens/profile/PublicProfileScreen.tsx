@@ -32,6 +32,11 @@ function DealCard({ deal, onPress }: { deal: Deal; onPress: () => void }) {
           <Text style={styles.dealImagePlaceholderText}>🏷️</Text>
         </View>
       )}
+      {deal.isSaved && (
+        <View style={styles.savedBadge}>
+          <Text style={{ fontSize: 12 }}>📌</Text>
+        </View>
+      )}
       <View style={styles.dealInfo}>
         <Text style={styles.dealTitle} numberOfLines={2}>{deal.title}</Text>
         <View style={styles.dealMeta}>
@@ -254,6 +259,17 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   dealImagePlaceholderText: { fontSize: 32 },
+  savedBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dealInfo: { flex: 1, padding: spacing.md },
   dealTitle: { ...typography['body-md'], color: colors['on-surface'], fontWeight: '600', marginBottom: spacing.xs },
   dealMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },

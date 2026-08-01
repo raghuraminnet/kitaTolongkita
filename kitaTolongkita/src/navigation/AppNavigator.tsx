@@ -29,6 +29,7 @@ import { ChatInboxScreen } from '../screens/notifications';
 import { SettingsScreen } from '../screens/settings';
 import { ReportFormScreen } from '../screens/reports/ReportFormScreen';
 import { MyReportsScreen } from '../screens/reports/MyReportsScreen';
+import { MySavesScreen } from '../screens/saves/MySavesScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -186,6 +187,11 @@ export default function AppNavigator() {
         <Stack.Screen
           name="MyReports"
           component={MyReportsScreen}
+          options={{ presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="MySaves"
+          component={MySavesScreen}
           options={{ animation: 'slide_from_right' }}
         />
       </Stack.Navigator>

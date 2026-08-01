@@ -151,6 +151,93 @@ export const authApi = {
   },
 };
 
+// ── Saved Deals API ─────────────────────────────────────────────────────────────
+
+export interface SavedList {
+  id: string;
+  name: string;
+  isPublic: boolean;
+  createdAt: string;
+  dealCount: number;
+}
+
+export interface SavedDealDealSummary {
+  id: string;
+  title: string;
+  category: string;
+  groupPrice: number;
+  originalPrice: number;
+  imageUrl?: string;
+  membersJoined: number;
+  minMembers: number;
+  status: string;
+  organizerName: string;
+  organizerAvatar?: string;
+  latitude?: number;
+  longitude?: number;
+  deadline: string;
+}
+
+export interface SavedDeal {
+  id: string;
+  dealId: string;
+  listId: string;
+  listName: string;
+  savedAt: string;
+  deal: SavedDealDealSummary;
+}
+
+export const savedDealsApi = {
+  /** Get all the current user's saved lists. */
+  getMyLists: async (): Promise<SavedList[]> => {
+    const token = await getAccessToken();
+    return request('GET', '/saved/lists', undefined, false, token ?? undefined) as Promise<SavedList[]>;
+  },
+
+  /** Create a new saved list. */
+  createList: async (name: string, isPublic = false): Promise<SavedList> => {
+    const token = await getAccessToken();
+    return request('POST', '/saved/lists', { name, isPublic }, false, token ?? undefined) as Promise<SavedList>;
+  },
+
+  /** Update a list's name or visibility. */
+  updateList: async (listId: string, data: { name?: string; isPublic?: boolean }): Promise<SavedList> => {
+    const token = await getAccessToken();
+    return request('PATCH', `/saved/lists/${listId}`, data, false, token ?? undefined) as Promise<SavedList>;
+  },
+
+  /** Delete a saved list. */
+  deleteList: async (listId: string): Promise<void> => {
+    const token = await getAccessToken();
+    return request('DELETE', `/saved/lists/${listId}`, undefined, false, token ?? undefined) as Promise<void>;
+  },
+
+  /** Get all saved deals, optionally filtered by listId. */
+  getSavedDeals: async (listId?: string): Promise<SavedDeal[]> => {
+    const token = await getAccessToken();
+    const url = listId ? `/saved?listId=${listId}` : '/saved';
+    return request('GET', url, undefined, false, token ?? undefined) as Promise<SavedDeal[]>;
+  },
+
+  /** Save a deal to a list (use listId or newListName to create a new list). */
+  saveDeal: async (dealId: string, listId?: string, newListName?: string): Promise<SavedDeal> => {
+    const token = await getAccessToken();
+    return request('POST', '/saved', { dealId, listId, newListName }, false, token ?? undefined) as Promise<SavedDeal>;
+  },
+
+  /** Remove a deal from a saved list. */
+  unsaveDeal: async (dealId: string, listId: string): Promise<void> => {
+    const token = await getAccessToken();
+    return request('DELETE', '/saved', { dealId, listId }, false, token ?? undefined) as Promise<void>;
+  },
+
+  /** Check which lists a deal is saved to by the current user. */
+  checkSaved: async (dealId: string): Promise<string[]> => {
+    const token = await getAccessToken();
+    return request('GET', `/saved/check/${dealId}`, undefined, false, token ?? undefined) as Promise<string[]>;
+  },
+};
+
 // ── Deals API ─────────────────────────────────────────────────────────────────
 
 export const dealsApi = {
@@ -246,6 +333,8 @@ export interface Deal {
   moderationStatus?: string;
   moderationRejectReason?: string;
   organizerId?: string;
+  isSaved?: boolean;
+  savedListIds?: string[];
 }
 
 export interface CreateDealPayload {

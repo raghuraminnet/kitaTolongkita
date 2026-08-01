@@ -10,13 +10,14 @@ import {
   Platform,
   Linking,
   ActionSheetIOS,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Button, ProgressBar, Avatar } from '../../components';
 import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
-import { dealsApi, request } from '../../api/client';
+import { dealsApi, savedDealsApi, request } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
 import type { Deal } from '../../api/client';
 
@@ -84,6 +85,9 @@ export const DealDetailScreen: React.FC = () => {
   const [userLiked, setUserLiked] = useState(false);
   const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
   const [hashtags, setHashtags] = useState<string[]>([]);
+  const [isSaved, setIsSaved] = useState(false);
+  const [savedListIds, setSavedListIds] = useState<string[]>([]);
+  const [myLists, setMyLists] = useState<{ id: string; name: string }[]>([]);
 
   const dealId = route.params?.dealId;
   const dealParam = route.params?.deal;
@@ -91,6 +95,7 @@ export const DealDetailScreen: React.FC = () => {
   useEffect(() => {
     loadDeal();
     loadReactions();
+    loadSavedState();
   }, []);
 
   const loadDeal = async () => {
@@ -121,6 +126,19 @@ export const DealDetailScreen: React.FC = () => {
         setUpvotes(data.upvotes ?? data.upvoteCount ?? 0);
         setLikes(data.likes ?? data.likeCount ?? 0);
       }
+    } catch { /* ignore */ }
+  };
+
+  const loadSavedState = async () => {
+    if (!dealId) return;
+    try {
+      const [lists, savedListIdsResult] = await Promise.all([
+        savedDealsApi.getMyLists(),
+        savedDealsApi.checkSaved(dealId),
+      ]);
+      setMyLists(lists);
+      setSavedListIds(savedListIdsResult);
+      setIsSaved(savedListIdsResult.length > 0);
     } catch { /* ignore */ }
   };
 
@@ -168,37 +186,143 @@ export const DealDetailScreen: React.FC = () => {
     }
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    const deal = displayDeal;
+    const shareUrl = `kitatolong://deal/${dealId ?? deal.id}`;
+    const message = `Check out this deal: ${deal.title} for RM${deal.groupPrice}!\n${shareUrl}`;
+
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['Cancel', 'Share Deal', 'Report this Deal'],
+          options: ['Cancel', 'Share Deal', 'Save to List', 'Report this Deal'],
           cancelButtonIndex: 0,
-          destructiveButtonIndex: 2,
+          destructiveButtonIndex: 3,
         },
-        (buttonIndex) => {
+        async (buttonIndex) => {
           if (buttonIndex === 1) {
-            Alert.alert(t('deals.shareDeal'), t('deals.shareComingSoon'));
+            await Share.share({ message });
           } else if (buttonIndex === 2) {
+            handleSave();
+          } else if (buttonIndex === 3) {
             navigation.navigate('ReportForm', {
               type: 'Deal',
               targetId: dealId!,
-              targetTitle: displayDeal.title,
+              targetTitle: deal.title,
             });
           }
         }
       );
     } else {
-      Alert.alert('More Options', 'Choose an action', [
-        { text: 'Share Deal', onPress: () => Alert.alert(t('deals.shareDeal'), t('deals.shareComingSoon')) },
+      Alert.alert('Deal Options', `\"${deal.title}\"`, [
+        { text: 'Share Deal', onPress: async () => { try { await Share.share({ message }); } catch {} } },
+        { text: 'Save to List', onPress: handleSave },
         { text: 'Report this Deal', style: 'destructive', onPress: () => {
-          navigation.navigate('ReportForm', {
-            type: 'Deal',
-            targetId: dealId!,
-            targetTitle: displayDeal.title,
-          });
+          navigation.navigate('ReportForm', { type: 'Deal', targetId: dealId!, targetTitle: deal.title });
         }},
         { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
+  };
+
+  const handleSave = () => {
+    if (myLists.length === 0) {
+      // No lists yet — offer to create one
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          { options: ['Cancel', 'Create New List'], cancelButtonIndex: 0 },
+          async (buttonIndex) => {
+            if (buttonIndex === 1) handleCreateListAndSave();
+          }
+        );
+      } else {
+        Alert.alert('Save Deal', 'You have no lists yet. Create one first?', [
+          { text: 'Create List', onPress: handleCreateListAndSave },
+          { text: 'Cancel', style: 'cancel' },
+        ]);
+      }
+      return;
+    }
+
+    const options = ['Cancel', ...myLists.map((l) => (savedListIds.includes(l.id) ? `✓ ${l.name}` : l.name)), 'Create New List'];
+    const destructiveIndex = savedListIds.length > 0 ? options.length : undefined;
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options, cancelButtonIndex: 0, destructiveButtonIndex: destructiveIndex },
+        async (buttonIndex) => {
+          if (buttonIndex === 0) return;
+          const selected = options[buttonIndex];
+          if (selected === 'Create New List') { handleCreateListAndSave(); return; }
+          const list = myLists.find((l) => `✓ ${l.name}` === selected || l.name === selected);
+          if (!list) return;
+          if (savedListIds.includes(list.id)) {
+            // Unsave
+            try {
+              await savedDealsApi.unsaveDeal(dealId!, list.id);
+              setSavedListIds((prev) => prev.filter((id) => id !== list.id));
+              setIsSaved(savedListIds.filter((id) => id !== list.id).length > 0);
+            } catch { Alert.alert('Error', 'Could not remove from list.'); }
+          } else {
+            // Save
+            try {
+              await savedDealsApi.saveDeal(dealId!, list.id);
+              setSavedListIds((prev) => [...prev, list.id]);
+              setIsSaved(true);
+            } catch { Alert.alert('Error', 'Could not save deal.'); }
+          }
+        }
+      );
+    } else {
+      Alert.alert('Save to List', 'Choose a list', [
+        ...myLists.map((l) => ({
+          text: savedListIds.includes(l.id) ? `✓ ${l.name}` : l.name,
+          onPress: async () => {
+            if (savedListIds.includes(l.id)) {
+              try {
+                await savedDealsApi.unsaveDeal(dealId!, l.id);
+                setSavedListIds((prev) => prev.filter((id) => id !== l.id));
+                setIsSaved(savedListIds.filter((id) => id !== l.id).length > 0);
+              } catch { Alert.alert('Error', 'Could not remove from list.'); }
+            } else {
+              try {
+                await savedDealsApi.saveDeal(dealId!, l.id);
+                setSavedListIds((prev) => [...prev, l.id]);
+                setIsSaved(true);
+              } catch { Alert.alert('Error', 'Could not save deal.'); }
+            }
+          },
+        })),
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
+  };
+
+  const handleCreateListAndSave = () => {
+    const isAlreadySaved = savedListIds.length > 0;
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Cancel', 'Save to Favorites'], cancelButtonIndex: 0 },
+        async (buttonIndex) => {
+          if (buttonIndex === 1) {
+            try {
+              await savedDealsApi.saveDeal(dealId!, undefined, 'Favorites');
+              await loadSavedState();
+            } catch { Alert.alert('Error', 'Could not save deal.'); }
+          }
+        }
+      );
+    } else {
+      Alert.alert('Create List', 'Enter a name for your new list', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Create "Favorites"',
+          onPress: async () => {
+            try {
+              await savedDealsApi.saveDeal(dealId!, undefined, 'Favorites');
+              await loadSavedState();
+            } catch { Alert.alert('Error', 'Could not save deal.'); }
+          },
+        },
       ]);
     }
   };
@@ -298,6 +422,14 @@ export const DealDetailScreen: React.FC = () => {
             onPress={() => navigation.goBack()}
           >
             <Text style={styles.backBtnText}>←</Text>
+          </TouchableOpacity>
+
+          {/* Save Button */}
+          <TouchableOpacity
+            style={[styles.saveBtn, { top: insets.top + 8, right: spacing.md + 48 }]}
+            onPress={handleSave}
+          >
+            <Text style={{ fontSize: 18 }}>{isSaved ? '📌' : '🔖'}</Text>
           </TouchableOpacity>
 
           {/* Share Button */}
@@ -506,6 +638,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
   },
   backBtnText: { fontSize: 20, fontWeight: '600', color: colors['on-surface'] },
+  saveBtn: {
+    position: 'absolute', width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
+  },
   shareBtn: {
     position: 'absolute', right: spacing.md, width: 40, height: 40, borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',

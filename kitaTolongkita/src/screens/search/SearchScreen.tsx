@@ -227,6 +227,11 @@ export const SearchScreen: React.FC = () => {
             <Text style={styles.thumbnailEmoji}>🛒</Text>
           </View>
         )}
+        {item.isSaved && (
+          <View style={styles.savedBadge}>
+            <Text style={{ fontSize: 11 }}>📌</Text>
+          </View>
+        )}
 
         {/* Info */}
         <View style={styles.dealInfo}>
@@ -433,6 +438,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors['surface-container-high'], alignItems: 'center', justifyContent: 'center',
   },
   thumbnailEmoji: { fontSize: 32 },
+  savedBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dealInfo: { flex: 1, marginLeft: spacing.sm, justifyContent: 'space-between' },
   dealTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
   dealCategoryChip: {
