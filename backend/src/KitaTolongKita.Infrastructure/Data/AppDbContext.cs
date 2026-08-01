@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
     public DbSet<PushToken> PushTokens => Set<PushToken>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
     public DbSet<Report> Reports => Set<Report>();
+    public DbSet<SavedList> SavedLists => Set<SavedList>();
+    public DbSet<SavedDeal> SavedDeals => Set<SavedDeal>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -89,6 +91,37 @@ public class AppDbContext : DbContext
                           : str.Split(',', StringSplitOptions.RemoveEmptyEntries)
                                 .Select(r => Enum.Parse<ReportReason>(r)).ToList()
                   );
+        });
+
+        modelBuilder.Entity<SavedList>(entity =>
+        {
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.UserId, e.Name }).IsUnique();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(30);
+            entity.HasOne(e => e.User)
+                  .WithMany(u => u.SavedLists)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SavedDeal>(entity =>
+        {
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.DealId);
+            entity.HasIndex(e => e.ListId);
+            entity.HasIndex(e => new { e.DealId, e.UserId, e.ListId }).IsUnique();
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Deal)
+                  .WithMany()
+                  .HasForeignKey(e => e.DealId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.List)
+                  .WithMany(l => l.SavedDeals)
+                  .HasForeignKey(e => e.ListId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

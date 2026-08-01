@@ -33,7 +33,10 @@ public record DealDto(
     // Computed
     double? DistanceKm,
     // Organizer
-    Guid? OrganizerId
+    Guid? OrganizerId,
+    // Saved state (populated by controller when user is authenticated)
+    bool IsSaved = false,
+    List<Guid>? SavedListIds = null
 );
 
 public record CreateDealRequest(

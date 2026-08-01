@@ -18,6 +18,7 @@ public class User
     public DateTime? LocationUpdatedAt { get; set; }
     public UserStatus Status { get; set; } = UserStatus.Active;
     public List<UserAddress> Addresses { get; set; } = [];
+    public List<SavedList> SavedLists { get; set; } = [];
 }
 
 public enum UserStatus

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Collections.Generic;
 using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Api.Middleware;
@@ -12,11 +13,13 @@ namespace KitaTolongKita.Api.Controllers;
 public class DealsController : ControllerBase
 {
     private readonly IDealService _deals;
+    private readonly ISavedDealService _saved;
     private readonly ILogger<DealsController> _logger;
 
-    public DealsController(IDealService deals, ILogger<DealsController> logger)
+    public DealsController(IDealService deals, ISavedDealService saved, ILogger<DealsController> logger)
     {
         _deals = deals;
+        _saved = saved;
         _logger = logger;
     }
 
@@ -38,6 +41,21 @@ public class DealsController : ControllerBase
             request = request with { Longitude = userLon };
 
         var result = await _deals.SearchDealsAsync(request);
+
+        var userId = GetUserId();
+        if (userId != null && result.Items.Count > 0)
+        {
+            var enriched = await EnrichDealsAsync(result.Items, userId.Value);
+            result = new PagedResult<DealDto>(
+                enriched,
+                result.TotalCount,
+                result.Page,
+                result.PageSize,
+                result.HasNextPage,
+                result.HasPreviousPage
+            );
+        }
+
         return Ok(result);
     }
 
@@ -46,7 +64,13 @@ public class DealsController : ControllerBase
     public async Task<IActionResult> GetDeal(Guid id)
     {
         var deal = await _deals.GetDealByIdAsync(id);
-        return deal == null ? NotFound() : Ok(deal);
+        if (deal == null) return NotFound();
+
+        var userId = GetUserId();
+        if (userId != null)
+            deal = await EnrichDealAsync(deal, userId.Value);
+
+        return Ok(deal);
     }
 
     /// <summary>Get deals near a location that need community verification.</summary>
@@ -79,6 +103,17 @@ public class DealsController : ControllerBase
     public async Task<IActionResult> GetDealsByUser(Guid userId)
     {
         var deals = await _deals.GetDealsByUserAsync(userId);
+        var myId = GetUserId();
+        if (myId != null && deals.Count > 0)
+            deals = await EnrichDealsAsync(deals, myId.Value);
+        return Ok(deals);
+    }
+
+    /// <summary>Get deals similar to a location (for public profile page).</summary>
+    [HttpGet("user/{userId:guid}")]
+    public async Task<IActionResult> GetDealsByUser(Guid userId)
+    {
+        var deals = await _deals.GetDealsByUserAsync(userId);
         return Ok(deals);
     }
 
@@ -88,6 +123,9 @@ public class DealsController : ControllerBase
     {
         var deals = await _deals.SuggestNearbyDealsAsync(
             request.Latitude, request.Longitude, request.RadiusKm, request.Category);
+        var myId = GetUserId();
+        if (myId != null && deals.Count > 0)
+            deals = await EnrichDealsAsync(deals, myId.Value);
         return Ok(deals);
     }
 
@@ -214,6 +252,19 @@ public class DealsController : ControllerBase
         }
     }
 
+    /// <summary>Get shareable link for a deal.</summary>
+    [HttpGet("{id:guid}/share")]
+    public async Task<IActionResult> GetShareLink(Guid id)
+    {
+        var deal = await _deals.GetDealByIdAsync(id);
+        if (deal == null) return NotFound();
+
+        // Returns a deep-link URL that the mobile app can open
+        var shareUrl = $"kitatolong://deal/{id}";
+        var text = $"Check out this deal: {deal.Title} for RM{deal.GroupPrice}! {shareUrl}";
+        return Ok(new { url = shareUrl, text });
+    }
+
     /// <summary>Get current user's orders.</summary>
     [Authorize]
     [HttpGet("orders")]
@@ -232,6 +283,27 @@ public class DealsController : ControllerBase
     {
         var idStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return Guid.TryParse(idStr, out var id) ? id : null;
+    }
+
+    /// <summary>Enrich a single DealDto with saved state for the authenticated user.</summary>
+    private async Task<DealDto> EnrichDealAsync(DealDto deal, Guid userId)
+    {
+        var listIds = await _saved.GetSavedListIdsAsync(userId, deal.Id);
+        return deal with { IsSaved = listIds.Count > 0, SavedListIds = listIds };
+    }
+
+    /// <summary>Enrich a list of DealDtos with saved state for the authenticated user (batch).</summary>
+    private async Task<List<DealDto>> EnrichDealsAsync(List<DealDto> deals, Guid userId)
+    {
+        if (deals.Count == 0) return deals;
+        var stateMap = await _saved.GetSavedStateBatchAsync(userId, deals.Select(d => d.Id));
+        var result = new List<DealDto>(deals.Count);
+        foreach (var deal in deals)
+        {
+            var listIds = stateMap.TryGetValue(deal.Id, out var ids) ? ids : new List<Guid>();
+            result.Add(deal with { IsSaved = listIds.Count > 0, SavedListIds = listIds });
+        }
+        return result;
     }
 }
 
