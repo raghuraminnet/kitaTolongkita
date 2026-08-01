@@ -384,3 +384,25 @@ export const reportsApi = {
     return (res as any)?.items ?? res ?? [];
   },
 };
+
+// ── User / Profile API ────────────────────────────────────────────────────────
+
+export interface PublicUserProfile {
+  id: string;
+  fullName: string;
+  avatarUrl?: string;
+  createdAt: string;
+  activeDealsCount: number;
+}
+
+export const usersApi = {
+  /** Get public profile of any user (for display on other users' screens). */
+  getPublicProfile: async (userId: string): Promise<PublicUserProfile> => {
+    return request('GET', `/users/${userId}`, undefined, true) as Promise<PublicUserProfile>;
+  },
+
+  /** Get public deals posted by a specific user. */
+  getDealsByUser: async (userId: string): Promise<Deal[]> => {
+    return request('GET', `/deals/user/${userId}`, undefined, true) as Promise<Deal[]>;
+  },
+};

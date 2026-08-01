@@ -23,6 +23,7 @@ import { MyDealsScreen } from '../screens/deals';
 import { OrdersScreen } from '../screens/orders';
 import { ProfileScreen } from '../screens/profile';
 import { ProfileSetupScreen } from '../screens/profile';
+import { PublicProfileScreen } from '../screens/profile/PublicProfileScreen';
 import { NotificationsScreen } from '../screens/notifications';
 import { ChatInboxScreen } from '../screens/notifications';
 import { SettingsScreen } from '../screens/settings';
@@ -166,6 +167,13 @@ export default function AppNavigator() {
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+
+        {/* User Profile */}
+        <Stack.Screen
+          name="PublicProfile"
+          component={PublicProfileScreen}
           options={{ animation: 'slide_from_right' }}
         />
 

@@ -189,6 +189,20 @@ public class DealService : IDealService
         return deals.Select(d => ToDealDto(d)).ToList();
     }
 
+    /// <summary>Get public active deals posted by a specific user (for public profile page).</summary>
+    public async Task<List<DealDto>> GetDealsByUserAsync(Guid userId)
+    {
+        var deals = await _db.Deals
+            .Where(d => d.OrganizerId == userId
+                && d.Status == DealStatus.Active
+                && d.ModerationStatus == ModerationStatus.Approved
+                && d.Status != DealStatus.Hidden)
+            .OrderByDescending(d => d.CreatedAt)
+            .ToListAsync();
+
+        return deals.Select(d => ToDealDto(d)).ToList();
+    }
+
     // ── Orders ─────────────────────────────────────────────────────────────────
 
     public async Task<DealOrderDto> JoinDealAsync(Guid dealId, Guid buyerId, int quantity, string? notes)

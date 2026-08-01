@@ -74,6 +74,14 @@ public class DealsController : ControllerBase
         return Ok(deals);
     }
 
+    /// <summary>Get public active deals posted by a specific user (for public profile page).</summary>
+    [HttpGet("user/{userId:guid}")]
+    public async Task<IActionResult> GetDealsByUser(Guid userId)
+    {
+        var deals = await _deals.GetDealsByUserAsync(userId);
+        return Ok(deals);
+    }
+
     /// <summary>Get deals similar to a location — shown when user posts a deal to warn about duplicates.</summary>
     [HttpGet("suggest-nearby")]
     public async Task<IActionResult> SuggestNearby([FromQuery] NearbyDealRequest request)

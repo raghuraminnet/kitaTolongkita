@@ -42,6 +42,28 @@ public class UsersController : ControllerBase
         ));
     }
 
+    /// <summary>Get a user's public profile (for display on other users' screens).</summary>
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetPublicProfile(Guid id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null) return NotFound(new { message = "User not found." });
+
+        // Count their active deals
+        var dealCount = await _db.Deals
+            .CountAsync(d => d.OrganizerId == id
+                && d.Status == DealStatus.Active
+                && d.ModerationStatus == ModerationStatus.Approved);
+
+        return Ok(new PublicUserProfileDto(
+            user.Id,
+            user.FullName,
+            user.AvatarUrl,
+            user.CreatedAt,
+            dealCount
+        ));
+    }
+
     /// <summary>Update the current user's profile.</summary>
     [HttpPut("me")]
     public async Task<IActionResult> UpdateMe([FromBody] UpdateProfileRequest request)
@@ -208,6 +230,15 @@ public class UsersController : ControllerBase
 public record UserProfileDto(
     Guid Id, string Email, string? Phone, string FullName,
     string? AvatarUrl, bool EmailVerified, bool PhoneVerified, DateTime CreatedAt
+);
+
+/// <summary>Public profile — returned when viewing another user's profile.</summary>
+public record PublicUserProfileDto(
+    Guid Id,
+    string FullName,
+    string? AvatarUrl,
+    DateTime CreatedAt,
+    int ActiveDealsCount
 );
 
 public record UpdateProfileRequest(

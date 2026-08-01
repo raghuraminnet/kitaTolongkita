@@ -14,6 +14,7 @@ public interface IDealService
     Task<DealDto> CreateDealAsync(CreateDealRequest request, Guid organizerId);
     Task<DealDto> UpdateDealAsync(Deal deal);
     Task<List<DealDto>> GetMyDealsAsync(Guid organizerId);
+    Task<List<DealDto>> GetDealsByUserAsync(Guid userId);
 
     // ── Orders ─────────────────────────────────────────────────────────────────
     Task<DealOrderDto> JoinDealAsync(Guid dealId, Guid buyerId, int quantity, string? notes);

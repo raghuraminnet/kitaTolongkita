@@ -370,7 +370,18 @@ export const DealDetailScreen: React.FC = () => {
           {/* Seller Info */}
           <View style={styles.sellerSection}>
             <Text style={styles.sectionTitle}>Seller</Text>
-            <View style={styles.sellerCard}>
+            <TouchableOpacity
+              style={styles.sellerCard}
+              onPress={() => {
+                if (displayDeal.organizerId) {
+                  navigation.navigate('PublicProfile', {
+                    userId: displayDeal.organizerId,
+                    userName: displayDeal.organizerName,
+                  });
+                }
+              }}
+              activeOpacity={0.8}
+            >
               <Avatar name={displayDeal.organizerName} size={48} verified />
               <View style={styles.sellerInfo}>
                 <Text style={styles.sellerName}>{displayDeal.organizerName}</Text>
@@ -379,7 +390,7 @@ export const DealDetailScreen: React.FC = () => {
               <TouchableOpacity style={styles.messageBtn} onPress={() => navigation.navigate('ChatInbox')}>
                 <Text style={{ fontSize: 18 }}>💬</Text>
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Hashtags */}
