@@ -236,6 +236,7 @@ export interface Deal {
   imageUrls: string[];
   status: string;
   organizerName: string;
+  organizerAvatar?: string;
   createdAt: string;
   latitude?: number;
   longitude?: number;

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Interfaces;
+using KitaTolongKita.Infrastructure.Data;
 
 namespace KitaTolongKita.Api.Controllers;
 
@@ -10,11 +11,13 @@ namespace KitaTolongKita.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
+    private readonly AppDbContext _db;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService auth, ILogger<AuthController> logger)
+    public AuthController(IAuthService auth, AppDbContext db, ILogger<AuthController> logger)
     {
         _auth = auth;
+        _db = db;
         _logger = logger;
     }
 
@@ -167,17 +170,26 @@ public class AuthController : ControllerBase
     /// <summary>Get current user profile.</summary>
     [Authorize]
     [HttpGet("me")]
-    public IActionResult GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser()
     {
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId)) return Unauthorized();
-        // User data is embedded in the JWT — return it directly
+        var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+            return Unauthorized();
+
+        // Fetch fresh user data from DB so avatarUrl is current
+        var user = await _db.Users.FindAsync(userId);
+        if (user == null) return NotFound();
+
         return Ok(new
         {
-            id = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-            email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value,
-            name = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value,
-            avatar = User.FindFirst("avatar_url")?.Value
+            id = user.Id,
+            email = user.Email,
+            fullName = user.FullName,
+            phone = user.Phone,
+            avatarUrl = user.AvatarUrl,
+            emailVerified = user.EmailVerified,
+            phoneVerified = user.PhoneVerified,
+            createdAt = user.CreatedAt,
         });
     }
 }

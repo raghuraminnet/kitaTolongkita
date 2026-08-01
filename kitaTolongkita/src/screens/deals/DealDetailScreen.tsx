@@ -382,7 +382,7 @@ export const DealDetailScreen: React.FC = () => {
               }}
               activeOpacity={0.8}
             >
-              <Avatar name={displayDeal.organizerName} size={48} verified />
+              <Avatar name={displayDeal.organizerName} uri={displayDeal.organizerAvatar} size={48} verified />
               <View style={styles.sellerInfo}>
                 <Text style={styles.sellerName}>{displayDeal.organizerName}</Text>
                 <Text style={styles.sellerMeta}>📍 {displayDeal.pickupLocation?.split(',')[0] ?? 'Kuala Lumpur'}</Text>
