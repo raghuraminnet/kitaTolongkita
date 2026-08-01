@@ -74,7 +74,9 @@ public class DealService : IDealService
     {
         var query = _db.Deals
             .Include(d => d.Orders)
-            .Where(d => d.Status == DealStatus.Active && d.ModerationStatus == ModerationStatus.Approved);
+            .Where(d => d.Status == DealStatus.Active
+                        && d.ModerationStatus == ModerationStatus.Approved
+                        && d.Status != DealStatus.Hidden);
 
         if (!string.IsNullOrEmpty(request.Query))
             query = query.Where(d => d.Title.Contains(request.Query) || d.Description.Contains(request.Query));
@@ -322,6 +324,7 @@ public class DealService : IDealService
         var deals = await _db.Deals
             .Where(d => d.Status == DealStatus.Active
                 && d.ModerationStatus == ModerationStatus.Approved
+                && d.Status != DealStatus.Hidden
                 && d.Latitude.HasValue && d.Longitude.HasValue)
             .Where(d => !verifiedDealIds.Contains(d.Id))
             .ToListAsync();

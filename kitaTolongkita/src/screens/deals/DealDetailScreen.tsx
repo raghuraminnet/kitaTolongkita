@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
   Linking,
+  ActionSheetIOS,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -168,7 +169,38 @@ export const DealDetailScreen: React.FC = () => {
   };
 
   const handleShare = () => {
-    Alert.alert(t('deals.shareDeal'), t('deals.shareComingSoon'));
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Share Deal', 'Report this Deal'],
+          cancelButtonIndex: 0,
+          destructiveButtonIndex: 2,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            Alert.alert(t('deals.shareDeal'), t('deals.shareComingSoon'));
+          } else if (buttonIndex === 2) {
+            navigation.navigate('ReportForm', {
+              type: 'Deal',
+              targetId: dealId!,
+              targetTitle: displayDeal.title,
+            });
+          }
+        }
+      );
+    } else {
+      Alert.alert('More Options', 'Choose an action', [
+        { text: 'Share Deal', onPress: () => Alert.alert(t('deals.shareDeal'), t('deals.shareComingSoon')) },
+        { text: 'Report this Deal', style: 'destructive', onPress: () => {
+          navigation.navigate('ReportForm', {
+            type: 'Deal',
+            targetId: dealId!,
+            targetTitle: displayDeal.title,
+          });
+        }},
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
   };
 
   const handleOpenDirections = () => {

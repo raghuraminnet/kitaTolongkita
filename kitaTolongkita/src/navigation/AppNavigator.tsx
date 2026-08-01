@@ -26,6 +26,8 @@ import { ProfileSetupScreen } from '../screens/profile';
 import { NotificationsScreen } from '../screens/notifications';
 import { ChatInboxScreen } from '../screens/notifications';
 import { SettingsScreen } from '../screens/settings';
+import { ReportFormScreen } from '../screens/reports/ReportFormScreen';
+import { MyReportsScreen } from '../screens/reports/MyReportsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -164,6 +166,18 @@ export default function AppNavigator() {
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+
+        {/* Reports */}
+        <Stack.Screen
+          name="ReportForm"
+          component={ReportFormScreen}
+          options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="MyReports"
+          component={MyReportsScreen}
           options={{ animation: 'slide_from_right' }}
         />
       </Stack.Navigator>

@@ -24,7 +24,9 @@ public enum UserStatus
 {
     Active,
     Suspended,
-    Deleted
+    Deleted,
+    /// <summary>Can browse and chat but cannot create new deals.</summary>
+    PostingAccessRevoked,
 }
 
 public class UserAddress

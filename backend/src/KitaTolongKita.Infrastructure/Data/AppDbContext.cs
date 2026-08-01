@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<UserNotification> UserNotifications => Set<UserNotification>();
     public DbSet<PushToken> PushTokens => Set<PushToken>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+    public DbSet<Report> Reports => Set<Report>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -69,6 +70,25 @@ public class AppDbContext : DbContext
         {
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => new { e.UserId, e.IsRead });
+        });
+
+        modelBuilder.Entity<Report>(entity =>
+        {
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => e.TargetId);
+            entity.HasIndex(e => e.ReporterId);
+            entity.HasIndex(e => new { e.ReporterId, e.TargetId, e.Status });
+
+            // Store ReportReason as a comma-separated string for SQLite compatibility
+            entity.Property(e => e.Reasons)
+                  .HasConversion(
+                      reasons => string.Join(',', reasons.Select(r => r.ToString())),
+                      str => string.IsNullOrEmpty(str)
+                          ? new List<ReportReason>()
+                          : str.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(r => Enum.Parse<ReportReason>(r)).ToList()
+                  );
         });
     }
 }

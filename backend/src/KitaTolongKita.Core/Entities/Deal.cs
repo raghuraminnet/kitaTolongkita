@@ -53,7 +53,9 @@ public enum DealStatus
     Active,
     Fulfilled,
     Cancelled,
-    Expired
+    Expired,
+    /// <summary>Hidden by admin after a report — excluded from search and app listings.</summary>
+    Hidden,
 }
 
 public enum DealCategory

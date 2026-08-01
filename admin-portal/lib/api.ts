@@ -124,6 +124,34 @@ export const api = {
     return request(`/audit-logs${q ? '?' + q : ''}`);
   },
 
+  // Reports
+  reports: (params?: { status?: string; type?: string; reason?: string; from?: string; to?: string; page?: number; pageSize?: number }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/reports${q ? '?' + q : ''}`);
+  },
+  reportById: (id: string) => request(`/reports/${id}`),
+  reportTakeAction: (id: string, data: { action: string; notes?: string }) =>
+    request(`/reports/${id}/action`, { method: 'POST', body: JSON.stringify(data) }),
+  reportUpdateStatus: (id: string, data: { status: string; notes?: string }) =>
+    request(`/reports/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) }),
+  reportStats: () => request('/reports/stats'),
+
+  reportActions: [
+    { key: 'None',              label: 'No Action (Dismiss)' },
+    { key: 'DealHidden',        label: 'Hide Deal' },
+    { key: 'UserWarned',        label: 'Warn User' },
+    { key: 'PostingRevoked',     label: 'Revoke Posting Access' },
+    { key: 'AccountSuspended',  label: 'Suspend Account' },
+    { key: 'AccountBanned',     label: 'Ban Account' },
+  ],
+  reportStatuses: ['New', 'UnderReview', 'ActionTaken', 'Dismissed', 'Resolved'],
+  reportTypes: ['Deal', 'User'],
+  reportReasons: [
+    'PriceGouging','MisleadingPricing','Counterfeit','ItemNotAsDescribed',
+    'DangerousProduct','SpamDuplicate','CoordinatedDeals','InappropriateContent',
+    'Harassment','FakeDeal','PhishingScam','FakeEngagement','SuspiciousPoster','Other',
+  ],
+
   // Admin users
   adminUsers: () => request('/admin-users'),
   createAdminUser: (data: { email: string; password: string; fullName: string; role: string }) =>

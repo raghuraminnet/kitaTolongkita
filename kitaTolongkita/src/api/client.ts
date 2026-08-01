@@ -315,3 +315,72 @@ export interface Notification {
   read: boolean;
   createdAt: string;
 }
+
+// ── Report Types ──────────────────────────────────────────────────────────────
+
+export type ReportType = 'Deal' | 'User';
+
+export type ReportReason =
+  | 'PriceGouging'
+  | 'MisleadingPricing'
+  | 'Counterfeit'
+  | 'ItemNotAsDescribed'
+  | 'DangerousProduct'
+  | 'SpamDuplicate'
+  | 'CoordinatedDeals'
+  | 'InappropriateContent'
+  | 'Harassment'
+  | 'FakeDeal'
+  | 'PhishingScam'
+  | 'FakeEngagement'
+  | 'SuspiciousPoster'
+  | 'Other';
+
+export type ReportStatus = 'New' | 'UnderReview' | 'ActionTaken' | 'Dismissed' | 'Resolved';
+
+export type ReportAction =
+  | 'None'
+  | 'DealHidden'
+  | 'UserWarned'
+  | 'PostingRevoked'
+  | 'AccountSuspended'
+  | 'AccountBanned';
+
+export interface Report {
+  id: string;
+  type: ReportType;
+  targetId: string;
+  targetTitle?: string;
+  reporterId: string;
+  reporterName?: string;
+  reasons: ReportReason[];
+  description?: string;
+  status: ReportStatus;
+  action: ReportAction;
+  adminNotes?: string;
+  resolvedAt?: string;
+  createdAt: string;
+}
+
+// ── Report API ────────────────────────────────────────────────────────────────
+
+export const reportsApi = {
+  /** Submit a new report. Throws on 409 if duplicate unresolved report exists. */
+  submit: async (payload: {
+    type: ReportType;
+    targetId: string;
+    reasons: ReportReason[];
+    description?: string;
+  }): Promise<Report> => {
+    const token = await getAccessToken();
+    const res = await request('POST', '/reports', payload, false, token ?? undefined);
+    return res as Report;
+  },
+
+  /** List the current user's own reports. */
+  mine: async (): Promise<Report[]> => {
+    const token = await getAccessToken();
+    const res = await request('GET', '/reports/mine', undefined, false, token ?? undefined);
+    return (res as any)?.items ?? res ?? [];
+  },
+};
