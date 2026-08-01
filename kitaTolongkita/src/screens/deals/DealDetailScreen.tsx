@@ -17,7 +17,7 @@ import { dealsApi, request } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
 import type { Deal } from '../../api/client';
 
-const API_BASE = 'http://168.235.81.222:5000/api';
+const API_BASE = 'http://76.13.219.191:5000/api';
 
 const MOCK_DEAL: Deal = {
   id: '1',
@@ -157,7 +157,8 @@ export const DealDetailScreen: React.FC = () => {
     if (!dealId) return;
     setShowVerifyPrompt(false);
     try {
-      await request('POST', `/deals/${dealId}/verify`, { answer }, true);
+      const offerStillAvailable = answer === 'yes';
+      await request('POST', `/deals/${dealId}/verify`, { offerStillAvailable }, true);
       Alert.alert('Thanks!', 'Your response helps the community.');
     } catch {
       Alert.alert('Error', 'Could not submit verification. Please try again.');

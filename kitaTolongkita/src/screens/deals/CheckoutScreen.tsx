@@ -5,11 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Button, Input, ProgressBar } from '../../components';
 import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import { dealsApi } from '../../api/client';
 
 interface CheckoutScreenProps {
   route?: any;
@@ -183,7 +185,14 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
         </View>
         <Button
           title="Commit Order"
-          onPress={() => navigation.navigate('OrderConfirmed', { dealId: deal.id, quantity })}
+          onPress={async () => {
+            try {
+              const order = await dealsApi.join(deal.id, quantity);
+              navigation.navigate('OrderConfirmed', { orderId: order.id, dealId: deal.id, quantity });
+            } catch (err: any) {
+              Alert.alert('Order Failed', err.message || 'Could not join deal. Please try again.');
+            }
+          }}
           variant="primary"
           style={styles.ctaButton}
         />

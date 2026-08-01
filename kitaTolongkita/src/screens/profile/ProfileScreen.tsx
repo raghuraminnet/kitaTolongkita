@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Avatar, Button } from '../../components';
 import { colors, typography, spacing, borderRadius } from '../../theme';
-import { authApi, clearTokens, getAccessToken } from '../../api/client';
+import { authApi, dealsApi, clearTokens, getAccessToken } from '../../api/client';
 import { useAuth } from '../../api/authContext';
 import type { User } from '../../api/client';
 

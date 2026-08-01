@@ -227,7 +227,7 @@ export const PostDealScreen: React.FC = () => {
             type: 'image/jpeg',
           } as any);
           const token = await getAccessToken();
-          const res = await fetch(`${API_BASE}/uploads/image`, {
+          const res = await fetch(`${API_BASE}/upload/image`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
             body: formData,

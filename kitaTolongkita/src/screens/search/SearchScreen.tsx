@@ -19,7 +19,7 @@ import { colors, typography, spacing, borderRadius, shadows } from '../../theme'
 import { dealsApi } from '../../api/client';
 import type { Deal } from '../../api/client';
 
-const API_BASE = 'http://168.235.81.222:5000/api';
+const API_BASE = 'http://76.13.219.191:5000/api';
 const CATEGORIES = ['All', 'Food', 'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Drinks'];
 const SORT_OPTIONS = [
   { key: 'distance', label: 'Distance' },
@@ -109,7 +109,7 @@ export const SearchScreen: React.FC = () => {
           sortBy,
         });
         try {
-          const res = await fetch(`${API_BASE}/search/deals?${params.toString()}`);
+          const res = await fetch(`${API_BASE}/deals?${params.toString()}`);
           if (res.ok) {
             const data = await res.json();
             results = data.items ?? data ?? [];
@@ -120,10 +120,10 @@ export const SearchScreen: React.FC = () => {
       if (results.length === 0) {
         // Fallback to dealsApi.search
         const fallbackParams: Record<string, string | number> = {
-          SortBy: sortBy === 'distance' ? 'Newest' : sortBy === 'price_asc' ? 'LowestPrice' : 'Newest',
-          Page: currentPage,
-          PageSize: 20,
-          ...(query.trim() ? { search: query.trim() } : {}),
+          sortBy: sortBy === 'distance' ? 'Newest' : sortBy === 'price_asc' ? 'LowestPrice' : 'Newest',
+          page: currentPage,
+          pageSize: 20,
+          ...(query.trim() ? { query: query.trim() } : {}),
         };
         const result = await dealsApi.search(fallbackParams);
         results = result.items ?? MOCK_DEALS;
