@@ -158,6 +158,56 @@ export const api = {
     request('/admin-users', { method: 'POST', body: JSON.stringify(data) }),
   deleteAdminUser: (id: number) =>
     request(`/admin-users/${id}`, { method: 'DELETE' }),
+
+  // ── Saved Lists ───────────────────────────────────────────────────────────────
+  savedLists: (params?: { search?: string; page?: number; pageSize?: number }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/saved-lists${q ? '?' + q : ''}`);
+  },
+  savedListDetail: (id: string) => request(`/saved-lists/${id}`),
+
+  // ── Notifications ────────────────────────────────────────────────────────────
+  notifications: (params?: { type?: string; isRead?: boolean; page?: number; pageSize?: number }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/notifications${q ? '?' + q : ''}`);
+  },
+  notificationStats: () => request('/notifications/stats'),
+
+  // ── Conversations / Chat ──────────────────────────────────────────────────────
+  conversations: (params?: { search?: string; page?: number; pageSize?: number }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/conversations${q ? '?' + q : ''}`);
+  },
+  chatMessages: (conversationId: string, page = 1, pageSize = 50) =>
+    request(`/conversations/${conversationId}/messages?page=${page}&pageSize=${pageSize}`),
+
+  // ── Push Tokens ─────────────────────────────────────────────────────────────
+  pushTokens: (params?: { search?: string; page?: number; pageSize?: number }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/push-tokens${q ? '?' + q : ''}`);
+  },
+
+  // ── Deal Statistics ──────────────────────────────────────────────────────────
+  dealStats: (days = 30) => request(`/stats/deals?days=${days}`),
+
+  // ── Bulk Actions ─────────────────────────────────────────────────────────────
+  bulkModerateDeals: (ids: string[], action: string, reason?: string) =>
+    request('/bulk/moderate-deals', {
+      method: 'POST',
+      body: JSON.stringify({ ids, action, reason }),
+    }),
+
+  // ── Categories ───────────────────────────────────────────────────────────────
+  categories: () => request('/categories'),
+  createCategory: (data: { name: string; description?: string }) =>
+    request('/categories', { method: 'POST', body: JSON.stringify(data) }),
+  updateCategory: (id: number, data: { name?: string; description?: string; isActive?: boolean }) =>
+    request(`/categories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteCategory: (id: number) =>
+    request(`/categories/${id}`, { method: 'DELETE' }),
+
+  // ── User Activity Timeline ────────────────────────────────────────────────────
+  userActivity: (userId: string) => request(`/users/${userId}/activity`),
 };
 
 export interface AiConfig {

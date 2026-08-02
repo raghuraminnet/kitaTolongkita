@@ -8,6 +8,12 @@ const NAV = [
   { href: '/reports', label: 'Reports', icon: '🚩' },
   { href: '/users', label: 'Users', icon: '👥' },
   { href: '/orders', label: 'Orders', icon: '📦' },
+  { href: '/saved-lists', label: 'Saved Lists', icon: '🔖' },
+  { href: '/notifications', label: 'Notifications', icon: '🔔' },
+  { href: '/conversations', label: 'Chat', icon: '💬' },
+  { href: '/push-tokens', label: 'Push Tokens', icon: '📱' },
+  { href: '/stats', label: 'Deal Stats', icon: '📈' },
+  { href: '/categories', label: 'Categories', icon: '🏷️' },
   { href: '/audit-logs', label: 'Audit Logs', icon: '📋' },
   { href: '/settings', label: 'Settings', icon: '⚙️' },
 ]
