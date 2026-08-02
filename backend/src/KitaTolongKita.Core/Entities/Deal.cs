@@ -50,6 +50,19 @@ public class Deal
     // ── Social ─────────────────────────────────────────────────────────────────
     public List<DealComment> Comments { get; set; } = [];
     public List<DealRepost> Reposts { get; set; } = [];
+
+    // ── Group Buy / Contributor fields ─────────────────────────────────────────
+    public Guid? ContributorId { get; set; }
+    public User? Contributor { get; set; }
+    public string DealType { get; set; } = "Standard"; // "Standard" | "GroupBuy"
+    public string LookupStatus { get; set; } = "Open"; // Open | Secured | InProcess | Dispatched | Completed | Expired
+    public DateTime? LookupDeadline { get; set; }
+    public int MinLookups { get; set; } = 1;
+    public int CurrentLookups { get; set; } = 0;
+    public DateTime? Etp { get; set; }  // Estimated Time of Purchase
+    public DateTime? Etd { get; set; }  // Estimated Time of Delivery
+    public string? DeliveryMode { get; set; } // "ContributorDeliver" | "SelfCollect"
+    public string? DispatchNotes { get; set; }
 }
 
 public enum DealStatus

@@ -7,6 +7,7 @@ const NAV = [
   { href: '/deals', label: 'Deal Moderation', icon: '🏷️', badge: true },
   { href: '/reports', label: 'Reports', icon: '🚩' },
   { href: '/comments', label: 'Comments', icon: '💬' },
+  { href: '/contributors', label: 'Contributors', icon: '🏅' },
   { href: '/users', label: 'Users', icon: '👥' },
   { href: '/orders', label: 'Orders', icon: '📦' },
   { href: '/saved-lists', label: 'Saved Lists', icon: '🔖' },

@@ -25,6 +25,9 @@ public class AppDbContext : DbContext
     public DbSet<DealComment> DealComments => Set<DealComment>();
     public DbSet<DealRepost> DealReposts => Set<DealRepost>();
     public DbSet<UserNotificationPreference> UserNotificationPreferences => Set<UserNotificationPreference>();
+    public DbSet<ContributorApplication> ContributorApplications => Set<ContributorApplication>();
+    public DbSet<DealLookup> DealLookups => Set<DealLookup>();
+    public DbSet<ContributorRating> ContributorRatings => Set<ContributorRating>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -190,6 +193,56 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.User)
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Contributor Applications ────────────────────────────────────────────────
+        modelBuilder.Entity<ContributorApplication>(entity =>
+        {
+            entity.HasIndex(e => e.UserId).IsUnique();
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Deal Lookups ──────────────────────────────────────────────────────────
+        modelBuilder.Entity<DealLookup>(entity =>
+        {
+            entity.HasIndex(e => new { e.DealId, e.UserId }).IsUnique();
+            entity.HasIndex(e => e.BookingId).IsUnique();
+            entity.HasIndex(e => e.DealId);
+            entity.HasIndex(e => e.Status);
+            entity.HasOne(e => e.Deal)
+                  .WithMany()
+                  .HasForeignKey(e => e.DealId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Contributor Ratings ───────────────────────────────────────────────────
+        modelBuilder.Entity<ContributorRating>(entity =>
+        {
+            entity.HasIndex(e => e.LookupId).IsUnique(); // one rating per lookup
+            entity.HasIndex(e => e.ContributorId);
+            entity.HasOne(e => e.Lookup)
+                  .WithMany()
+                  .HasForeignKey(e => e.LookupId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Deal)
+                  .WithMany()
+                  .HasForeignKey(e => e.DealId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Contributor)
+                  .WithMany()
+                  .HasForeignKey(e => e.ContributorId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Reviewer)
+                  .WithMany()
+                  .HasForeignKey(e => e.ReviewerId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

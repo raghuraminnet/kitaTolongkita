@@ -88,6 +88,9 @@ builder.Services.AddScoped<ISavedDealService, SavedDealService>();
 builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IRepostService, RepostService>();
+builder.Services.AddScoped<IContributorService, ContributorService>();
+builder.Services.AddScoped<ILookupService, LookupService>();
+builder.Services.AddScoped<IRatingService, RatingService>();
 
 // ── JWT Authentication ────────────────────────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "KitaTolongKita_SuperSecretKey_MinLength32Chars!";

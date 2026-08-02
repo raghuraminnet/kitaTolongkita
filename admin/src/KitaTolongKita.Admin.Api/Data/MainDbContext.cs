@@ -24,6 +24,7 @@ public class MainDbContext : DbContext
     public DbSet<MainPushToken> PushTokens => Set<MainPushToken>();
     public DbSet<MainUserFollow> UserFollows => Set<MainUserFollow>();
     public DbSet<MainDealComment> DealComments => Set<MainDealComment>();
+    public DbSet<MainContributorApplication> ContributorApplications => Set<MainContributorApplication>();
 
     protected override void OnModelCreating(ModelBuilder m)
     {
@@ -165,6 +166,18 @@ public class MainDbContext : DbContext
             .HasIndex(c => new { c.DealId, c.CreatedAt });
         m.Entity<MainDealComment>()
             .HasIndex(c => c.UserId);
+
+        // ── Contributor Application ─────────────────────────────────────────────
+        m.Entity<MainContributorApplication>(e => e.ToTable("contributor_applications", "public"));
+        m.Entity<MainContributorApplication>()
+            .HasOne(a => a.User)
+            .WithMany()
+            .HasForeignKey(a => a.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainContributorApplication>()
+            .HasIndex(a => a.Status);
+        m.Entity<MainContributorApplication>()
+            .HasIndex(a => a.UserId);
 
         base.OnModelCreating(m);
     }
@@ -361,5 +374,24 @@ public class MainDealComment
     public string ModerationStatus { get; set; } = "Approved";
 
     public MainDeal? Deal { get; set; }
+    public MainUser? User { get; set; }
+}
+
+public class MainContributorApplication
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public string Status { get; set; } = "Pending";
+    public string? RejectionReason { get; set; }
+    public string MobileNo { get; set; } = "";
+    public string IcPassportNo { get; set; } = "";
+    public string Nationality { get; set; } = "";
+    public string Race { get; set; } = "";
+    public string ResidentStatus { get; set; } = "";
+    public int? ReviewedBy { get; set; }
+    public DateTime? ReviewedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+
     public MainUser? User { get; set; }
 }
