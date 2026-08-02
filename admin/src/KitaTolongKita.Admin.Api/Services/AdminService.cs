@@ -710,11 +710,16 @@ public class AdminService : IAdminService
             .Take(10).AsNoTracking().ToListAsync();
 
         // Daily deals over time
-        var dailyDeals = await _mainDb.Deals
+        var dailyDealsRaw = await _mainDb.Deals
             .Where(d => d.CreatedAt >= since)
-            .GroupBy(d => d.CreatedAt.Date)
-            .Select(g => new DailyStat(g.Key.ToString("yyyy-MM-dd"), g.Count()))
-            .OrderBy(d => d.Date).AsNoTracking().ToListAsync();
+            .AsNoTracking()
+            .Select(d => d.CreatedAt.Date)
+            .ToListAsync();
+        var dailyDeals = dailyDealsRaw
+            .GroupBy(d => d.ToString("yyyy-MM-dd"))
+            .Select(g => new DailyStat(g.Key, g.Count()))
+            .OrderBy(d => d.Date)
+            .ToList();
 
         return new DealStats(
             totalDeals, approvedDeals, rejectedDeals, pendingDeals,

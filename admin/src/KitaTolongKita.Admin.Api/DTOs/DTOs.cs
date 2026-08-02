@@ -187,3 +187,11 @@ public record ExportResult(string DownloadUrl, string FileName, int RowCount, Da
 public record PagedResult<T>(List<T> Items, int TotalCount, int Page, int PageSize, int TotalPages);
 public record ApiResponse(bool Success, string? Message = null, object? Data = null);
 public record ApiMessage(bool Success, string Message);
+
+// ── Contributor Applications ──────────────────────────────────────────────────
+public record ContributorApplicationListItem(
+    Guid Id, Guid UserId, string FullName, string Email, string? Phone,
+    string MobileNo, string IcPassportNo, string Nationality, string Race,
+    string ResidentStatus, string Status, string? RejectionReason,
+    DateTime CreatedAt, DateTime? ApprovedAt
+);

@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using KitaTolongKita.Admin.Api.Entities;
-
-namespace KitaTolongKita.Admin.Api.Data;
+using BCrypt.Net;
 
 namespace KitaTolongKita.Admin.Api.Data;
 

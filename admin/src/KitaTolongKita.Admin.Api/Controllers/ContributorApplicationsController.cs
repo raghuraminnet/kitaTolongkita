@@ -35,13 +35,12 @@ public class ContributorApplicationsController : ControllerBase
         var items = await q
             .OrderByDescending(a => a.CreatedAt)
             .Skip((page - 1) * size).Take(size)
-            .Select(a => new
-            {
+            .Select(a => new ContributorApplicationListItem(
                 a.Id,
                 a.UserId,
-                fullName = a.User!.FullName,
-                email = a.User.Email,
-                phone = a.User.Phone,
+                a.User!.FullName,
+                a.User.Email,
+                a.User.Phone,
                 a.MobileNo,
                 a.IcPassportNo,
                 a.Nationality,
@@ -51,10 +50,10 @@ public class ContributorApplicationsController : ControllerBase
                 a.RejectionReason,
                 a.CreatedAt,
                 a.ApprovedAt
-            })
+            ))
             .ToListAsync();
 
-        return Ok(new PagedResult<dynamic>(items, total, page, size,
+        return Ok(new PagedResult<ContributorApplicationListItem>(items, total, page, size,
             (int)Math.Ceiling(total / (double)size)));
     }
 

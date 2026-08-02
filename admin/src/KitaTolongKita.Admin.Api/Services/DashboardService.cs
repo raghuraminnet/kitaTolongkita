@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
@@ -60,8 +61,8 @@ public class DashboardService : IDashboardService
         // Cache the result
         try
         {
-            var json = JsonSerializer.SerializeToUtf8(result);
-            await _cache.SetAsync(CacheKey, json, new DistributedCacheEntryOptions
+            var json = JsonSerializer.Serialize(result);
+            await _cache.SetAsync(CacheKey, Encoding.UTF8.GetBytes(json), new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = CacheDuration
             });
