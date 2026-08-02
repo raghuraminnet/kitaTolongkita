@@ -42,6 +42,10 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Title).IsRequired();
             entity.Property(e => e.GroupPrice).HasPrecision(10, 2);
             entity.Property(e => e.OriginalPrice).HasPrecision(10, 2);
+            entity.HasOne(d => d.Organizer)
+                  .WithMany()
+                  .HasForeignKey(d => d.OrganizerId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<DealOrder>(entity =>

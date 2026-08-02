@@ -21,6 +21,14 @@ builder.Services.AddDbContext<AdminDbContext>(opts => opts.UseNpgsql(connString)
 builder.Services.AddDbContext<MainDbContext>(opts => opts.UseNpgsql(mainConnString), ServiceLifetime.Transient);
 builder.Services.AddScoped<IMainDbService, MainDbService>();
 
+// ── Redis Distributed Cache ───────────────────────────────────────────────────────
+var adminRedisUrl = builder.Configuration["Redis:Url"] ?? "redis://redis:6379";
+builder.Services.AddStackExchangeRedisCache(opts =>
+{
+    opts.Configuration = adminRedisUrl;
+    opts.InstanceName = "kita-admin:";
+});
+
 // ── Redis ────────────────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<IConfigSyncService, RedisConfigSyncService>();
 
@@ -52,6 +60,7 @@ builder.Services.AddAuthorization(opts =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAiTestService, AiTestService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // ── Swagger ──────────────────────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();

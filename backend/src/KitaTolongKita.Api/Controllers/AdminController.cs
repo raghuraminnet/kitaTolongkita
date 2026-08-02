@@ -109,14 +109,19 @@ public class AdminController : ControllerBase
         if (deal == null) return NotFound();
 
         var adminId = GetAdminId();
+
+        // ── FIX: Set Status=Active so the deal is visible in app search ──
         deal.ModerationStatus = ModerationStatus.Approved;
         deal.ModerationRejectReason = null;
+        deal.Status = DealStatus.Active;   // ← was missing — admin-approved deals were invisible in ES search
         await _db.SaveChangesAsync();
 
-        try { await _es.UpdateDealAsync(deal); }
+        // Sync ES: now IsActive=true so it passes the ES filter
+        // Use RefreshDealIndexAsync to reload with Organizer for correct OrganizerName in ES
+        try { await _es.RefreshDealIndexAsync(dealId); }
         catch (Exception ex) { _logger.LogWarning(ex, "ES update failed after admin approve"); }
 
-        _logger.LogInformation("Admin {AdminId} approved deal {DealId}", adminId, dealId);
+        _logger.LogInformation("Admin {AdminId} approved deal {DealId} — now Active in ES", adminId, dealId);
         return Ok(new { message = "Deal approved and published." });
     }
 
@@ -128,10 +133,14 @@ public class AdminController : ControllerBase
         if (deal == null) return NotFound();
 
         var adminId = GetAdminId();
+
+        // ── FIX: Mark deal inactive so it disappears from app search immediately ──
         deal.ModerationStatus = ModerationStatus.Rejected;
         deal.ModerationRejectReason = body?.Reason ?? "Rejected by administrator.";
+        deal.Status = DealStatus.Cancelled;  // ← was missing — rejected deals could still appear in search
         await _db.SaveChangesAsync();
 
+        // Sync ES immediately so rejected deal disappears from search right away
         try { await _es.UpdateDealAsync(deal); }
         catch (Exception ex) { _logger.LogWarning(ex, "ES update failed after admin reject"); }
 

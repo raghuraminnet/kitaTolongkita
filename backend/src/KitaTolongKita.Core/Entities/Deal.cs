@@ -4,6 +4,7 @@ public class Deal
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid OrganizerId { get; set; }
+    public User? Organizer { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;

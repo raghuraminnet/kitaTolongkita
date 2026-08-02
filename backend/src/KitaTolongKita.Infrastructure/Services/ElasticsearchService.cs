@@ -1,7 +1,10 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Nest;
 using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Entities;
-using Microsoft.Extensions.Logging;
+using KitaTolongKita.Infrastructure.Data;
 
 namespace KitaTolongKita.Infrastructure.Services;
 
@@ -9,6 +12,7 @@ public interface IElasticsearchService
 {
     Task IndexDealAsync(Deal deal);
     Task UpdateDealAsync(Deal deal);
+    Task RefreshDealIndexAsync(Guid dealId);
     Task DeleteDealAsync(Guid dealId);
     Task<(List<DealDto> Items, int TotalCount)> SearchDealsAsync(DealSearchRequest request);
     Task<List<DealDto>> SuggestNearbyAsync(double lat, double lon, double radiusKm, string? category, int limit = 5);
@@ -20,12 +24,17 @@ public class ElasticsearchService : IElasticsearchService
 {
     private readonly IElasticClient _client;
     private readonly ILogger<ElasticsearchService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
     private const string IndexName = "deals";
 
-    public ElasticsearchService(IElasticClient client, ILogger<ElasticsearchService> logger)
+    public ElasticsearchService(
+        IElasticClient client,
+        ILogger<ElasticsearchService> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _client = client;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task EnsureIndexExistsAsync()
@@ -67,6 +76,7 @@ public class ElasticsearchService : IElasticsearchService
                     .Number(n => n.Name(n => n.UpvoteCount).Type(NumberType.Integer))
                     .Number(n => n.Name(n => n.LikeCount).Type(NumberType.Integer))
                     .Keyword(k => k.Name(n => n.ModerationStatus))
+                    .Text(t => t.Name(n => n.OrganizerName).Analyzer("standard").Boost(0.5))
                     .Boolean(b => b.Name(n => n.IsActive))
                 )
             )
@@ -86,7 +96,26 @@ public class ElasticsearchService : IElasticsearchService
 
     public async Task UpdateDealAsync(Deal deal)
     {
-        await IndexDealAsync(deal); // Upsert
+        // Upsert via Index — the existing doc is replaced entirely with the latest deal data
+        await IndexDealAsync(deal);
+    }
+
+    /// <summary>Force-reload a deal from DB with its Organizer populated, then re-index to ES.</summary>
+    public async Task RefreshDealIndexAsync(Guid dealId)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var deal = await db.Deals
+            .Include(d => d.Organizer)
+            .FirstOrDefaultAsync(d => d.Id == dealId);
+        if (deal == null)
+        {
+            _logger.LogWarning("RefreshDealIndexAsync: deal {DealId} not found", dealId);
+            return;
+        }
+        await IndexDealAsync(deal);
+        _logger.LogInformation("RefreshDealIndexAsync: re-indexed deal {DealId} with organizer {OrganizerName}",
+            dealId, deal.Organizer?.FullName ?? "(none)");
     }
 
     public async Task DeleteDealAsync(Guid dealId)
@@ -297,6 +326,7 @@ public class ElasticsearchService : IElasticsearchService
         ImageUrls = deal.ImageUrls,
         Status = deal.Status.ToString(),
         OrganizerId = deal.OrganizerId.ToString(),
+        OrganizerName = deal.Organizer?.FullName ?? "",
         CreatedAt = deal.CreatedAt,
         Location = deal.Latitude.HasValue && deal.Longitude.HasValue
             ? new GeoLocation(deal.Latitude.Value, deal.Longitude.Value)
@@ -310,7 +340,6 @@ public class ElasticsearchService : IElasticsearchService
     };
 
     private static DealDto ToDealDto(EsDeal doc, double? distanceKm = null) => new(
-        // doc.Id is string? — parse to Guid; fall back to Guid.Empty if missing/invalid.
         Guid.TryParse(doc.Id ?? "", out var id) ? id : Guid.Empty,
         doc.Title ?? "",
         doc.Description ?? "",
@@ -324,8 +353,8 @@ public class ElasticsearchService : IElasticsearchService
         doc.PickupLocation ?? "",
         doc.ImageUrls ?? new List<string>(),
         Enum.TryParse<DealStatus>(doc.Status ?? "Draft", out var s) ? s : DealStatus.Draft,
-        "", // OrganizerName — not stored in ES
-        null, // OrganizerAvatar
+        doc.OrganizerName ?? "",   // ✅ populated from ES index
+        null, // OrganizerAvatar — not stored in ES
         doc.CreatedAt,
         doc.Location?.Latitude,
         doc.Location?.Longitude,
@@ -336,7 +365,7 @@ public class ElasticsearchService : IElasticsearchService
         Enum.TryParse<ModerationStatus>(doc.ModerationStatus ?? "Pending", out var ms) ? ms : ModerationStatus.Pending,
         null,
         distanceKm,
-        null // OrganizerId — not stored in ES
+        Guid.TryParse(doc.OrganizerId ?? "", out var orgId) ? orgId : null  // ✅ populated from ES index
     );
 
     /// <summary>Calculate distance between two lat/lon points in km using Haversine formula.</summary>
@@ -372,6 +401,7 @@ internal class EsDeal
     public List<string> ImageUrls { get; set; } = new();
     public string Status { get; set; } = "Draft";
     public string OrganizerId { get; set; } = "";
+    public string OrganizerName { get; set; } = "";
     public DateTime CreatedAt { get; set; }
     public GeoLocation? Location { get; set; }
     public string? LocationName { get; set; }

@@ -23,6 +23,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddMemoryCache();
 builder.Services.AddHostedService<ConfigReloadService>();
 
+// ── Redis Distributed Cache ─────────────────────────────────────────────────
+var redisUrl = builder.Configuration["Redis:Url"] ?? "redis://redis:6379";
+builder.Services.AddStackExchangeRedisCache(opts =>
+{
+    opts.Configuration = redisUrl;
+    opts.InstanceName = "kita:";
+});
+builder.Services.AddScoped<ICacheService, RedisCacheService>();
+
 // ── ElasticSearch ────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<IElasticClient>(sp =>
 {
@@ -64,6 +73,8 @@ builder.Services.AddScoped<IModerationService>(sp =>
 // ── Background Services ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ModerationQueueService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ModerationQueueService>());
+builder.Services.AddSingleton<ElasticsearchCleanupService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<ElasticsearchCleanupService>());
 builder.Services.AddScoped<IPushNotificationService, FcmPushService>();
 
 // ── Core Services ─────────────────────────────────────────────────────────────

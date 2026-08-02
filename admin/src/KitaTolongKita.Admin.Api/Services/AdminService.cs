@@ -82,15 +82,18 @@ public class AdminService : IAdminService
     private readonly AdminDbContext _db;
     private readonly MainDbContext _mainDb;
     private readonly IConfigSyncService _configSync;
+    private readonly IDashboardService _dashboard;
     private readonly ILogger<AdminService> _logger;
 
     public AdminService(
         AdminDbContext db, MainDbContext mainDb,
-        IConfigSyncService configSync, ILogger<AdminService> logger)
+        IConfigSyncService configSync, IDashboardService dashboard,
+        ILogger<AdminService> logger)
     {
         _db = db;
         _mainDb = mainDb;
         _configSync = configSync;
+        _dashboard = dashboard;
         _logger = logger;
     }
 
@@ -202,6 +205,7 @@ public class AdminService : IAdminService
         await _mainDb.SaveChangesAsync();
         var admin = await _db.AdminUsers.FindAsync(adminId);
         await LogActionAsync(adminId, admin!.Email, isActive ? "ENABLED_USER" : "DISABLED_USER", "User", id);
+        await _dashboard.InvalidateCacheAsync();
         return true;
     }
 
@@ -247,6 +251,7 @@ public class AdminService : IAdminService
         var admin = await _db.AdminUsers.FindAsync(adminId);
         await LogActionAsync(adminId, admin!.Email, "APPROVED_DEAL", "Deal", id);
         await _configSync.PublishConfigChangeAsync("config:changed", new { key = "deal:approved", value = id });
+        await _dashboard.InvalidateCacheAsync();  // refresh dashboard KPIs immediately
         return true;
     }
 
@@ -260,6 +265,7 @@ public class AdminService : IAdminService
         await _mainDb.SaveChangesAsync();
         var admin = await _db.AdminUsers.FindAsync(adminId);
         await LogActionAsync(adminId, admin!.Email, "REJECTED_DEAL", "Deal", id, reason);
+        await _dashboard.InvalidateCacheAsync();  // refresh dashboard KPIs immediately
         return true;
     }
 
@@ -272,6 +278,7 @@ public class AdminService : IAdminService
         await _mainDb.SaveChangesAsync();
         var admin = await _db.AdminUsers.FindAsync(adminId);
         await LogActionAsync(adminId, admin!.Email, featured ? "FEATURED_DEAL" : "UNFEATURED_DEAL", "Deal", id);
+        await _dashboard.InvalidateCacheAsync();
         return true;
     }
 
@@ -310,6 +317,7 @@ public class AdminService : IAdminService
         await _mainDb.SaveChangesAsync();
         var admin = await _db.AdminUsers.FindAsync(adminId);
         await LogActionAsync(adminId, admin!.Email, $"UPDATE_ORDER_STATUS_{status.ToUpper()}", "Order", id);
+        await _dashboard.InvalidateCacheAsync();
         return true;
     }
 
@@ -745,6 +753,7 @@ public class AdminService : IAdminService
         }
 
         await _mainDb.SaveChangesAsync();
+        if (succeeded > 0) await _dashboard.InvalidateCacheAsync();
         return new BulkActionResult(succeeded, failed, errors);
     }
 

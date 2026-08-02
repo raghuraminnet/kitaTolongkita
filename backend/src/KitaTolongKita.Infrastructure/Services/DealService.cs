@@ -153,9 +153,10 @@ public class DealService : IDealService
         await _db.SaveChangesAsync();
 
         // Index in ElasticSearch (async, don't block)
+        // Use RefreshDealIndexAsync to ensure Organizer is loaded for correct OrganizerName in ES
         _ = Task.Run(async () =>
         {
-            try { await _es.IndexDealAsync(deal); }
+            try { await _es.RefreshDealIndexAsync(deal.Id); }
             catch (Exception ex) { _logger.LogWarning(ex, "Failed to index deal {DealId}", deal.Id); }
         });
 
@@ -173,7 +174,8 @@ public class DealService : IDealService
         _db.Deals.Update(deal);
         await _db.SaveChangesAsync();
 
-        try { await _es.UpdateDealAsync(deal); }
+        // Refresh from DB to ensure Organizer is loaded, then sync to ES
+        try { await _es.RefreshDealIndexAsync(deal.Id); }
         catch (Exception ex) { _logger.LogWarning(ex, "Failed to update deal in ES: {DealId}", deal.Id); }
 
         return ToDealDto(deal);
@@ -273,7 +275,7 @@ public class DealService : IDealService
         }
 
         await _db.SaveChangesAsync();
-        _ = Task.Run(async () => { try { await _es.UpdateDealAsync(deal); } catch { } });
+        _ = Task.Run(async () => { try { await _es.RefreshDealIndexAsync(dealId); } catch { } });
 
         return await GetReactionsAsync(dealId, userId);
     }
@@ -303,7 +305,7 @@ public class DealService : IDealService
         }
 
         await _db.SaveChangesAsync();
-        _ = Task.Run(async () => { try { await _es.UpdateDealAsync(deal); } catch { } });
+        _ = Task.Run(async () => { try { await _es.RefreshDealIndexAsync(dealId); } catch { } });
 
         return await GetReactionsAsync(dealId, userId);
     }
@@ -397,7 +399,7 @@ public class DealService : IDealService
         }
 
         await _db.SaveChangesAsync();
-        _ = Task.Run(async () => { try { await _es.UpdateDealAsync(deal); } catch { } });
+        _ = Task.Run(async () => { try { await _es.RefreshDealIndexAsync(dealId); } catch { } });
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
@@ -405,15 +407,32 @@ public class DealService : IDealService
     private async Task<List<DealDto>> EnrichWithOrganizerNamesAsync(List<DealDto> items)
     {
         if (items.Count == 0) return items;
-        var userIds = items.Select(i =>
-        {
-            // OrganizerId is in the deal — but we don't have it in DealDto directly.
-            // For now return empty list and just return items as-is
-            return Guid.Empty;
-        }).Distinct().ToList();
 
-        // We don't store OrganizerId in DealDto yet, so skip enrichment for now
-        return items;
+        // Collect distinct organizer IDs from search results
+        var orgIds = items
+            .Where(i => i.OrganizerId.HasValue && i.OrganizerId != Guid.Empty)
+            .Select(i => i.OrganizerId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (orgIds.Count == 0) return items;
+
+        // Batch-query user names from PostgreSQL
+        var userNames = await _db.Users
+            .Where(u => orgIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.FullName);
+
+        // Merge names back into DTOs — creates new list to satisfy immutability of record
+        return items.Select(item =>
+        {
+            if (item.OrganizerId.HasValue && item.OrganizerId != Guid.Empty
+                && userNames.TryGetValue(item.OrganizerId.Value, out var name))
+            {
+                // Record types are immutable — reconstruct with the name
+                return item with { OrganizerName = name };
+            }
+            return item;
+        }).ToList();
     }
 
     private static DealDto ToDealDto(Deal d, double? distanceKm = null) => new(

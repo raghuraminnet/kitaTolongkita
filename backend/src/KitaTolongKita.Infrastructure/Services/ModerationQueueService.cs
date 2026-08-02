@@ -103,8 +103,8 @@ public class ModerationQueueService : BackgroundService
 
         await db.SaveChangesAsync(ct);
 
-        // Update Elasticsearch index
-        try { await es.UpdateDealAsync(deal); }
+        // Update Elasticsearch index — use RefreshDealIndexAsync to ensure Organizer is loaded
+        try { await es.RefreshDealIndexAsync(dealId); }
         catch (Exception ex) { _logger.LogWarning(ex, "Failed to update ES after moderation"); }
 
         // Send push notification to deal organizer if status changed
