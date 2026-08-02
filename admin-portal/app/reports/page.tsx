@@ -119,7 +119,7 @@ export default function ReportsPage() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif', background: '#f5f5f5' }}>
-      <Sidebar active="reports" />
+      <Sidebar />
       <main style={{ flex: 1, padding: '24px 32px', overflow: 'auto' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>

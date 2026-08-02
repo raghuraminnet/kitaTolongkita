@@ -104,7 +104,7 @@ export const api = {
     request(`/ai-configs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteAiConfig: (id: number) =>
     request(`/ai-configs/${id}`, { method: 'DELETE' }),
-  testAiConnection: (data: { provider: string; apiKey?: string; endpoint?: string; deploymentName?: string; modelName?: string }) =>
+  testAiConnection: (data: { provider: string; apiKey?: string; endpoint?: string; baseUrl?: string; deploymentName?: string; modelName?: string }) =>
     request<{ success: boolean; message: string }>('/ai-configs/test', { method: 'POST', body: JSON.stringify(data) }),
 
   // Moderation Rules

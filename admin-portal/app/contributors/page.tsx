@@ -23,6 +23,8 @@ export default function ContributorsPage() {
 
   const loadContributors = () => {
     setLoading(true)
+    const token = localStorage.getItem('admin_token')
+    if (!token) { router.push('/'); return }
     // The backend has GET /api/admin/contributors
     fetch(`${process.env.NEXT_PUBLIC_ADMIN_API_URL || 'http://localhost:5001'}/api/admin/contributors?page=${page}&size=${pageSize}`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -47,7 +49,7 @@ export default function ContributorsPage() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif', background: '#f5f5f5' }}>
-      <Sidebar active="contributors" />
+      <Sidebar />
       <main style={{ flex: 1, padding: '24px 32px', overflow: 'auto' }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>🏅 Contributors</h1>
