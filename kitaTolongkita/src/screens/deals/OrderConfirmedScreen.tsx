@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -8,7 +9,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../../components';
-import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import { typography, spacing, borderRadius, shadows } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface OrderConfirmedScreenProps {
   route?: any;
@@ -19,6 +21,156 @@ export const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   route,
   navigation,
 }) => {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      flex: 1,
+      padding: spacing.md,
+      alignItems: 'center',
+    },
+    iconContainer: {
+      alignItems: 'center',
+      marginTop: spacing.xl,
+      marginBottom: spacing.xl,
+      position: 'relative',
+    },
+    successCircle: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: colors.secondary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkmark: {
+      fontSize: 48,
+      color: colors.white,
+      fontWeight: '700',
+    },
+    confetti: {
+      position: 'absolute',
+      top: -10,
+      left: -40,
+      right: -40,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    title: {
+      ...typography['headline-lg'],
+      color: colors['on-background'],
+      fontWeight: '800',
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
+    subtitle: {
+      ...typography['body-lg'],
+      color: colors['on-surface-variant'],
+      textAlign: 'center',
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.xl,
+    },
+    orderCard: {
+      width: '100%',
+      backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      ...shadows.card,
+      marginBottom: spacing.xl,
+    },
+    orderIdLabel: {
+      ...typography['label-sm'],
+      color: colors['on-surface-variant'],
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    orderId: {
+      ...typography['title-md'],
+      color: colors['on-surface'],
+      fontWeight: '700',
+      marginTop: 4,
+      marginBottom: spacing.md,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors['outline-variant'],
+      marginBottom: spacing.md,
+    },
+    statusRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    statusIcon: {
+      fontSize: 28,
+      marginRight: spacing.md,
+    },
+    statusTitle: {
+      ...typography['body-lg'],
+      color: colors['on-surface'],
+      fontWeight: '600',
+    },
+    statusSubtitle: {
+      ...typography['body-md'],
+      color: colors['on-surface-variant'],
+      marginTop: 2,
+    },
+    nextSteps: {
+      width: '100%',
+      marginBottom: spacing.xl,
+    },
+    nextTitle: {
+      ...typography['title-md'],
+      color: colors['on-background'],
+      marginBottom: spacing.md,
+    },
+    stepItem: {
+      flexDirection: 'row',
+      marginBottom: spacing.md,
+    },
+    stepNumber: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors['primary-container'],
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing.md,
+      marginTop: 2,
+    },
+    stepNumberText: {
+      ...typography['label-sm'],
+      color: colors.white,
+      fontWeight: '700',
+    },
+    stepContent: {
+      flex: 1,
+    },
+    stepTitle: {
+      ...typography['body-lg'],
+      color: colors['on-surface'],
+      fontWeight: '600',
+      marginBottom: 2,
+    },
+    stepDesc: {
+      ...typography['body-md'],
+      color: colors['on-surface-variant'],
+      lineHeight: 20,
+    },
+    bottomButtons: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+      gap: spacing.sm,
+    },
+    shareBtn: {
+      marginBottom: spacing.xs,
+    },
+    viewOrdersBtn: {},
+  });
   const insets = useSafeAreaInsets();
   const orderId = route?.params?.orderId || 'KTK-2024-0735';
 
@@ -125,150 +277,4 @@ export const OrderConfirmedScreen: React.FC<OrderConfirmedScreenProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  iconContainer: {
-    alignItems: 'center',
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
-    position: 'relative',
-  },
-  successCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkmark: {
-    fontSize: 48,
-    color: colors.white,
-    fontWeight: '700',
-  },
-  confetti: {
-    position: 'absolute',
-    top: -10,
-    left: -40,
-    right: -40,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  title: {
-    ...typography['headline-lg'],
-    color: colors['on-background'],
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    ...typography['body-lg'],
-    color: colors['on-surface-variant'],
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
-  },
-  orderCard: {
-    width: '100%',
-    backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    ...shadows.card,
-    marginBottom: spacing.xl,
-  },
-  orderIdLabel: {
-    ...typography['label-sm'],
-    color: colors['on-surface-variant'],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  orderId: {
-    ...typography['title-md'],
-    color: colors['on-surface'],
-    fontWeight: '700',
-    marginTop: 4,
-    marginBottom: spacing.md,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors['outline-variant'],
-    marginBottom: spacing.md,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusIcon: {
-    fontSize: 28,
-    marginRight: spacing.md,
-  },
-  statusTitle: {
-    ...typography['body-lg'],
-    color: colors['on-surface'],
-    fontWeight: '600',
-  },
-  statusSubtitle: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
-    marginTop: 2,
-  },
-  nextSteps: {
-    width: '100%',
-    marginBottom: spacing.xl,
-  },
-  nextTitle: {
-    ...typography['title-md'],
-    color: colors['on-background'],
-    marginBottom: spacing.md,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    marginBottom: spacing.md,
-  },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors['primary-container'],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-    marginTop: 2,
-  },
-  stepNumberText: {
-    ...typography['label-sm'],
-    color: colors.white,
-    fontWeight: '700',
-  },
-  stepContent: {
-    flex: 1,
-  },
-  stepTitle: {
-    ...typography['body-lg'],
-    color: colors['on-surface'],
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  stepDesc: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
-    lineHeight: 20,
-  },
-  bottomButtons: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    gap: spacing.sm,
-  },
-  shareBtn: {
-    marginBottom: spacing.xs,
-  },
-  viewOrdersBtn: {},
-});
+

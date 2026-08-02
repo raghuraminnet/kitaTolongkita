@@ -18,7 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Button, ProgressBar, Avatar } from '../../components';
-import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import { typography, spacing, borderRadius, shadows } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi, savedDealsApi, commentsApi, repostsApi, request } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
 import type { Deal } from '../../api/client';
@@ -73,6 +74,166 @@ interface ReactionCounts {
 }
 
 export const DealDetailScreen: React.FC = () => {
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    centered: { alignItems: 'center', justifyContent: 'center' },
+    loadingText: { ...typography['body-lg'], color: colors['on-surface-variant'] },
+    scrollContent: { paddingBottom: 160 },
+    imageContainer: { height: 300, backgroundColor: colors['surface-container'], position: 'relative' },
+    image: { width: '100%', height: '100%', resizeMode: 'cover' },
+    imagePlaceholder: {
+      width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center',
+      backgroundColor: colors['surface-container-high'],
+    },
+    placeholderEmoji: { fontSize: 64 },
+    backBtn: {
+      position: 'absolute', left: spacing.md, width: 40, height: 40, borderRadius: 20,
+      backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
+    },
+    backBtnText: { fontSize: 20, fontWeight: '600', color: colors['on-surface'] },
+    saveBtn: {
+      position: 'absolute', width: 40, height: 40, borderRadius: 20,
+      backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
+    },
+    shareBtn: {
+      position: 'absolute', right: spacing.md, width: 40, height: 40, borderRadius: 20,
+      backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
+    },
+    // Verify prompt
+    verifyBanner: {
+      backgroundColor: colors['secondary-container'],
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    },
+    verifyText: { ...typography['body-md'], color: colors['on-secondary-container'], marginBottom: spacing.sm },
+    verifyBtns: { flexDirection: 'row', gap: spacing.sm },
+    verifyBtn: {
+      flex: 1, paddingVertical: spacing.xs, borderRadius: borderRadius.md,
+      backgroundColor: colors['primary-container'], alignItems: 'center',
+    },
+    verifyBtnNo: { backgroundColor: colors['surface-container'] },
+    verifyBtnText: { ...typography['label-sm'], color: colors.white, fontWeight: '700' },
+    // Content
+    content: { padding: spacing.md },
+    priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+    price: { fontFamily: 'NunitoSans_800ExtraBold', fontSize: 32, fontWeight: '800', color: colors['primary-container'] },
+    originalPrice: {
+      fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
+      color: colors['on-surface-variant'], textDecorationLine: 'line-through',
+    },
+    discountBadge: {
+      backgroundColor: colors.error, paddingHorizontal: spacing.sm, paddingVertical: 2,
+      borderRadius: borderRadius.sm, marginLeft: spacing.xs,
+    },
+    discountText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, fontWeight: '700', color: colors.white },
+    title: {
+      fontFamily: 'NunitoSans_700Bold', fontSize: 22, fontWeight: '700',
+      color: colors['on-background'], marginBottom: spacing.md, lineHeight: 30,
+    },
+    countdownContainer: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: colors['secondary-container'], paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+      borderRadius: borderRadius.md, marginBottom: spacing.lg,
+    },
+    countdownIcon: { fontSize: 16, marginRight: spacing.xs },
+    countdownLabel: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-secondary-container'] },
+    countdownValue: { fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '700', color: colors['on-secondary-container'] },
+    progressSection: { marginBottom: spacing.lg },
+    progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
+    progressLabel: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], fontWeight: '600' },
+    progressValue: { fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '700', color: colors.secondary },
+    progressSubtext: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'], marginTop: spacing.xs },
+    divider: { height: 1, backgroundColor: colors['outline-variant'], marginVertical: spacing.lg },
+    sellerSection: { marginBottom: 0 },
+    sectionTitle: { fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700', color: colors['on-background'], marginBottom: spacing.md },
+    sellerCard: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: colors['surface-container-lowest'], padding: spacing.md, borderRadius: borderRadius.lg,
+      ...shadows.card,
+    },
+    sellerInfo: { flex: 1, marginLeft: spacing.md },
+    sellerName: { fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600', color: colors['on-surface'], marginBottom: 2 },
+    sellerMeta: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors['on-surface-variant'] },
+    messageBtn: {
+      width: 44, height: 44, borderRadius: 22,
+      backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center',
+    },
+    section: { marginBottom: 0 },
+    // Hashtags
+    hashtagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    hashtagChip: {
+      backgroundColor: colors['primary-container'], paddingHorizontal: spacing.sm, paddingVertical: 4,
+      borderRadius: borderRadius.full,
+    },
+    hashtagChipText: { ...typography['label-sm'], color: colors.white },
+    description: { fontFamily: 'Inter_400Regular', fontSize: 16, color: colors['on-surface'], lineHeight: 26 },
+    // Location
+    locationCard: {
+      flexDirection: 'row', backgroundColor: colors['surface-container-lowest'], padding: spacing.md,
+      borderRadius: borderRadius.lg, ...shadows.card,
+    },
+    locationIcon: { fontSize: 24, marginRight: spacing.md },
+    locationInfo: { flex: 1 },
+    locationName: { fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600', color: colors['on-surface'], marginBottom: 2 },
+    locationAddress: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors['on-surface-variant'], lineHeight: 20 },
+    locationDistance: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors['primary-container'], marginTop: 4 },
+    directionsBtn: {
+      width: 40, height: 40, borderRadius: 20,
+      backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center',
+      marginLeft: spacing.sm,
+    },
+    directionsBtnText: { fontSize: 18 },
+    // Bottom CTA
+    bottomCta: {
+      position: 'absolute', bottom: 0, left: 0, right: 0,
+      backgroundColor: colors['surface-container-lowest'], ...shadows.modal,
+      paddingTop: spacing.md, paddingHorizontal: spacing.md,
+    },
+    reactionRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+    reactionBtn: {
+      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      paddingVertical: spacing.sm, borderRadius: borderRadius.md,
+      backgroundColor: colors['surface-container'], gap: spacing.xs,
+      borderWidth: 1, borderColor: colors['outline-variant'],
+    },
+    reactionBtnActive: { backgroundColor: colors['primary-container'], borderColor: colors['primary-container'] },
+    reactionIcon: { fontSize: 16 },
+    reactionLabel: { ...typography['label-sm'], color: colors['on-surface'] },
+    reactionLabelActive: { color: colors.white, fontWeight: '700' },
+    ctaRow: { flexDirection: 'row', alignItems: 'center' },
+    ctaLeft: { marginRight: spacing.lg },
+    ctaPrice: { fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700', color: colors['on-surface'] },
+    ctaLabel: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'] },
+    ctaButton: { flex: 1 },
+    // ── Comments ────────────────────────────────────────────────────────────────
+    commentsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
+    repostBtn: {
+      paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+      borderRadius: borderRadius.full, borderWidth: 1.5, borderColor: colors.primary,
+    },
+    repostBtnActive: { backgroundColor: colors.primary },
+    repostBtnText: { ...typography['label-sm'], color: colors.primary, fontWeight: '700' },
+    repostBtnTextActive: { color: colors.white },
+    commentInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginBottom: spacing.md },
+    commentInputWrap: { flex: 1, borderWidth: 1, borderColor: colors['outline-variant'], borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xs },
+    commentInput: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], minHeight: 40, maxHeight: 100 },
+    charCount: { fontSize: 11, color: colors['on-surface-variant'], textAlign: 'right' },
+    commentSendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+    commentSendBtnDisabled: { backgroundColor: colors['outline-variant'] },
+    commentSendBtnText: { fontSize: 16, color: colors.white },
+    noCommentsText: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center', paddingVertical: spacing.lg },
+    commentItem: { flexDirection: 'row', marginBottom: spacing.md },
+    commentAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm },
+    commentAvatarText: { fontSize: 14, fontWeight: '700', color: colors.white },
+    commentBody: { flex: 1 },
+    commentHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 2 },
+    commentAuthor: { ...typography['label-sm'], color: colors['on-surface'], fontWeight: '700' },
+    commentTime: { fontSize: 11, color: colors['on-surface-variant'] },
+    commentContent: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], lineHeight: 20, flex: 1 },
+    commentDeleteBtn: { marginLeft: spacing.sm, padding: 4 },
+    commentDeleteText: { fontSize: 14 },
+  });
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
@@ -772,162 +933,4 @@ export const DealDetailScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  centered: { alignItems: 'center', justifyContent: 'center' },
-  loadingText: { ...typography['body-lg'], color: colors['on-surface-variant'] },
-  scrollContent: { paddingBottom: 160 },
-  imageContainer: { height: 300, backgroundColor: colors['surface-container'], position: 'relative' },
-  image: { width: '100%', height: '100%', resizeMode: 'cover' },
-  imagePlaceholder: {
-    width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors['surface-container-high'],
-  },
-  placeholderEmoji: { fontSize: 64 },
-  backBtn: {
-    position: 'absolute', left: spacing.md, width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
-  },
-  backBtnText: { fontSize: 20, fontWeight: '600', color: colors['on-surface'] },
-  saveBtn: {
-    position: 'absolute', width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
-  },
-  shareBtn: {
-    position: 'absolute', right: spacing.md, width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
-  },
-  // Verify prompt
-  verifyBanner: {
-    backgroundColor: colors['secondary-container'],
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-  },
-  verifyText: { ...typography['body-md'], color: colors['on-secondary-container'], marginBottom: spacing.sm },
-  verifyBtns: { flexDirection: 'row', gap: spacing.sm },
-  verifyBtn: {
-    flex: 1, paddingVertical: spacing.xs, borderRadius: borderRadius.md,
-    backgroundColor: colors['primary-container'], alignItems: 'center',
-  },
-  verifyBtnNo: { backgroundColor: colors['surface-container'] },
-  verifyBtnText: { ...typography['label-sm'], color: colors.white, fontWeight: '700' },
-  // Content
-  content: { padding: spacing.md },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  price: { fontFamily: 'NunitoSans_800ExtraBold', fontSize: 32, fontWeight: '800', color: colors['primary-container'] },
-  originalPrice: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
-    color: colors['on-surface-variant'], textDecorationLine: 'line-through',
-  },
-  discountBadge: {
-    backgroundColor: colors.error, paddingHorizontal: spacing.sm, paddingVertical: 2,
-    borderRadius: borderRadius.sm, marginLeft: spacing.xs,
-  },
-  discountText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, fontWeight: '700', color: colors.white },
-  title: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 22, fontWeight: '700',
-    color: colors['on-background'], marginBottom: spacing.md, lineHeight: 30,
-  },
-  countdownContainer: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors['secondary-container'], paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md, marginBottom: spacing.lg,
-  },
-  countdownIcon: { fontSize: 16, marginRight: spacing.xs },
-  countdownLabel: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-secondary-container'] },
-  countdownValue: { fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '700', color: colors['on-secondary-container'] },
-  progressSection: { marginBottom: spacing.lg },
-  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
-  progressLabel: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], fontWeight: '600' },
-  progressValue: { fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '700', color: colors.secondary },
-  progressSubtext: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'], marginTop: spacing.xs },
-  divider: { height: 1, backgroundColor: colors['outline-variant'], marginVertical: spacing.lg },
-  sellerSection: { marginBottom: 0 },
-  sectionTitle: { fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700', color: colors['on-background'], marginBottom: spacing.md },
-  sellerCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors['surface-container-lowest'], padding: spacing.md, borderRadius: borderRadius.lg,
-    ...shadows.card,
-  },
-  sellerInfo: { flex: 1, marginLeft: spacing.md },
-  sellerName: { fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600', color: colors['on-surface'], marginBottom: 2 },
-  sellerMeta: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors['on-surface-variant'] },
-  messageBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center',
-  },
-  section: { marginBottom: 0 },
-  // Hashtags
-  hashtagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  hashtagChip: {
-    backgroundColor: colors['primary-container'], paddingHorizontal: spacing.sm, paddingVertical: 4,
-    borderRadius: borderRadius.full,
-  },
-  hashtagChipText: { ...typography['label-sm'], color: colors.white },
-  description: { fontFamily: 'Inter_400Regular', fontSize: 16, color: colors['on-surface'], lineHeight: 26 },
-  // Location
-  locationCard: {
-    flexDirection: 'row', backgroundColor: colors['surface-container-lowest'], padding: spacing.md,
-    borderRadius: borderRadius.lg, ...shadows.card,
-  },
-  locationIcon: { fontSize: 24, marginRight: spacing.md },
-  locationInfo: { flex: 1 },
-  locationName: { fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600', color: colors['on-surface'], marginBottom: 2 },
-  locationAddress: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors['on-surface-variant'], lineHeight: 20 },
-  locationDistance: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors['primary-container'], marginTop: 4 },
-  directionsBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center',
-    marginLeft: spacing.sm,
-  },
-  directionsBtnText: { fontSize: 18 },
-  // Bottom CTA
-  bottomCta: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: colors['surface-container-lowest'], ...shadows.modal,
-    paddingTop: spacing.md, paddingHorizontal: spacing.md,
-  },
-  reactionRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  reactionBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: spacing.sm, borderRadius: borderRadius.md,
-    backgroundColor: colors['surface-container'], gap: spacing.xs,
-    borderWidth: 1, borderColor: colors['outline-variant'],
-  },
-  reactionBtnActive: { backgroundColor: colors['primary-container'], borderColor: colors['primary-container'] },
-  reactionIcon: { fontSize: 16 },
-  reactionLabel: { ...typography['label-sm'], color: colors['on-surface'] },
-  reactionLabelActive: { color: colors.white, fontWeight: '700' },
-  ctaRow: { flexDirection: 'row', alignItems: 'center' },
-  ctaLeft: { marginRight: spacing.lg },
-  ctaPrice: { fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700', color: colors['on-surface'] },
-  ctaLabel: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'] },
-  ctaButton: { flex: 1 },
 
-  // ── Comments ────────────────────────────────────────────────────────────────
-  commentsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
-  repostBtn: {
-    paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full, borderWidth: 1.5, borderColor: colors.primary,
-  },
-  repostBtnActive: { backgroundColor: colors.primary },
-  repostBtnText: { ...typography['label-sm'], color: colors.primary, fontWeight: '700' },
-  repostBtnTextActive: { color: colors.white },
-  commentInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginBottom: spacing.md },
-  commentInputWrap: { flex: 1, borderWidth: 1, borderColor: colors['outline-variant'], borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xs },
-  commentInput: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], minHeight: 40, maxHeight: 100 },
-  charCount: { fontSize: 11, color: colors['on-surface-variant'], textAlign: 'right' },
-  commentSendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  commentSendBtnDisabled: { backgroundColor: colors['outline-variant'] },
-  commentSendBtnText: { fontSize: 16, color: colors.white },
-  noCommentsText: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center', paddingVertical: spacing.lg },
-  commentItem: { flexDirection: 'row', marginBottom: spacing.md },
-  commentAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm },
-  commentAvatarText: { fontSize: 14, fontWeight: '700', color: colors.white },
-  commentBody: { flex: 1 },
-  commentHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 2 },
-  commentAuthor: { ...typography['label-sm'], color: colors['on-surface'], fontWeight: '700' },
-  commentTime: { fontSize: 11, color: colors['on-surface-variant'] },
-  commentContent: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], lineHeight: 20, flex: 1 },
-  commentDeleteBtn: { marginLeft: spacing.sm, padding: 4 },
-  commentDeleteText: { fontSize: 14 },
-});

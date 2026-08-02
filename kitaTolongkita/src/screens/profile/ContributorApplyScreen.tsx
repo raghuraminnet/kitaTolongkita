@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { contributorApi } from '../../api/client';
 
 const NATIONALITIES = ['Malaysian', 'Singaporean', 'Indonesian', 'Thai', 'Filipino', 'Vietnamese', 'Myanmar', 'Indian', 'Chinese', 'Other'];
@@ -13,6 +15,62 @@ const RACES = ['Malay', 'Chinese', 'Indian', 'Indigenous', 'Other'];
 const RESIDENT_STATUSES = ['Resident', 'Non-Resident'];
 
 export const ContributorApplyScreen: React.FC = () => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+      borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
+      backgroundColor: colors['surface-container-lowest'],
+    },
+    backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+    backBtnText: { fontSize: 22, color: colors['on-surface'] },
+    headerTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', flex: 1, textAlign: 'center' },
+    content: { padding: spacing.md, paddingBottom: spacing.xl * 2 },
+    intro: { backgroundColor: colors['surface-container-lowest'], borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg },
+    introTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.sm },
+    introBody: { ...typography['body-md'], color: colors['on-surface-variant'], lineHeight: 22 },
+    fieldGroup: { marginBottom: spacing.lg },
+    fieldLabel: { ...typography['label-md'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.sm },
+    input: {
+      backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors['outline-variant'],
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+      fontFamily: 'Inter_400Regular', fontSize: 16, color: colors['on-surface'],
+    },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    chip: {
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+      borderRadius: borderRadius.full, borderWidth: 1, borderColor: colors['outline-variant'],
+      backgroundColor: colors['surface-container-lowest'],
+    },
+    chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    chipText: { ...typography['label-sm'], color: colors['on-surface-variant'] },
+    chipTextActive: { color: colors.white, fontWeight: '700' },
+    disclaimer: {
+      backgroundColor: '#e3f2fd', borderRadius: borderRadius.lg,
+      padding: spacing.md, marginBottom: spacing.lg,
+    },
+    disclaimerText: { ...typography['label-sm'], color: '#1565c0', lineHeight: 18 },
+    submitBtn: {
+      backgroundColor: colors.primary, borderRadius: borderRadius.lg,
+      paddingVertical: spacing.md, alignItems: 'center',
+    },
+    submitBtnDisabled: { backgroundColor: colors['outline-variant'] },
+    submitBtnText: { ...typography['body-lg'], color: colors.white, fontWeight: '700' },
+    successState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+    successEmoji: { fontSize: 80, marginBottom: spacing.lg },
+    successTitle: { ...typography['headline-sm'], color: colors['on-surface'], fontWeight: '800', marginBottom: spacing.md, textAlign: 'center' },
+    successBody: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center', lineHeight: 24, marginBottom: spacing.xl },
+    doneBtn: {
+      backgroundColor: colors.primary, borderRadius: borderRadius.lg,
+      paddingHorizontal: spacing.xl * 2, paddingVertical: spacing.md,
+    },
+    doneBtnText: { ...typography['body-lg'], color: colors.white, fontWeight: '700' },
+  });
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
@@ -178,56 +236,4 @@ export const ContributorApplyScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-    borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
-    backgroundColor: colors['surface-container-lowest'],
-  },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  backBtnText: { fontSize: 22, color: colors['on-surface'] },
-  headerTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', flex: 1, textAlign: 'center' },
-  content: { padding: spacing.md, paddingBottom: spacing.xl * 2 },
-  intro: { backgroundColor: colors['surface-container-lowest'], borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.lg },
-  introTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.sm },
-  introBody: { ...typography['body-md'], color: colors['on-surface-variant'], lineHeight: 22 },
-  fieldGroup: { marginBottom: spacing.lg },
-  fieldLabel: { ...typography['label-md'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.sm },
-  input: {
-    backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors['outline-variant'],
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-    fontFamily: 'Inter_400Regular', fontSize: 16, color: colors['on-surface'],
-  },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: {
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full, borderWidth: 1, borderColor: colors['outline-variant'],
-    backgroundColor: colors['surface-container-lowest'],
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { ...typography['label-sm'], color: colors['on-surface-variant'] },
-  chipTextActive: { color: colors.white, fontWeight: '700' },
-  disclaimer: {
-    backgroundColor: '#e3f2fd', borderRadius: borderRadius.lg,
-    padding: spacing.md, marginBottom: spacing.lg,
-  },
-  disclaimerText: { ...typography['label-sm'], color: '#1565c0', lineHeight: 18 },
-  submitBtn: {
-    backgroundColor: colors.primary, borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md, alignItems: 'center',
-  },
-  submitBtnDisabled: { backgroundColor: colors['outline-variant'] },
-  submitBtnText: { ...typography['body-lg'], color: colors.white, fontWeight: '700' },
-  successState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  successEmoji: { fontSize: 80, marginBottom: spacing.lg },
-  successTitle: { ...typography['headline-sm'], color: colors['on-surface'], fontWeight: '800', marginBottom: spacing.md, textAlign: 'center' },
-  successBody: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center', lineHeight: 24, marginBottom: spacing.xl },
-  doneBtn: {
-    backgroundColor: colors.primary, borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing.xl * 2, paddingVertical: spacing.md,
-  },
-  doneBtnText: { ...typography['body-lg'], color: colors.white, fontWeight: '700' },
-});
+

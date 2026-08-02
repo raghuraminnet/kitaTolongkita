@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -18,7 +19,8 @@ import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
-import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import { typography, spacing, borderRadius, shadows } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi } from '../../api/client';
 import { getAccessToken } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
@@ -41,6 +43,172 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export const PostDealScreen: React.FC = () => {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    },
+    backBtn: { fontSize: 28, fontWeight: '300' },
+    headerTitle: { ...typography['title-md'], color: colors['on-background'] },
+    steps: {
+      flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, marginBottom: spacing.xl,
+    },
+    stepRow: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+    stepCircle: {
+      width: 28, height: 28, borderRadius: 14, borderWidth: 2,
+      borderColor: colors['outline-variant'], alignItems: 'center', justifyContent: 'center',
+    },
+    stepCircleActive: { backgroundColor: colors['primary-container'], borderColor: colors['primary-container'] },
+    stepNum: { ...typography['label-sm'], color: colors['on-surface-variant'] },
+    stepNumActive: { color: colors.white, fontWeight: '700' },
+    stepLine: { flex: 1, height: 2, backgroundColor: colors['outline-variant'] },
+    stepLineActive: { backgroundColor: colors['primary-container'] },
+    scrollContent: { padding: spacing.md, paddingBottom: 100, gap: spacing.md },
+    imageUploadSection: {
+      backgroundColor: colors['surface-container'], borderRadius: borderRadius.lg,
+      borderWidth: 2, borderStyle: 'dashed', borderColor: colors['outline-variant'],
+      padding: spacing.xl, alignItems: 'center', marginBottom: spacing.lg,
+    },
+    uploadIcon: { fontSize: 40, marginBottom: spacing.sm },
+    uploadText: { ...typography['body-lg'], color: colors['on-surface'], fontWeight: '600', marginBottom: 4 },
+    uploadHint: { ...typography['body-md'], color: colors['on-surface-variant'], marginBottom: spacing.md },
+    imagePickerBtn: {
+      backgroundColor: colors['primary-container'], paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm, borderRadius: borderRadius.full,
+    },
+    imagePickerBtnText: { ...typography['label-sm'], color: colors.white, fontWeight: '700' },
+    imageCarousel: { flexDirection: 'row', marginTop: spacing.sm },
+    imageItem: { position: 'relative', marginRight: spacing.sm },
+    thumbnailImage: { width: 80, height: 80, borderRadius: borderRadius.md, backgroundColor: colors['surface-container-high'] },
+    removeImageBtn: {
+      position: 'absolute', top: -6, right: -6,
+      width: 22, height: 22, borderRadius: 11,
+      backgroundColor: colors.error, alignItems: 'center', justifyContent: 'center',
+    },
+    removeImageBtnText: { color: colors.white, fontWeight: '700', fontSize: 14, lineHeight: 16 },
+    coverBadge: {
+      position: 'absolute', bottom: 4, left: 4,
+      backgroundColor: colors['primary-container'], paddingHorizontal: 4, paddingVertical: 1,
+      borderRadius: 4,
+    },
+    coverBadgeText: { color: colors.white, fontSize: 9, fontWeight: '700' },
+    addMoreImage: {
+      width: 80, height: 80, borderRadius: borderRadius.md,
+      backgroundColor: colors['surface-container-high'],
+      alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed',
+      borderColor: colors['outline-variant'],
+    },
+    addMoreImageText: { fontSize: 28, color: colors['on-surface-variant'] },
+    sectionTitle: { ...typography['title-md'], color: colors['on-background'], marginBottom: spacing.sm },
+    categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
+    categoryItem: {
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.full,
+      backgroundColor: colors['surface-container'], flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+    },
+    categoryItemSelected: { backgroundColor: colors['primary-container'] },
+    categoryEmoji: { fontSize: 14 },
+    categoryName: { ...typography['label-sm'], color: colors['on-surface'] },
+    categoryNameSelected: { color: colors.white },
+    input: { marginBottom: spacing.md },
+    inputLabel: {
+      ...typography['label-sm'],
+      color: colors['on-surface-variant'],
+      marginBottom: spacing.xs,
+      paddingHorizontal: spacing.xs,
+    },
+    datePickerTrigger: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors['surface-container'],
+      borderRadius: borderRadius.md,
+      paddingHorizontal: spacing.md,
+      height: 52,
+    },
+    datePickerText: {
+      ...typography['body-lg'],
+      color: colors['on-surface'],
+    },
+    datePickerIcon: { fontSize: 18 },
+    hashtagInputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+    hashtagInput: {
+      flex: 1, backgroundColor: colors['surface-container'], borderRadius: borderRadius.md,
+      paddingHorizontal: spacing.md, height: 44, ...typography['body-md'], color: colors['on-surface'],
+    },
+    addHashtagBtn: {
+      backgroundColor: colors['secondary-container'], paddingHorizontal: spacing.md,
+      height: 44, borderRadius: borderRadius.md, justifyContent: 'center',
+    },
+    addHashtagBtnText: { ...typography['label-sm'], color: colors['on-secondary-container'], fontWeight: '700' },
+    hashtagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.xs },
+    hashtagChip: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: colors['primary-container'], paddingHorizontal: spacing.sm, paddingVertical: 4,
+      borderRadius: borderRadius.full, gap: 4,
+    },
+    hashtagChipText: { ...typography['label-sm'], color: colors.white },
+    hashtagRemove: { color: colors.white, fontSize: 16, lineHeight: 16, fontWeight: '700' },
+    hashtagHint: { ...typography['body-sm'], color: colors['on-surface-variant'], marginBottom: spacing.md },
+    priceRow: { flexDirection: 'row', gap: spacing.md },
+    priceInput: { flex: 1 },
+    discountPreview: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      backgroundColor: colors['secondary-container'], padding: spacing.md, borderRadius: borderRadius.lg,
+      marginBottom: spacing.md,
+    },
+    discountLabel: { ...typography['body-md'], color: colors['on-secondary-container'] },
+    discountValue: { ...typography['title-md'], color: colors['on-secondary-container'], fontWeight: '800' },
+    btnRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
+    halfBtn: { flex: 1 },
+    locationCard: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: colors['surface-container-lowest'], padding: spacing.md, borderRadius: borderRadius.lg,
+      ...shadows.card, marginBottom: spacing.md,
+    },
+    locationIcon: { fontSize: 24, marginRight: spacing.md },
+    locationInfo: { flex: 1 },
+    locationName: { ...typography['body-lg'], color: colors['on-surface'], fontWeight: '600' },
+    locationCoords: { ...typography['body-sm'], color: colors['on-surface-variant'] },
+    changeBtn: { ...typography['body-md'], color: colors.primary, fontWeight: '600' },
+    accuracyText: { ...typography['label-xs'], color: colors.secondary, marginTop: 2 },
+    toggleRow: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      backgroundColor: colors['surface-container'], padding: spacing.md, borderRadius: borderRadius.lg,
+      marginBottom: spacing.sm,
+    },
+    toggleInfo: { flex: 1 },
+    toggleLabel: { ...typography['body-lg'], color: colors['on-surface'], fontWeight: '600' },
+    toggleHint: { ...typography['body-sm'], color: colors['on-surface-variant'] },
+    toggleSwitch: {
+      width: 50, height: 30, borderRadius: 15, backgroundColor: colors['outline-variant'],
+      justifyContent: 'center', paddingHorizontal: 2,
+    },
+    toggleSwitchActive: { backgroundColor: colors.secondary },
+    toggleThumb: {
+      width: 26, height: 26, borderRadius: 13, backgroundColor: colors.white,
+      alignSelf: 'flex-end',
+    },
+    toggleThumbActive: { alignSelf: 'flex-start', backgroundColor: colors.white },
+    lookupActiveText: { ...typography['label-xs'], color: colors.secondary, marginBottom: spacing.md, marginLeft: spacing.xs },
+    nearbySection: { marginBottom: spacing.md },
+    nearbyLoading: { ...typography['body-md'], color: colors['on-surface-variant'] },
+    nearbyCard: {
+      width: 140, backgroundColor: colors['surface-container-lowest'], borderRadius: borderRadius.lg,
+      padding: spacing.sm, marginRight: spacing.sm, ...shadows.card,
+    },
+    nearbyImage: { width: '100%', height: 80, borderRadius: borderRadius.md, marginBottom: spacing.xs },
+    nearbyImagePlaceholder: {
+      width: '100%', height: 80, borderRadius: borderRadius.md, marginBottom: spacing.xs,
+      backgroundColor: colors['surface-container-high'], alignItems: 'center', justifyContent: 'center',
+    },
+    nearbyTitle: { ...typography['label-sm'], color: colors['on-surface'], marginBottom: 2 },
+    nearbyPrice: { ...typography['body-sm'], color: colors['primary-container'], fontWeight: '700' },
+    nearbyCategory: { ...typography['label-xs'], color: colors['on-surface-variant'] },
+  });
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { latitude, longitude, accuracy, isLoading: locLoading, permissionStatus, updateLocation } = useLocation();
@@ -627,166 +795,4 @@ export const PostDealScreen: React.FC = () => {
 
 
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-  },
-  backBtn: { fontSize: 28, fontWeight: '300' },
-  headerTitle: { ...typography['title-md'], color: colors['on-background'] },
-  steps: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, marginBottom: spacing.xl,
-  },
-  stepRow: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  stepCircle: {
-    width: 28, height: 28, borderRadius: 14, borderWidth: 2,
-    borderColor: colors['outline-variant'], alignItems: 'center', justifyContent: 'center',
-  },
-  stepCircleActive: { backgroundColor: colors['primary-container'], borderColor: colors['primary-container'] },
-  stepNum: { ...typography['label-sm'], color: colors['on-surface-variant'] },
-  stepNumActive: { color: colors.white, fontWeight: '700' },
-  stepLine: { flex: 1, height: 2, backgroundColor: colors['outline-variant'] },
-  stepLineActive: { backgroundColor: colors['primary-container'] },
-  scrollContent: { padding: spacing.md, paddingBottom: 100, gap: spacing.md },
-  imageUploadSection: {
-    backgroundColor: colors['surface-container'], borderRadius: borderRadius.lg,
-    borderWidth: 2, borderStyle: 'dashed', borderColor: colors['outline-variant'],
-    padding: spacing.xl, alignItems: 'center', marginBottom: spacing.lg,
-  },
-  uploadIcon: { fontSize: 40, marginBottom: spacing.sm },
-  uploadText: { ...typography['body-lg'], color: colors['on-surface'], fontWeight: '600', marginBottom: 4 },
-  uploadHint: { ...typography['body-md'], color: colors['on-surface-variant'], marginBottom: spacing.md },
-  imagePickerBtn: {
-    backgroundColor: colors['primary-container'], paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm, borderRadius: borderRadius.full,
-  },
-  imagePickerBtnText: { ...typography['label-sm'], color: colors.white, fontWeight: '700' },
-  imageCarousel: { flexDirection: 'row', marginTop: spacing.sm },
-  imageItem: { position: 'relative', marginRight: spacing.sm },
-  thumbnailImage: { width: 80, height: 80, borderRadius: borderRadius.md, backgroundColor: colors['surface-container-high'] },
-  removeImageBtn: {
-    position: 'absolute', top: -6, right: -6,
-    width: 22, height: 22, borderRadius: 11,
-    backgroundColor: colors.error, alignItems: 'center', justifyContent: 'center',
-  },
-  removeImageBtnText: { color: colors.white, fontWeight: '700', fontSize: 14, lineHeight: 16 },
-  coverBadge: {
-    position: 'absolute', bottom: 4, left: 4,
-    backgroundColor: colors['primary-container'], paddingHorizontal: 4, paddingVertical: 1,
-    borderRadius: 4,
-  },
-  coverBadgeText: { color: colors.white, fontSize: 9, fontWeight: '700' },
-  addMoreImage: {
-    width: 80, height: 80, borderRadius: borderRadius.md,
-    backgroundColor: colors['surface-container-high'],
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed',
-    borderColor: colors['outline-variant'],
-  },
-  addMoreImageText: { fontSize: 28, color: colors['on-surface-variant'] },
-  sectionTitle: { ...typography['title-md'], color: colors['on-background'], marginBottom: spacing.sm },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
-  categoryItem: {
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.full,
-    backgroundColor: colors['surface-container'], flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-  },
-  categoryItemSelected: { backgroundColor: colors['primary-container'] },
-  categoryEmoji: { fontSize: 14 },
-  categoryName: { ...typography['label-sm'], color: colors['on-surface'] },
-  categoryNameSelected: { color: colors.white },
-  input: { marginBottom: spacing.md },
-  inputLabel: {
-    ...typography['label-sm'],
-    color: colors['on-surface-variant'],
-    marginBottom: spacing.xs,
-    paddingHorizontal: spacing.xs,
-  },
-  datePickerTrigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors['surface-container'],
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    height: 52,
-  },
-  datePickerText: {
-    ...typography['body-lg'],
-    color: colors['on-surface'],
-  },
-  datePickerIcon: { fontSize: 18 },
-  hashtagInputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  hashtagInput: {
-    flex: 1, backgroundColor: colors['surface-container'], borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md, height: 44, ...typography['body-md'], color: colors['on-surface'],
-  },
-  addHashtagBtn: {
-    backgroundColor: colors['secondary-container'], paddingHorizontal: spacing.md,
-    height: 44, borderRadius: borderRadius.md, justifyContent: 'center',
-  },
-  addHashtagBtnText: { ...typography['label-sm'], color: colors['on-secondary-container'], fontWeight: '700' },
-  hashtagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.xs },
-  hashtagChip: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors['primary-container'], paddingHorizontal: spacing.sm, paddingVertical: 4,
-    borderRadius: borderRadius.full, gap: 4,
-  },
-  hashtagChipText: { ...typography['label-sm'], color: colors.white },
-  hashtagRemove: { color: colors.white, fontSize: 16, lineHeight: 16, fontWeight: '700' },
-  hashtagHint: { ...typography['body-sm'], color: colors['on-surface-variant'], marginBottom: spacing.md },
-  priceRow: { flexDirection: 'row', gap: spacing.md },
-  priceInput: { flex: 1 },
-  discountPreview: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: colors['secondary-container'], padding: spacing.md, borderRadius: borderRadius.lg,
-    marginBottom: spacing.md,
-  },
-  discountLabel: { ...typography['body-md'], color: colors['on-secondary-container'] },
-  discountValue: { ...typography['title-md'], color: colors['on-secondary-container'], fontWeight: '800' },
-  btnRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
-  halfBtn: { flex: 1 },
-  locationCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors['surface-container-lowest'], padding: spacing.md, borderRadius: borderRadius.lg,
-    ...shadows.card, marginBottom: spacing.md,
-  },
-  locationIcon: { fontSize: 24, marginRight: spacing.md },
-  locationInfo: { flex: 1 },
-  locationName: { ...typography['body-lg'], color: colors['on-surface'], fontWeight: '600' },
-  locationCoords: { ...typography['body-sm'], color: colors['on-surface-variant'] },
-  changeBtn: { ...typography['body-md'], color: colors.primary, fontWeight: '600' },
-  accuracyText: { ...typography['label-xs'], color: colors.secondary, marginTop: 2 },
-  toggleRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: colors['surface-container'], padding: spacing.md, borderRadius: borderRadius.lg,
-    marginBottom: spacing.sm,
-  },
-  toggleInfo: { flex: 1 },
-  toggleLabel: { ...typography['body-lg'], color: colors['on-surface'], fontWeight: '600' },
-  toggleHint: { ...typography['body-sm'], color: colors['on-surface-variant'] },
-  toggleSwitch: {
-    width: 50, height: 30, borderRadius: 15, backgroundColor: colors['outline-variant'],
-    justifyContent: 'center', paddingHorizontal: 2,
-  },
-  toggleSwitchActive: { backgroundColor: colors.secondary },
-  toggleThumb: {
-    width: 26, height: 26, borderRadius: 13, backgroundColor: colors.white,
-    alignSelf: 'flex-end',
-  },
-  toggleThumbActive: { alignSelf: 'flex-start', backgroundColor: colors.white },
-  lookupActiveText: { ...typography['label-xs'], color: colors.secondary, marginBottom: spacing.md, marginLeft: spacing.xs },
-  nearbySection: { marginBottom: spacing.md },
-  nearbyLoading: { ...typography['body-md'], color: colors['on-surface-variant'] },
-  nearbyCard: {
-    width: 140, backgroundColor: colors['surface-container-lowest'], borderRadius: borderRadius.lg,
-    padding: spacing.sm, marginRight: spacing.sm, ...shadows.card,
-  },
-  nearbyImage: { width: '100%', height: 80, borderRadius: borderRadius.md, marginBottom: spacing.xs },
-  nearbyImagePlaceholder: {
-    width: '100%', height: 80, borderRadius: borderRadius.md, marginBottom: spacing.xs,
-    backgroundColor: colors['surface-container-high'], alignItems: 'center', justifyContent: 'center',
-  },
-  nearbyTitle: { ...typography['label-sm'], color: colors['on-surface'], marginBottom: 2 },
-  nearbyPrice: { ...typography['body-sm'], color: colors['primary-container'], fontWeight: '700' },
-  nearbyCategory: { ...typography['label-xs'], color: colors['on-surface-variant'] },
-});
+

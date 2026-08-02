@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -11,7 +12,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { DealCard, CategoryChip } from '../../components';
-import { colors, typography, spacing } from '../../theme';
+import { typography, spacing } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi } from '../../api/client';
 import type { Deal } from '../../api/client';
 
@@ -27,6 +29,132 @@ const CATEGORIES = [
 ];
 
 export const HomeScreen: React.FC = () => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    greeting: {
+      ...typography['body-md'],
+      color: colors['on-surface-variant'],
+    },
+    headerTitle: {
+      fontFamily: 'NunitoSans_800ExtraBold',
+      fontSize: 24,
+      fontWeight: '800',
+      color: colors['primary-container'],
+      lineHeight: 32,
+    },
+    notificationBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors['surface-container'],
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+    },
+    notificationIcon: {
+      fontSize: 20,
+    },
+    badge: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.error,
+    },
+    scrollContent: {
+      paddingBottom: 100,
+    },
+    heroBanner: {
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.lg,
+      backgroundColor: colors['primary-container'],
+      borderRadius: 20,
+      padding: spacing.lg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      overflow: 'hidden',
+    },
+    heroContent: {
+      flex: 1,
+    },
+    heroTitle: {
+      fontFamily: 'NunitoSans_800ExtraBold',
+      fontSize: 24,
+      fontWeight: '800',
+      color: colors.white,
+      lineHeight: 32,
+      marginBottom: spacing.xs,
+    },
+    heroSubtitle: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 14,
+      fontWeight: '400',
+      color: colors['on-primary'],
+      opacity: 0.9,
+    },
+    heroEmoji: {
+      fontSize: 56,
+      marginLeft: spacing.sm,
+    },
+    categoriesContainer: {
+      paddingHorizontal: spacing.md,
+      gap: spacing.sm,
+      marginBottom: spacing.lg,
+    },
+    categoryChip: {
+      marginRight: spacing.sm,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.md,
+    },
+    sectionTitle: {
+      fontFamily: 'NunitoSans_700Bold',
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors['on-background'],
+    },
+    seeAll: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors['primary-container'],
+    },
+    dealList: {
+      paddingHorizontal: spacing.md,
+      gap: spacing.md,
+    },
+    dealItem: {
+      marginBottom: spacing.sm,
+    },
+    loadingContainer: {
+      padding: spacing.xl,
+      alignItems: 'center',
+    },
+    loadingText: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 14,
+      color: colors['on-surface-variant'],
+    },
+  });
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -170,126 +298,4 @@ export const HomeScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  greeting: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
-  },
-  headerTitle: {
-    fontFamily: 'NunitoSans_800ExtraBold',
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors['primary-container'],
-    lineHeight: 32,
-  },
-  notificationBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors['surface-container'],
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  notificationIcon: {
-    fontSize: 20,
-  },
-  badge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.error,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  heroBanner: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.lg,
-    backgroundColor: colors['primary-container'],
-    borderRadius: 20,
-    padding: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  heroContent: {
-    flex: 1,
-  },
-  heroTitle: {
-    fontFamily: 'NunitoSans_800ExtraBold',
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.white,
-    lineHeight: 32,
-    marginBottom: spacing.xs,
-  },
-  heroSubtitle: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    fontWeight: '400',
-    color: colors['on-primary'],
-    opacity: 0.9,
-  },
-  heroEmoji: {
-    fontSize: 56,
-    marginLeft: spacing.sm,
-  },
-  categoriesContainer: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  categoryChip: {
-    marginRight: spacing.sm,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-  },
-  sectionTitle: {
-    fontFamily: 'NunitoSans_700Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors['on-background'],
-  },
-  seeAll: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors['primary-container'],
-  },
-  dealList: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.md,
-  },
-  dealItem: {
-    marginBottom: spacing.sm,
-  },
-  loadingContainer: {
-    padding: spacing.xl,
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    color: colors['on-surface-variant'],
-  },
-});
+

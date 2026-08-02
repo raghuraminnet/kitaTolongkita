@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -13,7 +14,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Avatar } from '../../components';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { chatApi } from '../../api/chat';
 import type { ConversationDto, ChatMessageDto } from '../../api/chat';
 
@@ -24,6 +26,107 @@ const MOCK_CONVERSATIONS: ConversationDto[] = [
 ];
 
 export const ChatInboxScreen: React.FC = () => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+      borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
+    },
+    backBtn: { fontSize: 24, color: colors['on-surface'] },
+    headerTitle: {
+      fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700',
+      color: colors['on-background'],
+    },
+    newChatBtn: { fontSize: 22 },
+    convList: { paddingBottom: 100 },
+    convItem: {
+      flexDirection: 'row', alignItems: 'center',
+      padding: spacing.md, borderBottomWidth: 1,
+      borderBottomColor: colors['outline-variant'],
+      backgroundColor: colors['surface-container-lowest'],
+    },
+    convContent: { flex: 1, marginLeft: spacing.md },
+    convHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    convName: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600',
+      color: colors['on-surface'],
+    },
+    convTime: {
+      fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'],
+    },
+    convFooter: { flexDirection: 'row', alignItems: 'center' },
+    convLastMessage: {
+      flex: 1, fontFamily: 'Inter_400Regular', fontSize: 14,
+      color: colors['on-surface-variant'],
+    },
+    unreadBadge: {
+      backgroundColor: colors['primary-container'], borderRadius: 10,
+      minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center',
+      marginLeft: spacing.sm,
+    },
+    unreadText: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 11, fontWeight: '600',
+      color: colors.white,
+    },
+    empty: { alignItems: 'center', paddingTop: 80 },
+    emptyEmoji: { fontSize: 56, marginBottom: spacing.md },
+    emptyTitle: {
+      fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
+      color: colors['on-background'], marginBottom: spacing.xs,
+    },
+    emptySubtitle: {
+      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
+    },
+    // Thread view
+    threadHeader: {
+      flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md, gap: spacing.md,
+      borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
+      backgroundColor: colors['surface-container-lowest'],
+    },
+    threadTitle: {
+      fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700',
+      color: colors['on-background'],
+    },
+    messageList: { padding: spacing.md, paddingBottom: spacing.xl },
+    messageBubble: {
+      maxWidth: '75%', borderRadius: borderRadius.lg,
+      padding: spacing.md, marginBottom: spacing.sm,
+    },
+    myMessage: { alignSelf: 'flex-end', backgroundColor: colors['primary-container'] },
+    theirMessage: { alignSelf: 'flex-start', backgroundColor: colors['surface-container'] },
+    messageText: { fontFamily: 'Inter_400Regular', fontSize: 15, lineHeight: 20 },
+    myMessageText: { color: colors.white },
+    theirMessageText: { color: colors['on-surface'] },
+    messageTime: { fontFamily: 'Inter_400Regular', fontSize: 11, marginTop: 4 },
+    myMessageTime: { color: 'rgba(255,255,255,0.7)', textAlign: 'right' },
+    theirMessageTime: { color: colors['on-surface-variant'] },
+    emptyMessages: { alignItems: 'center', paddingTop: 40 },
+    emptyText: {
+      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
+    },
+    inputRow: {
+      flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm, backgroundColor: colors['surface-container-lowest'],
+      borderTopWidth: 1, borderTopColor: colors['outline-variant'],
+      gap: spacing.sm,
+    },
+    textInput: {
+      flex: 1, backgroundColor: colors['surface-container'], borderRadius: borderRadius.lg,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontFamily: 'Inter_400Regular',
+      fontSize: 15, color: colors['on-surface'], maxHeight: 100,
+    },
+    sendBtn: {
+      width: 44, height: 44, borderRadius: 22, backgroundColor: colors['primary-container'],
+      alignItems: 'center', justifyContent: 'center',
+    },
+    sendBtnDisabled: { backgroundColor: colors['outline-variant'] },
+    sendBtnText: { fontSize: 18, color: colors.white },
+  });
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [conversations, setConversations] = useState<ConversationDto[]>([]);
@@ -203,101 +306,4 @@ export const ChatInboxScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-    borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
-  },
-  backBtn: { fontSize: 24, color: colors['on-surface'] },
-  headerTitle: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700',
-    color: colors['on-background'],
-  },
-  newChatBtn: { fontSize: 22 },
-  convList: { paddingBottom: 100 },
-  convItem: {
-    flexDirection: 'row', alignItems: 'center',
-    padding: spacing.md, borderBottomWidth: 1,
-    borderBottomColor: colors['outline-variant'],
-    backgroundColor: colors['surface-container-lowest'],
-  },
-  convContent: { flex: 1, marginLeft: spacing.md },
-  convHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  convName: {
-    fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600',
-    color: colors['on-surface'],
-  },
-  convTime: {
-    fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'],
-  },
-  convFooter: { flexDirection: 'row', alignItems: 'center' },
-  convLastMessage: {
-    flex: 1, fontFamily: 'Inter_400Regular', fontSize: 14,
-    color: colors['on-surface-variant'],
-  },
-  unreadBadge: {
-    backgroundColor: colors['primary-container'], borderRadius: 10,
-    minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center',
-    marginLeft: spacing.sm,
-  },
-  unreadText: {
-    fontFamily: 'Inter_600SemiBold', fontSize: 11, fontWeight: '600',
-    color: colors.white,
-  },
-  empty: { alignItems: 'center', paddingTop: 80 },
-  emptyEmoji: { fontSize: 56, marginBottom: spacing.md },
-  emptyTitle: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
-    color: colors['on-background'], marginBottom: spacing.xs,
-  },
-  emptySubtitle: {
-    fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
-  },
-  // Thread view
-  threadHeader: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md, gap: spacing.md,
-    borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
-    backgroundColor: colors['surface-container-lowest'],
-  },
-  threadTitle: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700',
-    color: colors['on-background'],
-  },
-  messageList: { padding: spacing.md, paddingBottom: spacing.xl },
-  messageBubble: {
-    maxWidth: '75%', borderRadius: borderRadius.lg,
-    padding: spacing.md, marginBottom: spacing.sm,
-  },
-  myMessage: { alignSelf: 'flex-end', backgroundColor: colors['primary-container'] },
-  theirMessage: { alignSelf: 'flex-start', backgroundColor: colors['surface-container'] },
-  messageText: { fontFamily: 'Inter_400Regular', fontSize: 15, lineHeight: 20 },
-  myMessageText: { color: colors.white },
-  theirMessageText: { color: colors['on-surface'] },
-  messageTime: { fontFamily: 'Inter_400Regular', fontSize: 11, marginTop: 4 },
-  myMessageTime: { color: 'rgba(255,255,255,0.7)', textAlign: 'right' },
-  theirMessageTime: { color: colors['on-surface-variant'] },
-  emptyMessages: { alignItems: 'center', paddingTop: 40 },
-  emptyText: {
-    fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
-  },
-  inputRow: {
-    flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm, backgroundColor: colors['surface-container-lowest'],
-    borderTopWidth: 1, borderTopColor: colors['outline-variant'],
-    gap: spacing.sm,
-  },
-  textInput: {
-    flex: 1, backgroundColor: colors['surface-container'], borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontFamily: 'Inter_400Regular',
-    fontSize: 15, color: colors['on-surface'], maxHeight: 100,
-  },
-  sendBtn: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: colors['primary-container'],
-    alignItems: 'center', justifyContent: 'center',
-  },
-  sendBtnDisabled: { backgroundColor: colors['outline-variant'] },
-  sendBtnText: { fontSize: 18, color: colors.white },
-});
+

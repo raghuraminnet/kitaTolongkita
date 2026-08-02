@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, RefreshControl, Image,
@@ -6,7 +7,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Avatar } from '../../components';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { followApi, getAccessToken } from '../../api/client';
 import type { FollowItem } from '../../api/client';
 
@@ -16,6 +18,47 @@ interface RouteParams {
 }
 
 export const FollowingScreen: React.FC = () => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+      borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
+      backgroundColor: colors['surface-container-lowest'],
+    },
+    backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+    backBtnText: { fontSize: 22, color: colors['on-surface'] },
+    headerTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', flex: 1, textAlign: 'center' },
+    listContent: { paddingBottom: spacing.xl * 2 },
+    totalText: {
+      ...typography['label-sm'], color: colors['on-surface-variant'],
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    },
+    userRow: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+      backgroundColor: colors['surface-container-lowest'],
+    },
+    avatarWrap: { marginRight: spacing.md },
+    avatar: { width: 48, height: 48, borderRadius: 24 },
+    avatarPlaceholder: {
+      width: 48, height: 48, borderRadius: 24,
+      backgroundColor: colors['surface-container-highest'],
+      alignItems: 'center', justifyContent: 'center',
+    },
+    avatarInitial: { fontSize: 18, fontWeight: '700', color: colors['on-surface-variant'] },
+    userInfo: { flex: 1 },
+    userName: { ...typography['body-md'], color: colors['on-surface'], fontWeight: '600' },
+    userMeta: { ...typography['label-xs'], color: colors['on-surface-variant'], marginTop: 2 },
+    arrow: { fontSize: 20, color: colors['on-surface-variant'] },
+    separator: { height: 1, backgroundColor: colors['outline-variant'] },
+    emptyState: { alignItems: 'center', paddingVertical: spacing.xl * 2 },
+    emptyEmoji: { fontSize: 48, marginBottom: spacing.md },
+    emptyText: { ...typography['body-md'], color: colors['on-surface-variant'] },
+  });
   const navigation = useNavigation<any>();
   const route = useRoute();
   const insets = useSafeAreaInsets();
@@ -131,41 +174,4 @@ export const FollowingScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-    borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
-    backgroundColor: colors['surface-container-lowest'],
-  },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  backBtnText: { fontSize: 22, color: colors['on-surface'] },
-  headerTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', flex: 1, textAlign: 'center' },
-  listContent: { paddingBottom: spacing.xl * 2 },
-  totalText: {
-    ...typography['label-sm'], color: colors['on-surface-variant'],
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-  },
-  userRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-    backgroundColor: colors['surface-container-lowest'],
-  },
-  avatarWrap: { marginRight: spacing.md },
-  avatar: { width: 48, height: 48, borderRadius: 24 },
-  avatarPlaceholder: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: colors['surface-container-highest'],
-    alignItems: 'center', justifyContent: 'center',
-  },
-  avatarInitial: { fontSize: 18, fontWeight: '700', color: colors['on-surface-variant'] },
-  userInfo: { flex: 1 },
-  userName: { ...typography['body-md'], color: colors['on-surface'], fontWeight: '600' },
-  userMeta: { ...typography['label-xs'], color: colors['on-surface-variant'], marginTop: 2 },
-  arrow: { fontSize: 20, color: colors['on-surface-variant'] },
-  separator: { height: 1, backgroundColor: colors['outline-variant'] },
-  emptyState: { alignItems: 'center', paddingVertical: spacing.xl * 2 },
-  emptyEmoji: { fontSize: 48, marginBottom: spacing.md },
-  emptyText: { ...typography['body-md'], color: colors['on-surface-variant'] },
-});
+

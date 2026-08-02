@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -11,13 +12,16 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface ProfileSetupScreenProps {
   navigation?: any;
 }
 
 export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigation }) => {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
   const nav = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(1);

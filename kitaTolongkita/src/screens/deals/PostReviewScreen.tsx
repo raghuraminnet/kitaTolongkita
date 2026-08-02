@@ -3,7 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../../components';
-import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import { typography, spacing, borderRadius, shadows } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
 interface PostReviewScreenProps {
@@ -13,6 +14,130 @@ interface PostReviewScreenProps {
 export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
   navigation,
 }) => {
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      flex: 1,
+      padding: spacing.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconContainer: {
+      marginBottom: spacing.xl,
+    },
+    statusChip: {
+      backgroundColor: colors['secondary-container'],
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.full,
+      marginBottom: spacing.md,
+    },
+    statusChipText: {
+      ...typography['label-sm'],
+      color: colors['on-secondary-container'],
+      fontWeight: '700',
+    },
+    pendingCircle: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: colors['surface-container'],
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pendingIcon: {
+      fontSize: 48,
+    },
+    title: {
+      ...typography['headline-lg'],
+      color: colors['on-background'],
+      fontWeight: '800',
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
+    subtitle: {
+      ...typography['body-lg'],
+      color: colors['on-surface-variant'],
+      textAlign: 'center',
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.xl,
+      lineHeight: 26,
+    },
+    infoCard: {
+      width: '100%',
+      backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      ...shadows.card,
+      marginBottom: spacing.lg,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+    },
+    infoIcon: {
+      fontSize: 24,
+      marginRight: spacing.md,
+    },
+    infoContent: {
+      flex: 1,
+    },
+    infoTitle: {
+      ...typography['body-lg'],
+      color: colors['on-surface'],
+      fontWeight: '600',
+      marginBottom: 4,
+    },
+    infoDesc: {
+      ...typography['body-md'],
+      color: colors['on-surface-variant'],
+      lineHeight: 22,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors['outline-variant'],
+      marginVertical: spacing.md,
+    },
+    summaryCard: {
+      width: '100%',
+      backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.lg,
+      padding: spacing.lg,
+      ...shadows.card,
+    },
+    summaryTitle: {
+      ...typography['title-md'],
+      color: colors['on-surface'],
+      marginBottom: spacing.md,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: spacing.sm,
+    },
+    summaryLabel: {
+      ...typography['body-md'],
+      color: colors['on-surface-variant'],
+    },
+    summaryValue: {
+      ...typography['body-md'],
+      color: colors['on-surface'],
+      fontWeight: '600',
+      textAlign: 'right',
+      flex: 1,
+      marginLeft: spacing.md,
+    },
+    bottomButtons: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+      gap: spacing.sm,
+    },
+  });
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
@@ -101,125 +226,4 @@ export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconContainer: {
-    marginBottom: spacing.xl,
-  },
-  statusChip: {
-    backgroundColor: colors['secondary-container'],
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
-    marginBottom: spacing.md,
-  },
-  statusChipText: {
-    ...typography['label-sm'],
-    color: colors['on-secondary-container'],
-    fontWeight: '700',
-  },
-  pendingCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors['surface-container'],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pendingIcon: {
-    fontSize: 48,
-  },
-  title: {
-    ...typography['headline-lg'],
-    color: colors['on-background'],
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    ...typography['body-lg'],
-    color: colors['on-surface-variant'],
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
-    lineHeight: 26,
-  },
-  infoCard: {
-    width: '100%',
-    backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    ...shadows.card,
-    marginBottom: spacing.lg,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  infoIcon: {
-    fontSize: 24,
-    marginRight: spacing.md,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoTitle: {
-    ...typography['body-lg'],
-    color: colors['on-surface'],
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  infoDesc: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
-    lineHeight: 22,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors['outline-variant'],
-    marginVertical: spacing.md,
-  },
-  summaryCard: {
-    width: '100%',
-    backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    ...shadows.card,
-  },
-  summaryTitle: {
-    ...typography['title-md'],
-    color: colors['on-surface'],
-    marginBottom: spacing.md,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  summaryLabel: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
-  },
-  summaryValue: {
-    ...typography['body-md'],
-    color: colors['on-surface'],
-    fontWeight: '600',
-    textAlign: 'right',
-    flex: 1,
-    marginLeft: spacing.md,
-  },
-  bottomButtons: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    gap: spacing.sm,
-  },
-});
+

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -10,7 +11,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Button, Input, ProgressBar } from '../../components';
-import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import { typography, spacing, borderRadius, shadows } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi } from '../../api/client';
 
 interface CheckoutScreenProps {
@@ -19,6 +21,228 @@ interface CheckoutScreenProps {
 }
 
 export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      paddingBottom: 120,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    backBtn: {
+      fontSize: 28,
+      fontWeight: '300',
+      color: colors['on-surface'],
+    },
+    title: {
+      ...typography['title-md'],
+      color: colors['on-background'],
+    },
+    progressCard: {
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.lg,
+      padding: spacing.md,
+      backgroundColor: colors['secondary-container'],
+      borderRadius: borderRadius.lg,
+    },
+    progressHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: spacing.sm,
+    },
+    progressTitle: {
+      ...typography['body-md'],
+      color: colors['on-secondary-container'],
+      fontWeight: '600',
+    },
+    progressCount: {
+      ...typography['body-md'],
+      color: colors['on-secondary-container'],
+      fontWeight: '700',
+    },
+    progressHint: {
+      ...typography['label-sm'],
+      color: colors['on-secondary-container'],
+      marginTop: spacing.sm,
+    },
+    section: {
+      marginBottom: spacing.lg,
+      paddingHorizontal: spacing.md,
+    },
+    sectionTitle: {
+      ...typography['title-md'],
+      color: colors['on-background'],
+      marginBottom: spacing.md,
+    },
+    card: {
+      backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.lg,
+      padding: spacing.md,
+      ...shadows.card,
+    },
+    cardRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    orderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: spacing.xs,
+    },
+    orderLabel: {
+      ...typography['body-md'],
+      color: colors['on-surface-variant'],
+    },
+    orderValue: {
+      ...typography['body-md'],
+      color: colors['on-surface'],
+      fontWeight: '600',
+      flex: 1,
+      textAlign: 'right',
+      marginLeft: spacing.md,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors['outline-variant'],
+      marginVertical: spacing.md,
+    },
+    quantityRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    quantityControl: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    quantityBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors['surface-container'],
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    quantityBtnText: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors['primary-container'],
+    },
+    quantityValue: {
+      ...typography['title-md'],
+      color: colors['on-surface'],
+      fontWeight: '700',
+      minWidth: 24,
+      textAlign: 'center',
+    },
+    locationOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    locationLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    locationIcon: {
+      fontSize: 24,
+      marginRight: spacing.md,
+    },
+    locationName: {
+      ...typography['body-lg'],
+      color: colors['on-surface'],
+      fontWeight: '600',
+    },
+    locationAddress: {
+      ...typography['body-md'],
+      color: colors['on-surface-variant'],
+      marginTop: 2,
+    },
+    changeBtn: {
+      ...typography['body-md'],
+      color: colors['primary-container'],
+      fontWeight: '600',
+    },
+    paymentOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.xs,
+    },
+    paymentLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    paymentIcon: {
+      fontSize: 24,
+      marginRight: spacing.md,
+    },
+    paymentName: {
+      ...typography['body-lg'],
+      color: colors['on-surface'],
+      fontWeight: '600',
+    },
+    paymentSub: {
+      ...typography['body-md'],
+      color: colors['on-surface-variant'],
+      marginTop: 2,
+    },
+    radio: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 2,
+      borderColor: colors['outline-variant'],
+    },
+    radioSelected: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 2,
+      borderColor: colors['primary-container'],
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    bottomCta: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+      backgroundColor: colors['surface-container-lowest'],
+      ...shadows.modal,
+    },
+    totalLabel: {
+      ...typography['body-md'],
+      color: colors['on-surface-variant'],
+    },
+    totalValue: {
+      ...typography['headline-lg'],
+      color: colors['on-surface'],
+      fontWeight: '800',
+    },
+    ctaButton: {
+      minWidth: 180,
+    },
+  });
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
@@ -201,222 +425,4 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    paddingBottom: 120,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  backBtn: {
-    fontSize: 28,
-    fontWeight: '300',
-    color: colors['on-surface'],
-  },
-  title: {
-    ...typography['title-md'],
-    color: colors['on-background'],
-  },
-  progressCard: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.lg,
-    padding: spacing.md,
-    backgroundColor: colors['secondary-container'],
-    borderRadius: borderRadius.lg,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  progressTitle: {
-    ...typography['body-md'],
-    color: colors['on-secondary-container'],
-    fontWeight: '600',
-  },
-  progressCount: {
-    ...typography['body-md'],
-    color: colors['on-secondary-container'],
-    fontWeight: '700',
-  },
-  progressHint: {
-    ...typography['label-sm'],
-    color: colors['on-secondary-container'],
-    marginTop: spacing.sm,
-  },
-  section: {
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.md,
-  },
-  sectionTitle: {
-    ...typography['title-md'],
-    color: colors['on-background'],
-    marginBottom: spacing.md,
-  },
-  card: {
-    backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    ...shadows.card,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  orderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-  },
-  orderLabel: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
-  },
-  orderValue: {
-    ...typography['body-md'],
-    color: colors['on-surface'],
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'right',
-    marginLeft: spacing.md,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors['outline-variant'],
-    marginVertical: spacing.md,
-  },
-  quantityRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  quantityControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  quantityBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors['surface-container'],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quantityBtnText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors['primary-container'],
-  },
-  quantityValue: {
-    ...typography['title-md'],
-    color: colors['on-surface'],
-    fontWeight: '700',
-    minWidth: 24,
-    textAlign: 'center',
-  },
-  locationOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  locationLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  locationIcon: {
-    fontSize: 24,
-    marginRight: spacing.md,
-  },
-  locationName: {
-    ...typography['body-lg'],
-    color: colors['on-surface'],
-    fontWeight: '600',
-  },
-  locationAddress: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
-    marginTop: 2,
-  },
-  changeBtn: {
-    ...typography['body-md'],
-    color: colors['primary-container'],
-    fontWeight: '600',
-  },
-  paymentOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-  },
-  paymentLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  paymentIcon: {
-    fontSize: 24,
-    marginRight: spacing.md,
-  },
-  paymentName: {
-    ...typography['body-lg'],
-    color: colors['on-surface'],
-    fontWeight: '600',
-  },
-  paymentSub: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
-    marginTop: 2,
-  },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: colors['outline-variant'],
-  },
-  radioSelected: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: colors['primary-container'],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bottomCta: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    backgroundColor: colors['surface-container-lowest'],
-    ...shadows.modal,
-  },
-  totalLabel: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
-  },
-  totalValue: {
-    ...typography['headline-lg'],
-    color: colors['on-surface'],
-    fontWeight: '800',
-  },
-  ctaButton: {
-    minWidth: 180,
-  },
-});
+

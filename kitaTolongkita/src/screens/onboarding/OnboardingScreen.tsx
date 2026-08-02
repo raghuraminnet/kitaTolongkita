@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -7,7 +8,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../../components';
-import { colors, typography, spacing } from '../../theme';
+import { typography, spacing } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const SCREENS = [
   {
@@ -34,6 +36,67 @@ const SCREENS = [
 ];
 
 export const OnboardingScreen: React.FC = () => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: spacing.md,
+    },
+    skip: {
+      ...typography['body-lg'],
+      color: colors['on-surface-variant'],
+      alignSelf: 'flex-end',
+      paddingVertical: spacing.md,
+    },
+    illustration: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    illustrationText: {
+      fontSize: 120,
+    },
+    content: {
+      alignItems: 'center',
+      marginBottom: spacing.xl,
+    },
+    title: {
+      ...typography['display-lg'],
+      color: colors['on-background'],
+      textAlign: 'center',
+      marginBottom: spacing.md,
+      lineHeight: 40,
+    },
+    subtitle: {
+      ...typography['body-lg'],
+      color: colors['on-surface-variant'],
+      textAlign: 'center',
+      paddingHorizontal: spacing.lg,
+      lineHeight: 26,
+    },
+    dots: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.xl,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors['outline-variant'],
+    },
+    dotActive: {
+      width: 24,
+      backgroundColor: colors['primary-container'],
+    },
+    buttons: {
+      gap: spacing.sm,
+    },
+  });
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [current, setCurrent] = useState(0);
@@ -104,61 +167,4 @@ export const OnboardingScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
-  },
-  skip: {
-    ...typography['body-lg'],
-    color: colors['on-surface-variant'],
-    alignSelf: 'flex-end',
-    paddingVertical: spacing.md,
-  },
-  illustration: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  illustrationText: {
-    fontSize: 120,
-  },
-  content: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  title: {
-    ...typography['display-lg'],
-    color: colors['on-background'],
-    textAlign: 'center',
-    marginBottom: spacing.md,
-    lineHeight: 40,
-  },
-  subtitle: {
-    ...typography['body-lg'],
-    color: colors['on-surface-variant'],
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-    lineHeight: 26,
-  },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors['outline-variant'],
-  },
-  dotActive: {
-    width: 24,
-    backgroundColor: colors['primary-container'],
-  },
-  buttons: {
-    gap: spacing.sm,
-  },
-});
+

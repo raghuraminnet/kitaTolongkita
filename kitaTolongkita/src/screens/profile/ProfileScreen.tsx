@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -13,7 +14,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Avatar, Button } from '../../components';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { authApi, dealsApi, clearTokens, getAccessToken, followApi, repostsApi, lookupsApi, ratingsApi } from '../../api/client';
 import { useAuth } from '../../api/authContext';
 import type { User } from '../../api/client';
@@ -22,6 +24,143 @@ import type { Deal } from '../../api/client';
 const TABS = ['Deals', 'Reposts', 'LookUps', 'Ratings'];
 
 export const ProfileScreen: React.FC = () => {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    scrollContent: { paddingBottom: 120 },
+    header: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    },
+    headerTitle: {
+      fontFamily: 'NunitoSans_700Bold', fontSize: 24, fontWeight: '700',
+      color: colors['on-background'],
+    },
+    settingsIcon: { fontSize: 24 },
+    profileCard: {
+      alignItems: 'center', paddingVertical: spacing.xl,
+      backgroundColor: colors['surface-container-lowest'],
+      marginHorizontal: spacing.md, borderRadius: borderRadius.xl,
+      marginBottom: spacing.md,
+    },
+    userName: {
+      fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
+      color: colors['on-background'], marginTop: spacing.md,
+    },
+    userEmail: {
+      fontFamily: 'Inter_400Regular', fontSize: 14,
+      color: colors['on-surface-variant'], marginTop: spacing.xs, textAlign: 'center',
+      paddingHorizontal: spacing.lg,
+    },
+    verifiedBadge: {
+      backgroundColor: '#e3f2fd', borderRadius: borderRadius.full,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm,
+    },
+    verifiedText: { fontSize: 11, color: '#1565c0', fontWeight: '700' },
+    contributorBadge: {
+      backgroundColor: '#fff8e1', borderRadius: borderRadius.full,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm,
+    },
+    contributorBadgeText: { fontSize: 11, color: '#e65100', fontWeight: '700' },
+    becomeContributorBtn: {
+      marginTop: spacing.md, backgroundColor: '#e65100',
+      borderRadius: borderRadius.full, paddingVertical: spacing.sm, alignItems: 'center',
+    },
+    becomeContributorBtnText: { ...typography['label-lg'], color: colors.white, fontWeight: '700' },
+    demoBadge: {
+      backgroundColor: colors['primary-container'], borderRadius: borderRadius.full,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+    },
+    demoBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.white },
+    profileMeta: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+    profileMetaText: { fontSize: 13, color: colors['on-surface-variant'] },
+    followStatsRow: {
+      flexDirection: 'row', justifyContent: 'space-around',
+      width: '100%', paddingHorizontal: spacing.md,
+      marginTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors['outline-variant'],
+      paddingTop: spacing.lg,
+    },
+    followStatItem: { alignItems: 'center', minWidth: 60 },
+    followStatValue: {
+      fontFamily: 'NunitoSans_800ExtraBold', fontSize: 18, fontWeight: '800',
+      color: colors['primary-container'],
+    },
+    followStatLabel: {
+      fontFamily: 'Inter_400Regular', fontSize: 11,
+      color: colors['on-surface-variant'], marginTop: 2,
+    },
+    tabsContainer: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
+    tabsScroll: { flexDirection: 'row', gap: spacing.xs },
+    tab: {
+      paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
+      borderRadius: borderRadius.full, backgroundColor: colors['surface-container-lowest'],
+    },
+    tabActive: { backgroundColor: colors['primary-container'] },
+    tabText: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 14,
+      color: colors['on-surface-variant'],
+    },
+    tabTextActive: { color: colors.white },
+    tabContent: { marginHorizontal: spacing.md, minHeight: 120 },
+    tabLoading: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl },
+    tabLoadingText: { color: colors['on-surface-variant'] },
+    emptyState: { alignItems: 'center', paddingVertical: spacing.xl },
+    emptyText: { color: colors['on-surface-variant'], fontSize: 14 },
+    dealCard: {
+      flexDirection: 'row', backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.lg, marginBottom: spacing.sm, overflow: 'hidden',
+    },
+    dealImage: { width: 80, height: 80 },
+    dealInfo: { flex: 1, padding: spacing.sm, justifyContent: 'center' },
+    dealTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors['on-surface'] },
+    dealPrice: { fontSize: 13, color: colors['primary-container'], fontWeight: '700', marginTop: 2 },
+    dealMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+    dealCategory: { fontSize: 11, color: colors['on-surface-variant'] },
+    dealMembers: { fontSize: 11, color: colors['on-surface-variant'] },
+    repostBanner: {
+      backgroundColor: colors.surface, paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+    },
+    repostLabel: { fontSize: 11, color: colors['on-surface-variant'] },
+    lookupCard: {
+      backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.sm,
+    },
+    lookupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+    lookupStatusBadge: (s: string) => ({ backgroundColor: lookupStatusBadge(s).backgroundColor, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }),
+    lookupStatusText: (s: string) => lookupStatusText(s),
+    bookingId: { fontFamily: 'monospace', fontSize: 12, color: colors['on-surface-variant'], fontWeight: '700' },
+    lookupMeta: { fontSize: 12, color: colors['on-surface-variant'], marginTop: 4 },
+    ratingCard: {
+      backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.sm,
+    },
+    ratingDealTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors['on-surface'] },
+    ratingContributor: { fontSize: 12, color: colors['on-surface-variant'], marginTop: 2 },
+    ratingStars: { flexDirection: 'row', marginTop: spacing.xs },
+    star: { fontSize: 16, color: '#f59e0b' },
+    menuSection: {
+      marginHorizontal: spacing.md, backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.xl, overflow: 'hidden', marginTop: spacing.lg,
+    },
+    menuItem: {
+      flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg, borderBottomWidth: 1,
+      borderBottomColor: colors['outline-variant'],
+    },
+    menuIcon: { fontSize: 20, marginRight: spacing.md },
+    menuLabel: {
+      flex: 1, fontFamily: 'Inter_400Regular', fontSize: 16,
+      color: colors['on-surface'],
+    },
+    menuArrow: {
+      fontFamily: 'Inter_400Regular', fontSize: 20,
+      color: colors['on-surface-variant'],
+    },
+    logoutSection: { marginHorizontal: spacing.md, marginTop: spacing.xl },
+  });
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { signOut } = useAuth();
@@ -391,137 +530,4 @@ const lookupStatusText = (status: string) => ({
   fontSize: 11, fontWeight: '700' as const,
 });
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { paddingBottom: 120 },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-  },
-  headerTitle: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 24, fontWeight: '700',
-    color: colors['on-background'],
-  },
-  settingsIcon: { fontSize: 24 },
-  profileCard: {
-    alignItems: 'center', paddingVertical: spacing.xl,
-    backgroundColor: colors['surface-container-lowest'],
-    marginHorizontal: spacing.md, borderRadius: borderRadius.xl,
-    marginBottom: spacing.md,
-  },
-  userName: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
-    color: colors['on-background'], marginTop: spacing.md,
-  },
-  userEmail: {
-    fontFamily: 'Inter_400Regular', fontSize: 14,
-    color: colors['on-surface-variant'], marginTop: spacing.xs, textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  verifiedBadge: {
-    backgroundColor: '#e3f2fd', borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm,
-  },
-  verifiedText: { fontSize: 11, color: '#1565c0', fontWeight: '700' },
-  contributorBadge: {
-    backgroundColor: '#fff8e1', borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm,
-  },
-  contributorBadgeText: { fontSize: 11, color: '#e65100', fontWeight: '700' },
-  becomeContributorBtn: {
-    marginTop: spacing.md, backgroundColor: '#e65100',
-    borderRadius: borderRadius.full, paddingVertical: spacing.sm, alignItems: 'center',
-  },
-  becomeContributorBtnText: { ...typography['label-lg'], color: colors.white, fontWeight: '700' },
-  demoBadge: {
-    backgroundColor: colors['primary-container'], borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
-  },
-  demoBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.white },
-  profileMeta: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
-  profileMetaText: { fontSize: 13, color: colors['on-surface-variant'] },
-  followStatsRow: {
-    flexDirection: 'row', justifyContent: 'space-around',
-    width: '100%', paddingHorizontal: spacing.md,
-    marginTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors['outline-variant'],
-    paddingTop: spacing.lg,
-  },
-  followStatItem: { alignItems: 'center', minWidth: 60 },
-  followStatValue: {
-    fontFamily: 'NunitoSans_800ExtraBold', fontSize: 18, fontWeight: '800',
-    color: colors['primary-container'],
-  },
-  followStatLabel: {
-    fontFamily: 'Inter_400Regular', fontSize: 11,
-    color: colors['on-surface-variant'], marginTop: 2,
-  },
-  tabsContainer: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
-  tabsScroll: { flexDirection: 'row', gap: spacing.xs },
-  tab: {
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full, backgroundColor: colors['surface-container-lowest'],
-  },
-  tabActive: { backgroundColor: colors['primary-container'] },
-  tabText: {
-    fontFamily: 'Inter_600SemiBold', fontSize: 14,
-    color: colors['on-surface-variant'],
-  },
-  tabTextActive: { color: colors.white },
-  tabContent: { marginHorizontal: spacing.md, minHeight: 120 },
-  tabLoading: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl },
-  tabLoadingText: { color: colors['on-surface-variant'] },
-  emptyState: { alignItems: 'center', paddingVertical: spacing.xl },
-  emptyText: { color: colors['on-surface-variant'], fontSize: 14 },
-  dealCard: {
-    flexDirection: 'row', backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.lg, marginBottom: spacing.sm, overflow: 'hidden',
-  },
-  dealImage: { width: 80, height: 80 },
-  dealInfo: { flex: 1, padding: spacing.sm, justifyContent: 'center' },
-  dealTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors['on-surface'] },
-  dealPrice: { fontSize: 13, color: colors['primary-container'], fontWeight: '700', marginTop: 2 },
-  dealMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  dealCategory: { fontSize: 11, color: colors['on-surface-variant'] },
-  dealMembers: { fontSize: 11, color: colors['on-surface-variant'] },
-  repostBanner: {
-    backgroundColor: '#f5f5f5', paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  repostLabel: { fontSize: 11, color: '#666' },
-  lookupCard: {
-    backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.sm,
-  },
-  lookupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
-  lookupStatusBadge: (s: string) => ({ backgroundColor: lookupStatusBadge(s).backgroundColor, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }),
-  lookupStatusText: (s: string) => lookupStatusText(s),
-  bookingId: { fontFamily: 'monospace', fontSize: 12, color: colors['on-surface-variant'], fontWeight: '700' },
-  lookupMeta: { fontSize: 12, color: colors['on-surface-variant'], marginTop: 4 },
-  ratingCard: {
-    backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.sm,
-  },
-  ratingDealTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors['on-surface'] },
-  ratingContributor: { fontSize: 12, color: colors['on-surface-variant'], marginTop: 2 },
-  ratingStars: { flexDirection: 'row', marginTop: spacing.xs },
-  star: { fontSize: 16, color: '#f59e0b' },
-  menuSection: {
-    marginHorizontal: spacing.md, backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.xl, overflow: 'hidden', marginTop: spacing.lg,
-  },
-  menuItem: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg, borderBottomWidth: 1,
-    borderBottomColor: colors['outline-variant'],
-  },
-  menuIcon: { fontSize: 20, marginRight: spacing.md },
-  menuLabel: {
-    flex: 1, fontFamily: 'Inter_400Regular', fontSize: 16,
-    color: colors['on-surface'],
-  },
-  menuArrow: {
-    fontFamily: 'Inter_400Regular', fontSize: 20,
-    color: colors['on-surface-variant'],
-  },
-  logoutSection: { marginHorizontal: spacing.md, marginTop: spacing.xl },
-});
+

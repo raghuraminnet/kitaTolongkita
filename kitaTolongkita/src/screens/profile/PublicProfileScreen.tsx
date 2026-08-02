@@ -13,11 +13,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Avatar, Button } from '../../components';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { usersApi, dealsApi, followApi } from '../../api/client';
 import type { PublicUserProfile, Deal } from '../../api/client';
 
-function DealCard({ deal, onPress }: { deal: Deal; onPress: () => void }) {
+function DealCard({ deal, onPress, styles }: { deal: Deal; onPress: () => void; styles: any }) {
   const discount = deal.originalPrice > 0
     ? Math.round((1 - Number(deal.groupPrice) / Number(deal.originalPrice)) * 100)
     : 0;
@@ -63,6 +64,7 @@ interface RouteParams {
 }
 
 export const PublicProfileScreen: React.FC = () => {
+  const { colors } = useTheme();
   const navigation = useNavigation<any>();
   const route = useRoute();
   const insets = useSafeAreaInsets();
@@ -258,7 +260,7 @@ export const PublicProfileScreen: React.FC = () => {
             </View>
           </>
         }
-        renderItem={({ item }) => <DealCard deal={item} onPress={() => handleDealPress(item)} />}
+        renderItem={({ item }) => <DealCard deal={item} onPress={() => handleDealPress(item)} styles={styles} />}
         ListEmptyComponent={
           dealsLoading ? (
             <View style={styles.emptyState}>

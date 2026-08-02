@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import { typography, spacing, borderRadius, shadows } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { request, getAccessToken } from '../../api/client';
 import { useTranslation } from 'react-i18next';
 
@@ -53,6 +54,72 @@ const MODERATION_CONFIG: Record<string, { label: string; color: string; bg: stri
 };
 
 export const MyDealsScreen: React.FC = () => {
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors['outline-variant'],
+    },
+    backBtn: { padding: spacing.sm },
+    backBtnText: { fontSize: 22, fontWeight: '700' },
+    headerTitle: { ...typography['title-lg'], fontWeight: '800', flex: 1, textAlign: 'center' },
+    addBtn: { backgroundColor: '#0e6a5b', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.md },
+    addBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
+    loadingText: { ...typography['body-lg'], color: colors['on-surface-variant'] },
+    emptyIcon: { fontSize: 64, marginBottom: spacing.md },
+    emptyTitle: { ...typography['title-lg'], fontWeight: '800', marginBottom: spacing.sm },
+    emptySubtitle: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center', marginBottom: spacing.xl },
+    postDealBtn: { backgroundColor: '#0e6a5b', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: borderRadius.md },
+    postDealBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+    list: { padding: spacing.md },
+    card: {
+      backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.lg,
+      overflow: 'hidden',
+      ...shadows.card,
+    },
+    cardImage: {
+      height: 140,
+      backgroundColor: colors['surface-container'],
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cardImageText: { fontSize: 40 },
+    discountBadge: {
+      position: 'absolute',
+      top: spacing.sm,
+      right: spacing.sm,
+      backgroundColor: '#EF4444',
+      borderRadius: borderRadius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+    },
+    discountText: { color: '#fff', fontWeight: '800', fontSize: 12 },
+    cardContent: { padding: spacing.md },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 4 },
+    cardTitle: { ...typography['title-md'], fontWeight: '700', flex: 1 },
+    statusChip: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: borderRadius.full },
+    statusText: { fontSize: 11, fontWeight: '700' },
+    cardCategory: { ...typography['body-sm'], color: colors['on-surface-variant'], marginBottom: spacing.xs },
+    priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginBottom: spacing.sm },
+    groupPrice: { ...typography['title-md'], fontWeight: '800', color: '#0e6a5b' },
+    originalPrice: { ...typography['body-sm'], color: colors['on-surface-variant'], textDecorationLine: 'line-through' },
+    modChip: { alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: borderRadius.sm, marginBottom: spacing.sm },
+    modText: { fontSize: 12, fontWeight: '600' },
+    statsRow: { flexDirection: 'row', gap: spacing.lg },
+    stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    statIcon: { fontSize: 14 },
+    statText: { ...typography['body-sm'], fontWeight: '600' },
+    expiredText: { color: '#DC2626' },
+  });
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
@@ -202,67 +269,4 @@ export const MyDealsScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors['outline-variant'],
-  },
-  backBtn: { padding: spacing.sm },
-  backBtnText: { fontSize: 22, fontWeight: '700' },
-  headerTitle: { ...typography['title-lg'], fontWeight: '800', flex: 1, textAlign: 'center' },
-  addBtn: { backgroundColor: '#0e6a5b', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.md },
-  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
-  loadingText: { ...typography['body-lg'], color: colors['on-surface-variant'] },
-  emptyIcon: { fontSize: 64, marginBottom: spacing.md },
-  emptyTitle: { ...typography['title-lg'], fontWeight: '800', marginBottom: spacing.sm },
-  emptySubtitle: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center', marginBottom: spacing.xl },
-  postDealBtn: { backgroundColor: '#0e6a5b', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: borderRadius.md },
-  postDealBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  list: { padding: spacing.md },
-  card: {
-    backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    ...shadows.card,
-  },
-  cardImage: {
-    height: 140,
-    backgroundColor: colors['surface-container'],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardImageText: { fontSize: 40 },
-  discountBadge: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    backgroundColor: '#EF4444',
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  discountText: { color: '#fff', fontWeight: '800', fontSize: 12 },
-  cardContent: { padding: spacing.md },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 4 },
-  cardTitle: { ...typography['title-md'], fontWeight: '700', flex: 1 },
-  statusChip: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: borderRadius.full },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  cardCategory: { ...typography['body-sm'], color: colors['on-surface-variant'], marginBottom: spacing.xs },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginBottom: spacing.sm },
-  groupPrice: { ...typography['title-md'], fontWeight: '800', color: '#0e6a5b' },
-  originalPrice: { ...typography['body-sm'], color: colors['on-surface-variant'], textDecorationLine: 'line-through' },
-  modChip: { alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: borderRadius.sm, marginBottom: spacing.sm },
-  modText: { fontSize: 12, fontWeight: '600' },
-  statsRow: { flexDirection: 'row', gap: spacing.lg },
-  stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statIcon: { fontSize: 14 },
-  statText: { ...typography['body-sm'], fontWeight: '600' },
-  expiredText: { color: '#DC2626' },
-});
+
