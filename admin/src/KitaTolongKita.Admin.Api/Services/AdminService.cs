@@ -45,6 +45,36 @@ public interface IAdminService
     // Settings
     Task<List<SettingItem>> GetSettingsAsync();
     Task<bool> UpdateSettingAsync(UpdateSettingRequest req, int adminId);
+
+    // Saved Lists (main DB)
+    Task<PagedResult<SavedListItem>> GetSavedListsAsync(string? search, int page, int pageSize);
+    Task<SavedListDetail?> GetSavedListDetailAsync(string id);
+
+    // Notifications (main DB)
+    Task<PagedResult<NotificationItem>> GetNotificationsAsync(string? type, bool? isRead, int page, int pageSize);
+    Task<NotificationStats> GetNotificationStatsAsync();
+
+    // Conversations / Chat (main DB)
+    Task<PagedResult<ConversationItem>> GetConversationsAsync(string? search, int page, int pageSize);
+    Task<List<ChatMessageItem>> GetChatMessagesAsync(string conversationId, int page, int pageSize);
+
+    // Push Tokens (main DB)
+    Task<PagedResult<PushTokenItem>> GetPushTokensAsync(string? search, int page, int pageSize);
+
+    // User Activity Timeline
+    Task<UserActivityTimeline?> GetUserActivityAsync(string userId);
+
+    // Deal Statistics
+    Task<DealStats> GetDealStatsAsync(int days = 30);
+
+    // Bulk Actions
+    Task<BulkActionResult> BulkModerateDealsAsync(BulkActionRequest req, int adminId);
+
+    // Categories (admin DB)
+    Task<List<CategoryItem>> GetCategoriesAsync();
+    Task<CategoryItem?> CreateCategoryAsync(CreateCategoryRequest req, int adminId);
+    Task<CategoryItem?> UpdateCategoryAsync(int id, UpdateCategoryRequest req, int adminId);
+    Task<bool> DeleteCategoryAsync(int id, int adminId);
 }
 
 public class AdminService : IAdminService
@@ -445,6 +475,336 @@ public class AdminService : IAdminService
         // Sync to Redis
         await _configSync.SetConfigAsync($"setting:{req.Key}", req.Value);
 
+        return true;
+    }
+
+    // ── Saved Lists ──────────────────────────────────────────────────────────
+    public async Task<PagedResult<SavedListItem>> GetSavedListsAsync(string? search, int page, int pageSize)
+    {
+        var q = _mainDb.SavedLists.Include(sl => sl.User).AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            q = q.Where(sl =>
+                sl.Name.Contains(search) ||
+                sl.User.Email.Contains(search) ||
+                sl.User.FullName.Contains(search));
+
+        var total = await q.CountAsync();
+        var lists = await q.OrderByDescending(sl => sl.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        var items = new List<SavedListItem>();
+        foreach (var sl in lists)
+        {
+            var dealCount = await _mainDb.SavedDeals.CountAsync(sd => sd.ListId == sl.Id);
+            items.Add(new SavedListItem(
+                sl.Id, sl.UserId, sl.User?.Email ?? "", sl.User?.FullName ?? "",
+                sl.Name, sl.IsPublic, dealCount, sl.CreatedAt));
+        }
+        return new PagedResult<SavedListItem>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize));
+    }
+
+    public async Task<SavedListDetail?> GetSavedListDetailAsync(string id)
+    {
+        if (!Guid.TryParse(id, out var lid)) return null;
+        var sl = await _mainDb.SavedLists
+            .Include(x => x.User)
+            .Include(x => x.SavedDeals).ThenInclude(sd => sd.Deal)
+            .AsNoTracking().FirstOrDefaultAsync(x => x.Id == lid);
+        if (sl == null) return null;
+
+        var deals = sl.SavedDeals.Select(sd => new SavedDealItem(
+            sd.Id, sd.DealId, sd.Deal?.Title ?? "", sd.Deal?.Category ?? "",
+            sd.Deal?.GroupPrice ?? 0, sd.Deal?.ModerationStatus ?? "", sd.SavedAt)).ToList();
+
+        return new SavedListDetail(
+            sl.Id, sl.UserId, sl.User?.Email ?? "", sl.User?.FullName ?? "",
+            sl.Name, sl.IsPublic, sl.CreatedAt, deals);
+    }
+
+    // ── Notifications ──────────────────────────────────────────────────────
+    public async Task<PagedResult<NotificationItem>> GetNotificationsAsync(string? type, bool? isRead, int page, int pageSize)
+    {
+        var q = _mainDb.Notifications.Include(n => n.User).AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(type))
+            q = q.Where(n => n.Type == type);
+        if (isRead.HasValue)
+            q = q.Where(n => n.IsRead == isRead.Value);
+
+        var total = await q.CountAsync();
+        var notifs = await q.OrderByDescending(n => n.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        var items = notifs.Select(n => new NotificationItem(
+            n.Id, n.UserId, n.User?.Email ?? "", n.User?.FullName ?? "",
+            n.Type, n.Title, n.Body, n.IsRead, n.CreatedAt)).ToList();
+
+        return new PagedResult<NotificationItem>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize));
+    }
+
+    public async Task<NotificationStats> GetNotificationStatsAsync()
+    {
+        var total = await _mainDb.Notifications.AsNoTracking().CountAsync();
+        var unread = await _mainDb.Notifications.AsNoTracking().CountAsync(n => !n.IsRead);
+        var read = total - unread;
+        return new NotificationStats(total, unread, read);
+    }
+
+    // ── Conversations / Chat ─────────────────────────────────────────────────
+    public async Task<PagedResult<ConversationItem>> GetConversationsAsync(string? search, int page, int pageSize)
+    {
+        var q = _mainDb.Conversations
+            .Include(c => c.Participants).ThenInclude(p => p.User)
+            .AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            q = q.Where(c => c.Participants.Any(p =>
+                p.User.Email.Contains(search!) || p.User.FullName.Contains(search!)));
+
+        var total = await q.CountAsync();
+        var convos = await q.OrderByDescending(c => c.LastMessageAt ?? c.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        var items = new List<ConversationItem>();
+        foreach (var c in convos)
+        {
+            var msgCount = await _mainDb.ChatMessages.CountAsync(m => m.ConversationId == c.Id);
+            var lastMsg = await _mainDb.ChatMessages
+                .Where(m => m.ConversationId == c.Id)
+                .OrderByDescending(m => m.CreatedAt).FirstOrDefaultAsync();
+
+            items.Add(new ConversationItem(
+                c.Id, c.DealId, null,
+                c.Participants.Select(p => new ParticipantInfo(
+                    p.UserId, p.User?.FullName ?? "", p.User?.AvatarUrl)).ToList(),
+                msgCount, lastMsg?.Content, c.LastMessageAt, c.CreatedAt));
+        }
+        return new PagedResult<ConversationItem>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize));
+    }
+
+    public async Task<List<ChatMessageItem>> GetChatMessagesAsync(string conversationId, int page, int pageSize)
+    {
+        if (!Guid.TryParse(conversationId, out var cid))
+            return new List<ChatMessageItem>();
+
+        var messages = await _mainDb.ChatMessages
+            .Include(m => m.Sender)
+            .Where(m => m.ConversationId == cid)
+            .OrderByDescending(m => m.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .AsNoTracking().ToListAsync();
+
+        return messages.Select(m => new ChatMessageItem(
+            m.Id, m.SenderId, m.Sender?.FullName ?? "",
+            m.Content, m.IsRead, m.CreatedAt)).ToList();
+    }
+
+    // ── Push Tokens ─────────────────────────────────────────────────────────
+    public async Task<PagedResult<PushTokenItem>> GetPushTokensAsync(string? search, int page, int pageSize)
+    {
+        var q = _mainDb.PushTokens.Include(pt => pt.User).AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            q = q.Where(pt =>
+                pt.User.Email.Contains(search!) || pt.User.FullName.Contains(search!));
+
+        var total = await q.CountAsync();
+        var tokens = await q.OrderByDescending(pt => pt.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        var items = tokens.Select(pt => new PushTokenItem(
+            pt.Id, pt.UserId, pt.User?.Email ?? "", pt.User?.FullName ?? "",
+            MaskApiKey(pt.Token), pt.Platform, pt.IsActive, pt.CreatedAt, pt.LastUsedAt)).ToList();
+
+        return new PagedResult<PushTokenItem>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize));
+    }
+
+    // ── User Activity Timeline ───────────────────────────────────────────────
+    public async Task<UserActivityTimeline?> GetUserActivityAsync(string userId)
+    {
+        if (!Guid.TryParse(userId, out var uid)) return null;
+        var user = await _mainDb.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == uid);
+        if (user == null) return null;
+
+        var activities = new List<ActivityItem>();
+
+        var deals = await _mainDb.Deals.Where(d => d.OrganizerId == uid)
+            .OrderByDescending(d => d.CreatedAt).Take(20).AsNoTracking().ToListAsync();
+        foreach (var d in deals)
+            activities.Add(new ActivityItem("deal_posted", $"Posted deal: {d.Title}", d.Id.ToString(), d.CreatedAt));
+
+        var orders = await _mainDb.Orders.Include(o => o.Deal).Where(o => o.BuyerId == uid)
+            .OrderByDescending(o => o.CreatedAt).Take(20).AsNoTracking().ToListAsync();
+        foreach (var o in orders)
+            activities.Add(new ActivityItem("order_placed", $"Joined deal: {o.Deal?.Title}", o.Id.ToString(), o.CreatedAt));
+
+        var savedDeals = await _mainDb.SavedDeals.Include(sd => sd.Deal)
+            .Where(sd => sd.UserId == uid)
+            .OrderByDescending(sd => sd.SavedAt).Take(20).AsNoTracking().ToListAsync();
+        foreach (var sd in savedDeals)
+            activities.Add(new ActivityItem("deal_saved", $"Saved deal: {sd.Deal?.Title}", sd.Id.ToString(), sd.SavedAt));
+
+        var notifs = await _mainDb.Notifications.Where(n => n.UserId == uid)
+            .OrderByDescending(n => n.CreatedAt).Take(20).AsNoTracking().ToListAsync();
+        foreach (var n in notifs)
+            activities.Add(new ActivityItem("notification", n.Title, n.Id.ToString(), n.CreatedAt));
+
+        activities = activities.OrderByDescending(a => a.At).Take(50).ToList();
+
+        var totalDealsPosted = await _mainDb.Deals.CountAsync(d => d.OrganizerId == uid);
+        var totalOrders = await _mainDb.Orders.CountAsync(o => o.BuyerId == uid);
+        var totalSaved = await _mainDb.SavedDeals.CountAsync(sd => sd.UserId == uid);
+        var totalNotifs = await _mainDb.Notifications.CountAsync(n => n.UserId == uid);
+
+        return new UserActivityTimeline(
+            user.Id.ToString(), user.Email, user.FullName,
+            activities, totalDealsPosted, totalOrders, totalSaved, totalNotifs);
+    }
+
+    // ── Deal Statistics ──────────────────────────────────────────────────────
+    public async Task<DealStats> GetDealStatsAsync(int days = 30)
+    {
+        var since = DateTime.UtcNow.AddDays(-days);
+
+        var totalDeals = await _mainDb.Deals.AsNoTracking().CountAsync();
+        var approvedDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d => d.ModerationStatus == "Approved");
+        var rejectedDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d => d.ModerationStatus == "Rejected");
+        var pendingDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d =>
+            d.ModerationStatus == "Pending" || d.ModerationStatus == "UnderReview" || d.ModerationStatus == "PendingReview");
+        var featuredDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d => d.IsFeatured);
+        var totalOrders = await _mainDb.Orders.AsNoTracking().CountAsync();
+        var totalRevenue = await _mainDb.Orders.AsNoTracking().SumAsync(o => o.TotalPrice);
+
+        // Category breakdown
+        var categories = await _mainDb.Deals
+            .Where(d => d.ModerationStatus == "Approved")
+            .GroupBy(d => d.Category)
+            .Select(g => new CategoryStat(
+                g.Key,
+                g.Count(),
+                g.SelectMany(d => d.Orders).Count(),
+                g.SelectMany(d => d.Orders).Sum(o => o.TotalPrice)))
+            .OrderByDescending(c => c.Count)
+            .Take(10).AsNoTracking().ToListAsync();
+
+        // Daily deals over time
+        var dailyDeals = await _mainDb.Deals
+            .Where(d => d.CreatedAt >= since)
+            .GroupBy(d => d.CreatedAt.Date)
+            .Select(g => new DailyStat(g.Key.ToString("yyyy-MM-dd"), g.Count()))
+            .OrderBy(d => d.Date).AsNoTracking().ToListAsync();
+
+        return new DealStats(
+            totalDeals, approvedDeals, rejectedDeals, pendingDeals,
+            featuredDeals, totalOrders, totalRevenue,
+            categories, dailyDeals);
+    }
+
+    // ── Bulk Actions ────────────────────────────────────────────────────────
+    public async Task<BulkActionResult> BulkModerateDealsAsync(BulkActionRequest req, int adminId)
+    {
+        var errors = new List<string>();
+        var succeeded = 0;
+        var failed = 0;
+        var admin = await _db.AdminUsers.FindAsync(adminId);
+
+        foreach (var idStr in req.Ids)
+        {
+            if (!Guid.TryParse(idStr, out var id))
+            { errors.Add($"Invalid ID: {idStr}"); failed++; continue; }
+
+            var deal = await _mainDb.Deals.FindAsync(id);
+            if (deal == null)
+            { errors.Add($"Deal not found: {idStr}"); failed++; continue; }
+
+            switch (req.Action.ToLower())
+            {
+                case "approve":
+                    deal.ModerationStatus = "Approved";
+                    deal.ModerationRejectReason = null;
+                    await LogActionAsync(adminId, admin!.Email, "BULK_APPROVED_DEAL", "Deal", idStr);
+                    break;
+                case "reject":
+                    deal.ModerationStatus = "Rejected";
+                    deal.ModerationRejectReason = req.Reason ?? "Bulk rejection";
+                    await LogActionAsync(adminId, admin!.Email, "BULK_REJECTED_DEAL", "Deal", idStr, req.Reason);
+                    break;
+                case "feature":
+                    deal.IsFeatured = true;
+                    await LogActionAsync(adminId, admin!.Email, "BULK_FEATURED_DEAL", "Deal", idStr);
+                    break;
+                case "unfeature":
+                    deal.IsFeatured = false;
+                    await LogActionAsync(adminId, admin!.Email, "BULK_UNFEATURED_DEAL", "Deal", idStr);
+                    break;
+                default:
+                    errors.Add($"Unknown action '{req.Action}' for ID: {idStr}"); failed++; continue;
+            }
+            succeeded++;
+        }
+
+        await _mainDb.SaveChangesAsync();
+        return new BulkActionResult(succeeded, failed, errors);
+    }
+
+    // ── Categories ──────────────────────────────────────────────────────────
+    public async Task<List<CategoryItem>> GetCategoriesAsync()
+    {
+        var cats = await _db.Categories.AsNoTracking().OrderBy(c => c.Name).ToListAsync();
+        var items = new List<CategoryItem>();
+        foreach (var c in cats)
+        {
+            var dealCount = await _mainDb.Deals.CountAsync(d => d.Category == c.Name);
+            items.Add(new CategoryItem(c.Id, c.Name, c.Description, dealCount, c.IsActive, c.CreatedAt));
+        }
+        return items;
+    }
+
+    public async Task<CategoryItem?> CreateCategoryAsync(CreateCategoryRequest req, int adminId)
+    {
+        var existing = await _db.Categories.FirstOrDefaultAsync(c => c.Name == req.Name);
+        if (existing != null) return null;
+
+        var cat = new Category
+        {
+            Name = req.Name,
+            Description = req.Description,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        _db.Categories.Add(cat);
+        await _db.SaveChangesAsync();
+        await LogActionAsync(adminId, (await _db.AdminUsers.FindAsync(adminId))!.Email,
+            "CREATED_CATEGORY", "Category", cat.Id.ToString(), $"Created category: {cat.Name}");
+        return new CategoryItem(cat.Id, cat.Name, cat.Description, 0, cat.IsActive, cat.CreatedAt);
+    }
+
+    public async Task<CategoryItem?> UpdateCategoryAsync(int id, UpdateCategoryRequest req, int adminId)
+    {
+        var cat = await _db.Categories.FindAsync(id);
+        if (cat == null) return null;
+
+        if (req.Name != null) cat.Name = req.Name;
+        if (req.Description != null) cat.Description = req.Description;
+        if (req.IsActive.HasValue) cat.IsActive = req.IsActive.Value;
+        await _db.SaveChangesAsync();
+
+        var admin = await _db.AdminUsers.FindAsync(adminId);
+        await LogActionAsync(adminId, admin!.Email, "UPDATED_CATEGORY", "Category", id.ToString(), $"Updated category: {cat.Name}");
+
+        var dealCount = await _mainDb.Deals.CountAsync(d => d.Category == cat.Name);
+        return new CategoryItem(cat.Id, cat.Name, cat.Description, dealCount, cat.IsActive, cat.CreatedAt);
+    }
+
+    public async Task<bool> DeleteCategoryAsync(int id, int adminId)
+    {
+        var cat = await _db.Categories.FindAsync(id);
+        if (cat == null) return false;
+        _db.Categories.Remove(cat);
+        await _db.SaveChangesAsync();
+        var admin = await _db.AdminUsers.FindAsync(adminId);
+        await LogActionAsync(adminId, admin!.Email, "DELETED_CATEGORY", "Category", id.ToString(), $"Deleted category: {cat.Name}");
         return true;
     }
 }

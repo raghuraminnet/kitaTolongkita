@@ -101,6 +101,75 @@ public record UpdateModerationRuleRequest(string Value, bool? IsActive);
 public record SettingItem(string Key, string Value, string? Description);
 public record UpdateSettingRequest(string Key, string Value);
 
+// ── Saved Lists ─────────────────────────────────────────────────────────────────
+public record SavedListItem(
+    Guid Id, Guid UserId, string UserEmail, string UserName,
+    string Name, bool IsPublic, int DealCount, DateTime CreatedAt
+);
+public record SavedListDetail(
+    Guid Id, Guid UserId, string UserEmail, string UserName,
+    string Name, bool IsPublic, DateTime CreatedAt,
+    List<SavedDealItem> Deals
+);
+public record SavedDealItem(
+    Guid Id, Guid DealId, string DealTitle, string DealCategory,
+    decimal DealPrice, string DealStatus, DateTime SavedAt
+);
+
+// ── Notifications ────────────────────────────────────────────────────────────────
+public record NotificationItem(
+    Guid Id, Guid UserId, string UserEmail, string UserName,
+    string Type, string Title, string Body, bool IsRead, DateTime CreatedAt
+);
+public record NotificationStats(int Total, int Unread, int Read);
+
+// ── Conversations / Chat ────────────────────────────────────────────────────────
+public record ConversationItem(
+    Guid Id, Guid? DealId, string? DealTitle,
+    List<ParticipantInfo> Participants, int MessageCount,
+    string? LastMessage, DateTime? LastMessageAt, DateTime CreatedAt
+);
+public record ParticipantInfo(Guid UserId, string FullName, string? AvatarUrl);
+public record ChatMessageItem(
+    Guid Id, Guid SenderId, string SenderName, string Content,
+    bool IsRead, DateTime CreatedAt
+);
+
+// ── Push Tokens ────────────────────────────────────────────────────────────────
+public record PushTokenItem(
+    Guid Id, Guid UserId, string UserEmail, string UserName,
+    string TokenMasked, string Platform, bool IsActive,
+    DateTime CreatedAt, DateTime? LastUsedAt
+);
+
+// ── Deal Statistics ─────────────────────────────────────────────────────────────
+public record DealStats(
+    int TotalDeals, int ApprovedDeals, int RejectedDeals, int PendingDeals,
+    int FeaturedDeals, int TotalOrders, decimal TotalRevenue,
+    List<CategoryStat> TopCategories, List<DailyStat> DealsOverTime
+);
+public record CategoryStat(string Category, int Count, int TotalOrders, decimal TotalRevenue);
+
+// ── User Activity Timeline ──────────────────────────────────────────────────────
+public record UserActivityTimeline(
+    string UserId, string Email, string FullName,
+    List<ActivityItem> Activities, int TotalDealsPosted, int TotalOrdersPlaced,
+    int TotalSavedDeals, int TotalNotificationsReceived
+);
+public record ActivityItem(string Type, string Summary, string EntityId, DateTime At);
+
+// ── Bulk Actions ────────────────────────────────────────────────────────────────
+public record BulkActionRequest(List<string> Ids, string Action, string? Reason);
+public record BulkActionResult(int Succeeded, int Failed, List<string> Errors);
+
+// ── Categories ─────────────────────────────────────────────────────────────────
+public record CategoryItem(int Id, string Name, string? Description, int DealCount, bool IsActive, DateTime CreatedAt);
+public record CreateCategoryRequest(string Name, string? Description);
+public record UpdateCategoryRequest(string? Name, string? Description, bool? IsActive);
+
+// ── Export ─────────────────────────────────────────────────────────────────────
+public record ExportResult(string DownloadUrl, string FileName, int RowCount, DateTime GeneratedAt);
+
 // ── Common ─────────────────────────────────────────────────────────────────────
 public record PagedResult<T>(List<T> Items, int TotalCount, int Page, int PageSize, int TotalPages);
 public record ApiResponse(bool Success, string? Message = null, object? Data = null);

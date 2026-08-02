@@ -15,36 +15,128 @@ public class MainDbContext : DbContext
     public DbSet<MainDeal> Deals => Set<MainDeal>();
     public DbSet<MainDealOrder> Orders => Set<MainDealOrder>();
 
+    // ── New entities ──────────────────────────────────────────────────────────
+    public DbSet<MainSavedList> SavedLists => Set<MainSavedList>();
+    public DbSet<MainSavedDeal> SavedDeals => Set<MainSavedDeal>();
+    public DbSet<MainNotification> Notifications => Set<MainNotification>();
+    public DbSet<MainConversation> Conversations => Set<MainConversation>();
+    public DbSet<MainChatMessage> ChatMessages => Set<MainChatMessage>();
+    public DbSet<MainPushToken> PushTokens => Set<MainPushToken>();
+
     protected override void OnModelCreating(ModelBuilder m)
     {
+        // ── Core tables ───────────────────────────────────────────────────────
         m.Entity<MainUser>(e => e.ToTable("users", "public"));
         m.Entity<MainDeal>(e => e.ToTable("deals", "public"));
         m.Entity<MainDealOrder>(e => e.ToTable("deal_orders", "public"));
 
-        // Navigation: deal → organizer
+        // ── Navigation: deal → organizer ──────────────────────────────────────
         m.Entity<MainDeal>()
             .HasOne(d => d.Organizer)
             .WithMany()
             .HasForeignKey(d => d.OrganizerId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Navigation: order → user
+        // ── Navigation: order → user ──────────────────────────────────────────
         m.Entity<MainDealOrder>()
             .HasOne(o => o.User)
             .WithMany()
             .HasForeignKey(o => o.BuyerId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Navigation: order → deal
+        // ── Navigation: order → deal ─────────────────────────────────────────
         m.Entity<MainDealOrder>()
             .HasOne(o => o.Deal)
             .WithMany()
             .HasForeignKey(o => o.DealId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // ── SavedList ─────────────────────────────────────────────────────────
+        m.Entity<MainSavedList>(e => e.ToTable("saved_lists", "public"));
+        m.Entity<MainSavedList>()
+            .HasOne(sl => sl.User)
+            .WithMany()
+            .HasForeignKey(sl => sl.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ── SavedDeal ─────────────────────────────────────────────────────────
+        m.Entity<MainSavedDeal>(e => e.ToTable("saved_deals", "public"));
+        m.Entity<MainSavedDeal>()
+            .HasOne(sd => sd.User)
+            .WithMany()
+            .HasForeignKey(sd => sd.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainSavedDeal>()
+            .HasOne(sd => sd.Deal)
+            .WithMany()
+            .HasForeignKey(sd => sd.DealId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainSavedDeal>()
+            .HasOne(sd => sd.List)
+            .WithMany(sl => sl.SavedDeals)
+            .HasForeignKey(sd => sd.ListId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ── Notification ──────────────────────────────────────────────────────
+        m.Entity<MainNotification>(e => e.ToTable("user_notifications", "public"));
+        m.Entity<MainNotification>()
+            .HasOne(n => n.User)
+            .WithMany()
+            .HasForeignKey(n => n.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainNotification>()
+            .HasIndex(n => n.CreatedAt);
+        m.Entity<MainNotification>()
+            .HasIndex(n => n.IsRead);
+
+        // ── Conversation ──────────────────────────────────────────────────────
+        m.Entity<MainConversation>(e => e.ToTable("conversations", "public"));
+        m.Entity<MainConversation>()
+            .HasIndex(c => c.LastMessageAt);
+
+        // ── ConversationParticipant ───────────────────────────────────────────
+        m.Entity<MainConversationParticipant>(e => e.ToTable("conversation_participants", "public"));
+        m.Entity<MainConversationParticipant>()
+            .HasOne(cp => cp.Conversation)
+            .WithMany(c => c.Participants)
+            .HasForeignKey(cp => cp.ConversationId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainConversationParticipant>()
+            .HasOne(cp => cp.User)
+            .WithMany()
+            .HasForeignKey(cp => cp.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ── ChatMessage ───────────────────────────────────────────────────────
+        m.Entity<MainChatMessage>(e => e.ToTable("chat_messages", "public"));
+        m.Entity<MainChatMessage>()
+            .HasOne(m => m.Conversation)
+            .WithMany(c => c.Messages)
+            .HasForeignKey(m => m.ConversationId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainChatMessage>()
+            .HasIndex(m => m.CreatedAt);
+        m.Entity<MainChatMessage>()
+            .HasIndex(m => m.SenderId);
+
+        // ── PushToken ─────────────────────────────────────────────────────────
+        m.Entity<MainPushToken>(e => e.ToTable("push_tokens", "public"));
+        m.Entity<MainPushToken>()
+            .HasOne(pt => pt.User)
+            .WithMany()
+            .HasForeignKey(pt => pt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainPushToken>()
+            .HasIndex(pt => pt.Token)
+            .IsUnique();
+        m.Entity<MainPushToken>()
+            .HasIndex(pt => pt.IsActive);
+
         base.OnModelCreating(m);
     }
 }
+
+// ── Main DB Entity Classes ────────────────────────────────────────────────────
 
 public class MainUser
 {
@@ -60,6 +152,10 @@ public class MainUser
 
     public ICollection<MainDeal> OrganizedDeals { get; set; } = new List<MainDeal>();
     public ICollection<MainDealOrder> Orders { get; set; } = new List<MainDealOrder>();
+    public ICollection<MainSavedList> SavedLists { get; set; } = new List<MainSavedList>();
+    public ICollection<MainSavedDeal> SavedDeals { get; set; } = new List<MainSavedDeal>();
+    public ICollection<MainNotification> Notifications { get; set; } = new List<MainNotification>();
+    public ICollection<MainPushToken> PushTokens { get; set; } = new List<MainPushToken>();
 }
 
 public class MainDeal
@@ -93,6 +189,7 @@ public class MainDeal
 
     public MainUser? Organizer { get; set; }
     public ICollection<MainDealOrder> Orders { get; set; } = new List<MainDealOrder>();
+    public ICollection<MainSavedDeal> SavedDeals { get; set; } = new List<MainSavedDeal>();
 }
 
 public class MainDealOrder
@@ -108,4 +205,94 @@ public class MainDealOrder
 
     public MainUser? User { get; set; }
     public MainDeal? Deal { get; set; }
+}
+
+// ── New Entity Classes ─────────────────────────────────────────────────────────
+
+public class MainSavedList
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public string Name { get; set; } = "";
+    public bool IsPublic { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public MainUser? User { get; set; }
+    public ICollection<MainSavedDeal> SavedDeals { get; set; } = new List<MainSavedDeal>();
+}
+
+public class MainSavedDeal
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public Guid DealId { get; set; }
+    public Guid ListId { get; set; }
+    public DateTime SavedAt { get; set; }
+
+    public MainUser? User { get; set; }
+    public MainDeal? Deal { get; set; }
+    public MainSavedList? List { get; set; }
+}
+
+public class MainNotification
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public string Type { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Body { get; set; } = "";
+    public string? DataJson { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public MainUser? User { get; set; }
+}
+
+public class MainConversation
+{
+    public Guid Id { get; set; }
+    public Guid? DealId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastMessageAt { get; set; }
+    public Guid? LastMessageId { get; set; }
+
+    public ICollection<MainConversationParticipant> Participants { get; set; } = new List<MainConversationParticipant>();
+    public ICollection<MainChatMessage> Messages { get; set; } = new List<MainChatMessage>();
+}
+
+public class MainConversationParticipant
+{
+    public Guid Id { get; set; }
+    public Guid ConversationId { get; set; }
+    public Guid UserId { get; set; }
+    public DateTime? LastReadAt { get; set; }
+
+    public MainConversation? Conversation { get; set; }
+    public MainUser? User { get; set; }
+}
+
+public class MainChatMessage
+{
+    public Guid Id { get; set; }
+    public Guid ConversationId { get; set; }
+    public Guid SenderId { get; set; }
+    public string Content { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public bool IsRead { get; set; }
+
+    public MainConversation? Conversation { get; set; }
+    public MainUser? Sender { get; set; }
+}
+
+public class MainPushToken
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public string Token { get; set; } = "";
+    public string Platform { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastUsedAt { get; set; }
+    public bool IsActive { get; set; } = true;
+
+    public MainUser? User { get; set; }
 }

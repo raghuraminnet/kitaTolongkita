@@ -44,4 +44,12 @@ public class UsersController : ControllerBase
         if (!ok) return BadRequest(new ApiResponse(false, "Failed to update user status"));
         return Ok(new ApiResponse(true, isActive ? "User enabled" : "User disabled"));
     }
+
+    [HttpGet("{id}/activity")]
+    public async Task<IActionResult> GetUserActivity(string id)
+    {
+        var result = await _svc.GetUserActivityAsync(id);
+        if (result == null) return NotFound(new ApiResponse(false, "User not found"));
+        return Ok(new ApiResponse(true, null, result));
+    }
 }
