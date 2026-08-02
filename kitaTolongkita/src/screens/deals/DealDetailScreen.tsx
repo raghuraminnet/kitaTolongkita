@@ -715,6 +715,14 @@ export const DealDetailScreen: React.FC = () => {
                       </Text>
                     </View>
                     <Text style={styles.commentContent}>{comment.content}</Text>
+                    {comment.userId && (
+                      <TouchableOpacity
+                        style={styles.commentDeleteBtn}
+                        onPress={() => handleDeleteComment(comment.id)}
+                      >
+                        <Text style={styles.commentDeleteText}>🗑</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               ))
@@ -919,5 +927,7 @@ const styles = StyleSheet.create({
   commentHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 2 },
   commentAuthor: { ...typography['label-sm'], color: colors['on-surface'], fontWeight: '700' },
   commentTime: { fontSize: 11, color: colors['on-surface-variant'] },
-  commentContent: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], lineHeight: 20 },
+  commentContent: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], lineHeight: 20, flex: 1 },
+  commentDeleteBtn: { marginLeft: spacing.sm, padding: 4 },
+  commentDeleteText: { fontSize: 14 },
 });
