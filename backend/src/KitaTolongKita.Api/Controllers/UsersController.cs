@@ -5,6 +5,7 @@ using System.Security.Claims;
 using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Infrastructure.Data;
+using KitaTolongKita.Infrastructure.Services;
 
 namespace KitaTolongKita.Api.Controllers;
 
@@ -14,11 +15,13 @@ namespace KitaTolongKita.Api.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IFollowService _follow;
     private readonly ILogger<UsersController> _logger;
 
-    public UsersController(AppDbContext db, ILogger<UsersController> logger)
+    public UsersController(AppDbContext db, IFollowService follow, ILogger<UsersController> logger)
     {
         _db = db;
+        _follow = follow;
         _logger = logger;
     }
 
@@ -29,8 +32,10 @@ public class UsersController : ControllerBase
         var userId = GetUserId();
         var user = await _db.Users.FindAsync(userId);
         if (user == null) return NotFound();
+        var counts = await _follow.GetCountsAsync(userId);
+        var dealCount = await _db.Deals.CountAsync(d => d.OrganizerId == userId && d.Status == DealStatus.Active && d.ModerationStatus == ModerationStatus.Approved);
 
-        return Ok(new UserProfileDto(
+        return Ok(new ExpandedUserProfileDto(
             user.Id,
             user.Email,
             user.Phone,
@@ -38,7 +43,17 @@ public class UsersController : ControllerBase
             user.AvatarUrl,
             user.EmailVerified,
             user.PhoneVerified,
-            user.CreatedAt
+            user.CreatedAt,
+            user.Bio,
+            user.City,
+            user.Website,
+            user.IsVerified,
+            user.IsContributor,
+            user.ContributorSince,
+            user.ContributorRating,
+            dealCount,
+            counts.followers,
+            counts.following
         ));
     }
 
@@ -49,22 +64,31 @@ public class UsersController : ControllerBase
         var user = await _db.Users.FindAsync(id);
         if (user == null) return NotFound(new { message = "User not found." });
 
-        // Count their active deals
         var dealCount = await _db.Deals
             .CountAsync(d => d.OrganizerId == id
                 && d.Status == DealStatus.Active
                 && d.ModerationStatus == ModerationStatus.Approved);
+        var counts = await _follow.GetCountsAsync(id);
+        var isFollowing = await _follow.IsFollowingAsync(GetUserId(), id);
 
         return Ok(new PublicUserProfileDto(
             user.Id,
             user.FullName,
             user.AvatarUrl,
+            user.Bio,
+            user.City,
+            user.Website,
+            user.IsVerified,
+            user.IsContributor,
             user.CreatedAt,
-            dealCount
+            dealCount,
+            counts.followers,
+            counts.following,
+            isFollowing
         ));
     }
 
-    /// <summary>Update the current user's profile.</summary>
+    /// <summary>Update the current user's profile (full name, phone, avatar).</summary>
     [HttpPut("me")]
     public async Task<IActionResult> UpdateMe([FromBody] UpdateProfileRequest request)
     {
@@ -74,10 +98,8 @@ public class UsersController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(request.FullName))
             user.FullName = request.FullName;
-
         if (!string.IsNullOrWhiteSpace(request.Phone))
             user.Phone = request.Phone;
-
         if (!string.IsNullOrWhiteSpace(request.AvatarUrl))
             user.AvatarUrl = request.AvatarUrl;
 
@@ -89,6 +111,24 @@ public class UsersController : ControllerBase
             user.Id, user.Email, user.Phone, user.FullName,
             user.AvatarUrl, user.EmailVerified, user.PhoneVerified, user.CreatedAt
         ));
+    }
+
+    /// <summary>Update profile fields: bio, city, website.</summary>
+    [HttpPatch("me/profile")]
+    public async Task<IActionResult> UpdateProfileFields([FromBody] UpdateProfileFieldsRequest request)
+    {
+        var userId = GetUserId();
+        var user = await _db.Users.FindAsync(userId);
+        if (user == null) return NotFound();
+
+        if (request.Bio != null) user.Bio = request.Bio.Length <= 160 ? request.Bio : request.Bio[..160];
+        if (request.City != null) user.City = request.City;
+        if (request.Website != null) user.Website = request.Website;
+
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("User {UserId} updated profile fields", userId);
+
+        return Ok(new { success = true, bio = user.Bio, city = user.City, website = user.Website });
     }
 
     /// <summary>Add or update a user address.</summary>
@@ -263,3 +303,23 @@ public record AddressDto(
     string? Postcode, string? City, string? State,
     double? Latitude, double? Longitude, bool IsDefault
 );
+
+/// <summary>Expanded user profile with social counts and profile fields.</summary>
+public record ExpandedUserProfileDto(
+    Guid Id, string Email, string? Phone, string FullName, string? AvatarUrl,
+    bool EmailVerified, bool PhoneVerified, DateTime CreatedAt,
+    string? Bio, string? City, string? Website,
+    bool IsVerified, bool IsContributor, DateTime? ContributorSince, decimal? ContributorRating,
+    int dealCount, int followerCount, int followingCount
+);
+
+/// <summary>Public profile with social counts and follow status.</summary>
+public record PublicUserProfileDto(
+    Guid Id, string FullName, string? AvatarUrl,
+    string? Bio, string? City, string? Website,
+    bool IsVerified, bool IsContributor, DateTime CreatedAt,
+    int dealCount, int followerCount, int followingCount,
+    bool isFollowing
+);
+
+public record UpdateProfileFieldsRequest(string? Bio, string? City, string? Website);

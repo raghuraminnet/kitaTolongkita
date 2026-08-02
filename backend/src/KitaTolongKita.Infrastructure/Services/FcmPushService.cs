@@ -20,6 +20,9 @@ public interface IPushNotificationService
 
     /// <summary>Send to users by their notification preferences (location/category match).</summary>
     Task SendToMatchingUsersAsync(string category, double lat, double lon, string title, string body, object? data = null);
+
+    /// <summary>Send and persist a notification to a user's notification history.</summary>
+    Task SendAndStoreAsync(Guid userId, string type, string title, string body, object? data = null);
 }
 
 public class FcmPushService : IPushNotificationService
@@ -97,6 +100,32 @@ public class FcmPushService : IPushNotificationService
         {
             await SendToUserAsync(userId, title, body, data);
         }
+    }
+
+    public async Task SendAndStoreAsync(Guid userId, string type, string title, string body, object? data = null)
+    {
+        // 1. Store in DB
+        try
+        {
+            var notification = new UserNotification
+            {
+                UserId = userId,
+                Type = type,
+                Title = title,
+                Body = body,
+                DataJson = data == null ? null : JsonSerializer.Serialize(data),
+                IsRead = false
+            };
+            _db.UserNotifications.Add(notification);
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to store notification for user {UserId}", userId);
+        }
+
+        // 2. Send push
+        await SendToUserAsync(userId, title, body, data);
     }
 
     private async Task SendToTokenAsync(string token, string title, string body, object? data)

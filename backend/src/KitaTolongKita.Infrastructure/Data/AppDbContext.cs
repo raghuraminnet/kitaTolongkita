@@ -21,6 +21,10 @@ public class AppDbContext : DbContext
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<SavedList> SavedLists => Set<SavedList>();
     public DbSet<SavedDeal> SavedDeals => Set<SavedDeal>();
+    public DbSet<UserFollow> UserFollows => Set<UserFollow>();
+    public DbSet<DealComment> DealComments => Set<DealComment>();
+    public DbSet<DealRepost> DealReposts => Set<DealRepost>();
+    public DbSet<UserNotificationPreference> UserNotificationPreferences => Set<UserNotificationPreference>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -125,6 +129,67 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.List)
                   .WithMany(l => l.SavedDeals)
                   .HasForeignKey(e => e.ListId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── User Follows ──────────────────────────────────────────────────────────────
+        modelBuilder.Entity<UserFollow>(entity =>
+        {
+            entity.HasIndex(e => new { e.FollowerId, e.FollowingId }).IsUnique();
+            entity.HasIndex(e => e.FollowingId);
+            entity.HasIndex(e => e.FollowerId);
+            entity.HasOne(e => e.Follower)
+                  .WithMany(u => u.Following)
+                  .HasForeignKey(e => e.FollowerId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Following)
+                  .WithMany(u => u.Followers)
+                  .HasForeignKey(e => e.FollowingId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Deal Comments ────────────────────────────────────────────────────────────
+        modelBuilder.Entity<DealComment>(entity =>
+        {
+            entity.HasIndex(e => new { e.DealId, e.CreatedAt });
+            entity.HasIndex(e => e.UserId);
+            entity.Property(e => e.Content).HasMaxLength(500).IsRequired();
+            entity.HasOne(e => e.Deal)
+                  .WithMany(d => d.Comments)
+                  .HasForeignKey(e => e.DealId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Parent)
+                  .WithMany(r => r.Replies)
+                  .HasForeignKey(e => e.ParentId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ── Deal Reposts ─────────────────────────────────────────────────────────────
+        modelBuilder.Entity<DealRepost>(entity =>
+        {
+            entity.HasIndex(e => new { e.DealId, e.UserId }).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasOne(e => e.Deal)
+                  .WithMany(d => d.Reposts)
+                  .HasForeignKey(e => e.DealId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── User Notification Preferences ───────────────────────────────────────────
+        modelBuilder.Entity<UserNotificationPreference>(entity =>
+        {
+            entity.HasIndex(e => e.UserId).IsUnique();
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

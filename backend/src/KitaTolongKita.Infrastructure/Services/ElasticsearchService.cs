@@ -113,9 +113,19 @@ public class ElasticsearchService : IElasticsearchService
             _logger.LogWarning("RefreshDealIndexAsync: deal {DealId} not found", dealId);
             return;
         }
-        await IndexDealAsync(deal);
-        _logger.LogInformation("RefreshDealIndexAsync: re-indexed deal {DealId} with organizer {OrganizerName}",
-            dealId, deal.Organizer?.FullName ?? "(none)");
+
+        // Compute social counts from DB
+        var commentCount = await db.DealComments
+            .CountAsync(c => c.DealId == dealId && !c.IsHidden && c.ModerationStatus == "Approved");
+        var repostCount = await db.DealReposts.CountAsync(r => r.DealId == dealId);
+
+        var esDeal = ToEsDeal(deal);
+        esDeal.CommentCount = commentCount;
+        esDeal.RepostCount = repostCount;
+
+        await _esClient.IndexAsync(esDeal, i => i.Index(_indexName).Id(dealId.ToString()));
+        _logger.LogInformation("RefreshDealIndexAsync: re-indexed deal {DealId} with organizer {OrganizerName}, comments={CommentCount}, reposts={RepostCount}",
+            dealId, deal.Organizer?.FullName ?? "(none)", commentCount, repostCount);
     }
 
     public async Task DeleteDealAsync(Guid dealId)
@@ -410,4 +420,6 @@ internal class EsDeal
     public int LikeCount { get; set; }
     public string ModerationStatus { get; set; } = "Pending";
     public bool IsActive { get; set; }
+    public int CommentCount { get; set; }
+    public int RepostCount { get; set; }
 }

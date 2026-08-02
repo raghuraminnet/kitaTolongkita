@@ -19,6 +19,19 @@ public class User
     public UserStatus Status { get; set; } = UserStatus.Active;
     public List<UserAddress> Addresses { get; set; } = [];
     public List<SavedList> SavedLists { get; set; } = [];
+
+    // ── Social: Follow system ───────────────────────────────────────────────────
+    public List<UserFollow> Followers { get; set; } = [];   // users who follow this user
+    public List<UserFollow> Following { get; set; } = [];  // users this user follows
+
+    // ── Profile fields ──────────────────────────────────────────────────────────
+    public string? Bio { get; set; }
+    public string? City { get; set; }
+    public string? Website { get; set; }
+    public bool IsVerified { get; set; } = false;
+    public bool IsContributor { get; set; } = false;
+    public DateTime? ContributorSince { get; set; }
+    public decimal? ContributorRating { get; set; }
 }
 
 public enum UserStatus

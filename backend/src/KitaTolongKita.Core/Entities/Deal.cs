@@ -46,6 +46,10 @@ public class Deal
     public string? DuplicateOfDealId { get; set; }
 
     public List<DealOrder> Orders { get; set; } = [];
+
+    // ── Social ─────────────────────────────────────────────────────────────────
+    public List<DealComment> Comments { get; set; } = [];
+    public List<DealRepost> Reposts { get; set; } = [];
 }
 
 public enum DealStatus

@@ -19,17 +19,25 @@ public class NotificationsController : ControllerBase
 
     /// <summary>Get all notifications for the current user.</summary>
     [HttpGet]
-    public async Task<IActionResult> GetNotifications([FromQuery] int page = 1, [FromQuery] int pageSize = 30)
+    public async Task<IActionResult> GetNotifications(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 30,
+        [FromQuery] string? type = null,
+        [FromQuery] bool? isRead = null)
     {
         var userId = GetUserId();
 
-        var total = await _db.UserNotifications
-            .CountAsync(n => n.UserId == userId);
+        var q = _db.UserNotifications.Where(n => n.UserId == userId);
+        if (!string.IsNullOrEmpty(type))
+            q = q.Where(n => n.Type == type);
+        if (isRead != null)
+            q = q.Where(n => n.IsRead == isRead);
+
+        var total = await q.CountAsync();
 
         // Materialize the query first so we can safely call JsonSerializer.Deserialize
         // (which can't live inside an EF expression tree).
-        var rows = await _db.UserNotifications
-            .Where(n => n.UserId == userId)
+        var rows = await q
             .OrderByDescending(n => n.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
