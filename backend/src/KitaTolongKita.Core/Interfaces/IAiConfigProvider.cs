@@ -12,4 +12,8 @@ public interface IAiConfigProvider
     string Model { get; }
     string Endpoint { get; }         // Azure-specific
     string DeploymentName { get; }   // Azure-specific
+
+    // Moderation thresholds — hot-reloaded from Redis via moderation:rules:updated pub/sub
+    int AutoApproveThreshold { get; }
+    int PendingReviewThreshold { get; }
 }

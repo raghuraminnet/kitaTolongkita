@@ -470,6 +470,11 @@ public class AdminService : IAdminService
         // Publish to Redis so app API can reload
         await _configSync.SetConfigAsync($"rule:{rule.Key}", rule.Value);
 
+        // Publish full rules snapshot for hot-reload in Kita API
+        var allRules = await _db.ModerationRules.AsNoTracking().ToListAsync();
+        var rulesDict = allRules.ToDictionary(r => r.Key, r => r.Value);
+        await _configSync.PublishConfigChangeAsync("moderation:rules:updated", rulesDict);
+
         return new ModerationRuleItem(
             rule.Id, rule.Key, rule.Value, rule.Description, rule.Category, rule.IsActive, rule.UpdatedAt);
     }

@@ -83,7 +83,37 @@ public class ConfigReloadService : BackgroundService
                 }
             });
 
-            _logger.LogInformation("Subscribed to Redis config:changed and ai:config:updated channels");
+            // Moderation rules hot-reload: admin updates rule → published here → update ai:config:live cache
+            await sub.SubscribeAsync(RedisChannel.Literal("moderation:rules:updated"), (ch, msg) =>
+            {
+                try
+                {
+                    var rules = JsonSerializer.Deserialize<Dictionary<string, string>>(msg!);
+                    if (rules != null && _cache != null)
+                    {
+                        // Merge into existing ai:config:live cache so AiConfigProvider reads thresholds
+                        if (_cache.TryGetValue("ai:config:live", out var existing) && existing is Dictionary<string, string> current)
+                        {
+                            foreach (var kvp in rules) current[kvp.Key] = kvp.Value;
+                            _cache.Set("ai:config:live", current, TimeSpan.FromHours(1));
+                        }
+                        else
+                        {
+                            _cache.Set("ai:config:live", rules, TimeSpan.FromHours(1));
+                        }
+                        _logger.LogInformation("Moderation rules hot-reloaded: auto_approve_threshold={AutoApprove}, pending_review_threshold={PendingReview}",
+                            rules.GetValueOrDefault("auto_approve_threshold"),
+                            rules.GetValueOrDefault("pending_review_threshold"));
+                        AiConfigHotReloadEvent?.Set();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to process moderation rules update: {Msg}", msg);
+                }
+            });
+
+            _logger.LogInformation("Subscribed to Redis config:changed, ai:config:updated, and moderation:rules:updated channels");
         }
         catch (Exception ex)
         {

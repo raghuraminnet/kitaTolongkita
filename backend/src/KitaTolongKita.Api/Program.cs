@@ -66,7 +66,7 @@ builder.Services.AddScoped<IModerationService>(sp =>
             sp.GetRequiredService<ILogger<OpenAiModerationService>>()),
         "anthropic" => new AnthropicModerationService(http, aiCfg,
             sp.GetRequiredService<ILogger<AnthropicModerationService>>()),
-        _ => new AzureOpenAiModerationService(http, config, logger)
+        _ => new AzureOpenAiModerationService(http, aiCfg, logger)
     };
 });
 

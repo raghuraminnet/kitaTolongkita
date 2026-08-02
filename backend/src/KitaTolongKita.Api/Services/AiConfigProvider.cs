@@ -43,6 +43,12 @@ public class AiConfigProvider : IAiConfigProvider
     public string Endpoint => Get("endpoint", "AI:Endpoint", "");
     public string DeploymentName => Get("deploymentName", "AI:DeploymentName", "");
 
+    public int AutoApproveThreshold =>
+        int.TryParse(Get("auto_approve_threshold", "AI:AutoApproveThreshold", "80"), out var a) ? a : 80;
+
+    public int PendingReviewThreshold =>
+        int.TryParse(Get("pending_review_threshold", "AI:PendingReviewThreshold", "50"), out var p) ? p : 50;
+
     /// <summary>
     /// Called by ConfigReloadService when admin updates AI config — hot-reloads credentials without restart.
     /// </summary>

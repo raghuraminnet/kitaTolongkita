@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
+using KitaTolongKita.Core.Interfaces;
 using Microsoft.Extensions.Logging;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Core.Interfaces;
@@ -13,32 +14,20 @@ public class AzureOpenAiModerationService : IModerationService
 {
     private readonly HttpClient _http;
     private readonly ILogger<AzureOpenAiModerationService> _logger;
-    private readonly string _endpoint;
-    private readonly string _deployment;
-    private readonly string _apiKey;
-    private readonly int _autoApproveThreshold = 80;
-    private readonly int _pendingReviewThreshold = 50;
+    private readonly IAiConfigProvider _cfg;
 
     public AzureOpenAiModerationService(
         HttpClient httpClient,
-        IConfiguration config,
+        IAiConfigProvider config,
         ILogger<AzureOpenAiModerationService> logger)
     {
         _http = httpClient;
         _logger = logger;
+        _cfg = config;
 
-        _endpoint = config["AI:Endpoint"] ?? config["AI:BaseUrl"] ?? "";
-        _deployment = config["AI:DeploymentName"] ?? config["AI:Model"] ?? "gpt-4o";
-        _apiKey = config["AI:ApiKey"] ?? "";
-
-        if (!string.IsNullOrEmpty(_apiKey))
+        if (!string.IsNullOrEmpty(_cfg.ApiKey))
             _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", _apiKey);
-
-        if (int.TryParse(config["AI:AutoApproveThreshold"], out var t))
-            _autoApproveThreshold = t;
-        if (int.TryParse(config["AI:PendingReviewThreshold"], out var p))
-            _pendingReviewThreshold = p;
+                new AuthenticationHeaderValue("Bearer", _cfg.ApiKey);
     }
 
     public async Task<ModerationResult> AnalyseDealAsync(Deal deal)
@@ -62,7 +51,7 @@ public class AzureOpenAiModerationService : IModerationService
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             // Construct the Azure OpenAI chat completions URL
-            var url = $"{_endpoint.TrimEnd('/')}/openai/deployments/{_deployment}/chat/completions?api-version=2024-02-15-preview";
+            var url = $"{_cfg.Endpoint.TrimEnd('/')}/openai/deployments/{_cfg.DeploymentName}/chat/completions?api-version=2024-02-15-preview";
 
             using var response = await _http.PostAsync(url, content);
             var responseBody = await response.Content.ReadAsStringAsync();
@@ -131,7 +120,7 @@ If no duplicate, respond with: NO_DUPLICATE";
 
             var json = JsonSerializer.Serialize(requestBody);
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var url = $"{_endpoint.TrimEnd('/')}/openai/deployments/{_deployment}/chat/completions?api-version=2024-02-15-preview";
+            var url = $"{_cfg.Endpoint.TrimEnd('/')}/openai/deployments/{_cfg.DeploymentName}/chat/completions?api-version=2024-02-15-preview";
             using var response = await _http.PostAsync(url, content);
             var body = await response.Content.ReadAsStringAsync();
 
@@ -223,8 +212,8 @@ Check for:
             }
 
             // Enforce thresholds
-            var decision = score >= _autoApproveThreshold ? ModerationDecision.AutoApproved
-                : score >= _pendingReviewThreshold ? ModerationDecision.PendingReview
+            var decision = score >= _cfg.AutoApproveThreshold ? ModerationDecision.AutoApproved
+                : score >= _cfg.PendingReviewThreshold ? ModerationDecision.PendingReview
                 : ModerationDecision.Rejected;
 
             return new ModerationResult
