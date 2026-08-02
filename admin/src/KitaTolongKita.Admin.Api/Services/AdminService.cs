@@ -115,7 +115,7 @@ public class AdminService : IAdminService
         await _db.SaveChangesAsync();
     }
 
-    private string MaskApiKey(string? key) =>
+    private static string MaskApiKey(string? key) =>
         string.IsNullOrWhiteSpace(key) || key.Length < 8
             ? "****"
             : $"{key[..4]}...{key[^4..]}";
@@ -688,38 +688,58 @@ public class AdminService : IAdminService
     {
         var since = DateTime.UtcNow.AddDays(-days);
 
-        var totalDeals = await _mainDb.Deals.AsNoTracking().CountAsync();
-        var approvedDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d => d.ModerationStatus == "Approved");
-        var rejectedDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d => d.ModerationStatus == "Rejected");
-        var pendingDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d =>
-            d.ModerationStatus == "Pending" || d.ModerationStatus == "UnderReview" || d.ModerationStatus == "PendingReview");
-        var featuredDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d => d.IsFeatured);
-        var totalOrders = await _mainDb.Orders.AsNoTracking().CountAsync();
-        var totalRevenue = await _mainDb.Orders.AsNoTracking().SumAsync(o => o.TotalPrice);
+        int totalDeals = 0, approvedDeals = 0, rejectedDeals = 0, pendingDeals = 0, featuredDeals = 0;
+        int totalOrders = 0;
+        decimal totalRevenue = 0;
+        List<CategoryStat> categories = new();
+        List<DailyStat> dailyDeals = new();
 
-        // Category breakdown
-        var categories = await _mainDb.Deals
-            .Where(d => d.ModerationStatus == "Approved")
-            .GroupBy(d => d.Category)
-            .Select(g => new CategoryStat(
-                g.Key,
-                g.Count(),
-                g.SelectMany(d => d.Orders).Count(),
-                g.SelectMany(d => d.Orders).Sum(o => o.TotalPrice)))
-            .OrderByDescending(c => c.Count)
-            .Take(10).AsNoTracking().ToListAsync();
-
-        // Daily deals over time
-        var dailyDealsRaw = await _mainDb.Deals
-            .Where(d => d.CreatedAt >= since)
-            .AsNoTracking()
-            .Select(d => d.CreatedAt.Date)
-            .ToListAsync();
-        var dailyDeals = dailyDealsRaw
-            .GroupBy(d => d.ToString("yyyy-MM-dd"))
-            .Select(g => new DailyStat(g.Key, g.Count()))
-            .OrderBy(d => d.Date)
-            .ToList();
+        try {
+            totalDeals = await _mainDb.Deals.AsNoTracking().CountAsync();
+        } catch { }
+        try {
+            approvedDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d => d.ModerationStatus == "Approved");
+        } catch { }
+        try {
+            rejectedDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d => d.ModerationStatus == "Rejected");
+        } catch { }
+        try {
+            pendingDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d =>
+                d.ModerationStatus == "Pending" || d.ModerationStatus == "UnderReview" || d.ModerationStatus == "PendingReview");
+        } catch { }
+        try {
+            featuredDeals = await _mainDb.Deals.AsNoTracking().CountAsync(d => d.IsFeatured);
+        } catch { }
+        try {
+            totalOrders = await _mainDb.Orders.AsNoTracking().CountAsync();
+        } catch { }
+        try {
+            totalRevenue = await _mainDb.Orders.AsNoTracking().SumAsync(o => o.TotalPrice);
+        } catch { }
+        try {
+            categories = await _mainDb.Deals
+                .Where(d => d.ModerationStatus == "Approved")
+                .GroupBy(d => d.Category)
+                .Select(g => new CategoryStat(
+                    g.Key,
+                    g.Count(),
+                    g.SelectMany(d => d.Orders).Count(),
+                    g.SelectMany(d => d.Orders).Sum(o => o.TotalPrice)))
+                .OrderByDescending(c => c.Count)
+                .Take(10).AsNoTracking().ToListAsync();
+        } catch { }
+        try {
+            var dailyDealsRaw = await _mainDb.Deals
+                .Where(d => d.CreatedAt >= since)
+                .AsNoTracking()
+                .Select(d => d.CreatedAt.Date)
+                .ToListAsync();
+            dailyDeals = dailyDealsRaw
+                .GroupBy(d => d.ToString("yyyy-MM-dd"))
+                .Select(g => new DailyStat(g.Key, g.Count()))
+                .OrderBy(d => d.Date)
+                .ToList();
+        } catch { }
 
         return new DealStats(
             totalDeals, approvedDeals, rejectedDeals, pendingDeals,
@@ -782,7 +802,8 @@ public class AdminService : IAdminService
         var items = new List<CategoryItem>();
         foreach (var c in cats)
         {
-            var dealCount = await _mainDb.Deals.CountAsync(d => d.Category == c.Name);
+            int dealCount = 0;
+            try { dealCount = await _mainDb.Deals.CountAsync(d => d.Category == c.Name); } catch { }
             items.Add(new CategoryItem(c.Id, c.Name, c.Description, dealCount, c.IsActive, c.CreatedAt));
         }
         return items;
