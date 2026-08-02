@@ -45,6 +45,17 @@ public class UsersController : ControllerBase
         return Ok(new ApiResponse(true, isActive ? "User enabled" : "User disabled"));
     }
 
+    /// <summary>Verify or revoke verification badge for a user.</summary>
+    [Authorize(Policy = "Moderator")]
+    [HttpPatch("{id}/verify")]
+    public async Task<IActionResult> VerifyUser(string id, [FromBody] VerifyUserRequest req)
+    {
+        var adminId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var ok = await _svc.VerifyUserAsync(id, req.Verify, adminId);
+        if (!ok) return BadRequest(new ApiResponse(false, "Failed to update verification status"));
+        return Ok(new ApiResponse(true, req.Verify ? "User verified" : "Verification revoked"));
+    }
+
     [HttpGet("{id}/activity")]
     public async Task<IActionResult> GetUserActivity(string id)
     {
@@ -53,3 +64,5 @@ public class UsersController : ControllerBase
         return Ok(new ApiResponse(true, null, result));
     }
 }
+
+public record VerifyUserRequest(bool Verify);

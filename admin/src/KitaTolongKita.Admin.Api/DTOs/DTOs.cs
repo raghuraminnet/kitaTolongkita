@@ -167,6 +167,19 @@ public record CategoryItem(int Id, string Name, string? Description, int DealCou
 public record CreateCategoryRequest(string Name, string? Description);
 public record UpdateCategoryRequest(string? Name, string? Description, bool? IsActive);
 
+// ── Comments ──────────────────────────────────────────────────────────────────
+public record CommentItem(
+    Guid Id, Guid DealId, string DealTitle,
+    Guid UserId, string UserFullName, string? UserAvatar,
+    string Content, DateTime CreatedAt,
+    bool IsHidden, string ModerationStatus
+);
+public record CommentStats(int Total, int PendingReview, int Approved, int Rejected);
+
+// ── Follows (read-only) ────────────────────────────────────────────────────────
+public record FollowerItem(Guid UserId, string FullName, string? AvatarUrl, DateTime FollowedAt);
+public record FollowStats(int Followers, int Following);
+
 // ── Export ─────────────────────────────────────────────────────────────────────
 public record ExportResult(string DownloadUrl, string FileName, int RowCount, DateTime GeneratedAt);
 

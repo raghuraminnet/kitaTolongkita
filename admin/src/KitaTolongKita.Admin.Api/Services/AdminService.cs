@@ -18,6 +18,7 @@ public interface IAdminService
     Task<PagedResult<UserListItem>> GetUsersAsync(string? search, string? filter, int page, int pageSize);
     Task<UserDetail?> GetUserDetailAsync(string id);
     Task<bool> ToggleUserStatusAsync(string id, bool isActive, int adminId);
+    Task<bool> VerifyUserAsync(string id, bool verify, int adminId);
 
     // Deals (main DB)
     Task<PagedResult<DealModerationItem>> GetPendingDealsAsync(int page, int pageSize);
@@ -206,6 +207,18 @@ public class AdminService : IAdminService
         var admin = await _db.AdminUsers.FindAsync(adminId);
         await LogActionAsync(adminId, admin!.Email, isActive ? "ENABLED_USER" : "DISABLED_USER", "User", id);
         await _dashboard.InvalidateCacheAsync();
+        return true;
+    }
+
+    public async Task<bool> VerifyUserAsync(string id, bool verify, int adminId)
+    {
+        if (!Guid.TryParse(id, out var uid)) return false;
+        var user = await _mainDb.Users.FindAsync(uid);
+        if (user == null) return false;
+        user.IsVerified = verify;
+        await _mainDb.SaveChangesAsync();
+        var admin = await _db.AdminUsers.FindAsync(adminId);
+        await LogActionAsync(adminId, admin!.Email, verify ? "VERIFIED_USER" : "REVOKED_VERIFICATION", "User", id);
         return true;
     }
 

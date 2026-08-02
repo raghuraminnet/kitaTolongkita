@@ -22,6 +22,8 @@ public class MainDbContext : DbContext
     public DbSet<MainConversation> Conversations => Set<MainConversation>();
     public DbSet<MainChatMessage> ChatMessages => Set<MainChatMessage>();
     public DbSet<MainPushToken> PushTokens => Set<MainPushToken>();
+    public DbSet<MainUserFollow> UserFollows => Set<MainUserFollow>();
+    public DbSet<MainDealComment> DealComments => Set<MainDealComment>();
 
     protected override void OnModelCreating(ModelBuilder m)
     {
@@ -132,6 +134,38 @@ public class MainDbContext : DbContext
         m.Entity<MainPushToken>()
             .HasIndex(pt => pt.IsActive);
 
+        // ── UserFollow ─────────────────────────────────────────────────────────
+        m.Entity<MainUserFollow>(e => e.ToTable("user_follows", "public"));
+        m.Entity<MainUserFollow>()
+            .HasOne(uf => uf.Follower)
+            .WithMany()
+            .HasForeignKey(uf => uf.FollowerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainUserFollow>()
+            .HasOne(uf => uf.Following)
+            .WithMany()
+            .HasForeignKey(uf => uf.FollowingId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainUserFollow>()
+            .HasIndex(uf => new { uf.FollowerId, uf.FollowingId }).IsUnique();
+
+        // ── DealComment ────────────────────────────────────────────────────────
+        m.Entity<MainDealComment>(e => e.ToTable("deal_comments", "public"));
+        m.Entity<MainDealComment>()
+            .HasOne(c => c.Deal)
+            .WithMany()
+            .HasForeignKey(c => c.DealId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainDealComment>()
+            .HasOne(c => c.User)
+            .WithMany()
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        m.Entity<MainDealComment>()
+            .HasIndex(c => new { c.DealId, c.CreatedAt });
+        m.Entity<MainDealComment>()
+            .HasIndex(c => c.UserId);
+
         base.OnModelCreating(m);
     }
 }
@@ -149,6 +183,13 @@ public class MainUser
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? Bio { get; set; }
+    public string? City { get; set; }
+    public string? Website { get; set; }
+    public bool IsVerified { get; set; }
+    public bool IsContributor { get; set; }
+    public DateTime? ContributorSince { get; set; }
+    public decimal? ContributorRating { get; set; }
 
     public ICollection<MainDeal> OrganizedDeals { get; set; } = new List<MainDeal>();
     public ICollection<MainDealOrder> Orders { get; set; } = new List<MainDealOrder>();
@@ -294,5 +335,31 @@ public class MainPushToken
     public DateTime? LastUsedAt { get; set; }
     public bool IsActive { get; set; } = true;
 
+    public MainUser? User { get; set; }
+}
+
+public class MainUserFollow
+{
+    public Guid Id { get; set; }
+    public Guid FollowerId { get; set; }
+    public Guid FollowingId { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public MainUser? Follower { get; set; }
+    public MainUser? Following { get; set; }
+}
+
+public class MainDealComment
+{
+    public Guid Id { get; set; }
+    public Guid DealId { get; set; }
+    public Guid UserId { get; set; }
+    public string Content { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public bool IsHidden { get; set; }
+    public string ModerationStatus { get; set; } = "Approved";
+
+    public MainDeal? Deal { get; set; }
     public MainUser? User { get; set; }
 }
