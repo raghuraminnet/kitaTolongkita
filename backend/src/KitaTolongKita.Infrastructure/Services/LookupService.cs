@@ -67,7 +67,7 @@ public class LookupService : ILookupService
         if (existing != null) return null;
 
         var bookingId = GenerateBookingId();
-        var qrCode = GenerateQrCode(bookingId, dealId, userId);
+        var qrCode = GenerateQrCode(bookingId, dealId, userId, Guid.Empty);
 
         var lookup = new DealLookup
         {

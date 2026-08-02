@@ -123,7 +123,7 @@ public class ElasticsearchService : IElasticsearchService
         esDeal.CommentCount = commentCount;
         esDeal.RepostCount = repostCount;
 
-        await _esClient.IndexAsync(esDeal, i => i.Index(_indexName).Id(dealId.ToString()));
+        await _client.IndexAsync(esDeal, i => i.Index(IndexName).Id(dealId.ToString()));
         _logger.LogInformation("RefreshDealIndexAsync: re-indexed deal {DealId} with organizer {OrganizerName}, comments={CommentCount}, reposts={RepostCount}",
             dealId, deal.Organizer?.FullName ?? "(none)", commentCount, repostCount);
     }

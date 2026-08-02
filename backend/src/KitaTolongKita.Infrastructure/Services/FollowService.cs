@@ -116,7 +116,7 @@ public class FollowService : IFollowService
 
         try
         {
-            await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize([followerCount, followingCount]),
+            await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(new[] { followerCount, followingCount }),
                 new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = CountCacheDuration });
         }
         catch { /* ignore */ }

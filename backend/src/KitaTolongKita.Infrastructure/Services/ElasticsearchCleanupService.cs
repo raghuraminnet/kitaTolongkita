@@ -74,7 +74,7 @@ public class ElasticsearchCleanupService : BackgroundService
         var scrollTimeout = TimeSpan.FromMinutes(2);
         var searchResponse = await _es.SearchAsync<EsDeal>(s => s
             .Index(IndexName)
-            .Scroll(scrollTimeout)
+            .Scroll(new Time(scrollTimeout))
             .Size(500)
             .Query(q => q.MatchAll())
             .Source(src => src.Includes(i => i.Field(f => f.Id))),
@@ -96,11 +96,8 @@ public class ElasticsearchCleanupService : BackgroundService
         var scrollId = searchResponse.ScrollId;
         while (!string.IsNullOrEmpty(scrollId) && searchResponse.Hits.Any())
         {
-            searchResponse = await _es.ScrollAsync<EsDeal>(s => s
-                .ScrollId(scrollId)
-                .Scroll(scrollTimeout)
-                .Size(500),
-                ct);
+            var scrollReq = new ScrollRequest(scrollId, new Time(scrollTimeout));
+            searchResponse = await _es.ScrollAsync<EsDeal>(scrollReq, ct);
 
             if (!searchResponse.IsValid || !searchResponse.Hits.Any()) break;
             ProcessHits(searchResponse.Hits, pgDealIdsSet, orphanedIds, staleIds);

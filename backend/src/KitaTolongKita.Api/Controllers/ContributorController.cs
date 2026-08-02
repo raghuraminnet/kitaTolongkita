@@ -48,7 +48,7 @@ public class ContributorController : ControllerBase
         var status = await _svc.GetMyApplicationStatusAsync(CurrentUserId);
         if (status == null)
             return Ok(new { hasApplication = false });
-        return Ok(new { hasApplication = true, ...status });
+        return Ok(new { hasApplication = true, status.Id, status.Status, status.RejectionReason, status.CreatedAt, status.ApprovedAt });
     }
 
     /// <summary>Withdraw pending application.</summary>

@@ -59,7 +59,7 @@ public class RedisCacheService : ICacheService
     {
         try
         {
-            var bytes = JsonSerializer.SerializeToUtf8(value, JsonOptions);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value, JsonOptions));
             var opts = new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = expiry ?? TimeSpan.FromMinutes(10)
@@ -140,7 +140,7 @@ public class RedisCacheService : ICacheService
             {
                 keys.Add(key);
                 var opts = new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) };
-                await _cache.SetAsync(keySetKey, JsonSerializer.SerializeToUtf8(keys, JsonOptions), opts, ct);
+                await _cache.SetAsync(keySetKey, System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(keys, JsonOptions)), opts, ct);
             }
         }
         catch (Exception ex)

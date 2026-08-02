@@ -46,13 +46,12 @@ public class DealsController : ControllerBase
         if (userId != null && result.Items.Count > 0)
         {
             var enriched = await EnrichDealsAsync(result.Items, userId.Value);
-            result = new PagedResult<DealDto>(
+            result = new Core.DTOs.PagedResult<DealDto>(
                 enriched,
                 result.TotalCount,
                 result.Page,
                 result.PageSize,
-                result.HasNextPage,
-                result.HasPreviousPage
+                (int)Math.Ceiling(result.TotalCount / (double)result.PageSize)
             );
         }
 
@@ -106,14 +105,6 @@ public class DealsController : ControllerBase
         var myId = GetUserId();
         if (myId != null && deals.Count > 0)
             deals = await EnrichDealsAsync(deals, myId.Value);
-        return Ok(deals);
-    }
-
-    /// <summary>Get deals similar to a location (for public profile page).</summary>
-    [HttpGet("user/{userId:guid}")]
-    public async Task<IActionResult> GetDealsByUser(Guid userId)
-    {
-        var deals = await _deals.GetDealsByUserAsync(userId);
         return Ok(deals);
     }
 

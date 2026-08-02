@@ -47,7 +47,7 @@ public class SavedDealService : ISavedDealService
         else
         {
             // Use or create default "Favorites" list
-            list = await _db.SavedLists.FirstOrDefault(l => l.UserId == userId && l.Name == "Favorites");
+            list = await _db.SavedLists.FirstOrDefaultAsync(l => l.UserId == userId && l.Name == "Favorites");
             if (list == null)
             {
                 list = new SavedList { UserId = userId, Name = "Favorites", IsPublic = false };
@@ -185,7 +185,7 @@ public class SavedDealService : ISavedDealService
             listName,
             saved.SavedAt,
             new SavedDeal_DealSummary(
-                deal.Id,
+                deal.Id.ToString(),
                 deal.Title,
                 deal.Category,
                 deal.GroupPrice,
@@ -194,8 +194,8 @@ public class SavedDealService : ISavedDealService
                 deal.MembersJoined,
                 deal.MinMembers,
                 deal.Status.ToString(),
-                deal.OrganizerName,
-                deal.OrganizerAvatar,
+                deal.Organizer?.FullName ?? "",
+                deal.Organizer?.AvatarUrl,
                 deal.Latitude,
                 deal.Longitude,
                 deal.Deadline

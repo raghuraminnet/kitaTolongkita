@@ -140,7 +140,7 @@ public class RepostService : IRepostService
 
         try
         {
-            await _cache.SetStringAsync(cacheKey, JsonSerializer.SerializeToUtf8(reposts),
+            await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(reposts),
                 new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1) });
         }
         catch { /* ignore */ }

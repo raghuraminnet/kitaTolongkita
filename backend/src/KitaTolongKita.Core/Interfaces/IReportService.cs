@@ -61,13 +61,25 @@ public record ReportDto(
     DateTime CreatedAt
 );
 
-public record ReportDetailDto : ReportDto
-{
-    public string? DealDescription { get; init; }
-    public string? DealImageUrl { get; init; }
-    public decimal? DealGroupPrice { get; init; }
-    public string? DealPickupLocation { get; init; }
-    public string? TargetUserName { get; init; }
-    public string? TargetUserEmail { get; init; }
-    public Guid? ResolvedById { get; init; }
-}
+public record ReportDetailDto(
+    Guid Id,
+    ReportType Type,
+    Guid TargetId,
+    string? TargetTitle,
+    Guid ReporterId,
+    string? ReporterName,
+    List<ReportReason> Reasons,
+    string? Description,
+    ReportStatus Status,
+    ReportAction Action,
+    string? AdminNotes,
+    DateTime? ResolvedAt,
+    DateTime CreatedAt,
+    string? DealDescription,
+    string? DealImageUrl,
+    decimal? DealGroupPrice,
+    string? DealPickupLocation,
+    string? TargetUserName,
+    string? TargetUserEmail,
+    Guid? ResolvedById
+) : ReportDto(Id, Type, TargetId, TargetTitle, ReporterId, ReporterName, Reasons, Description, Status, Action, AdminNotes, ResolvedAt, CreatedAt);

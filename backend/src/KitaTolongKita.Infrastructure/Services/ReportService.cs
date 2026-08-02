@@ -226,6 +226,13 @@ public class ReportService : IReportService
         ReporterName: r.Reporter?.FullName,
         r.Reasons, r.Description,
         r.Status, r.Action, r.AdminNotes,
-        r.ResolvedAt, r.CreatedAt
+        r.ResolvedAt, r.CreatedAt,
+        DealDescription: null,
+        DealImageUrl: null,
+        DealGroupPrice: null,
+        DealPickupLocation: null,
+        TargetUserName: null,
+        TargetUserEmail: null,
+        ResolvedById: null
     );
 }

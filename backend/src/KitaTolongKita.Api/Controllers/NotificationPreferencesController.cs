@@ -28,11 +28,11 @@ public class NotificationPreferencesController : ControllerBase
         {
             // Return defaults
             return Ok(new NotificationSettingsDto(
-                notifyFollow: true,
-                notifyFollowedDeal: false,
-                notifyLikes: true,
-                notifyComments: true,
-                notifyLookups: true
+                NotifyFollow: true,
+                NotifyFollowedDeal: false,
+                NotifyLikes: true,
+                NotifyComments: true,
+                NotifyLookups: true
             ));
         }
 

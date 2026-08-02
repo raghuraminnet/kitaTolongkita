@@ -277,8 +277,16 @@ public record PublicUserProfileDto(
     Guid Id,
     string FullName,
     string? AvatarUrl,
+    string? Bio,
+    string? City,
+    string? Website,
+    bool IsVerified,
+    bool IsContributor,
     DateTime CreatedAt,
-    int ActiveDealsCount
+    int dealCount,
+    int followerCount,
+    int followingCount,
+    bool isFollowing
 );
 
 public record UpdateProfileRequest(
@@ -313,13 +321,5 @@ public record ExpandedUserProfileDto(
     int dealCount, int followerCount, int followingCount
 );
 
-/// <summary>Public profile with social counts and follow status.</summary>
-public record PublicUserProfileDto(
-    Guid Id, string FullName, string? AvatarUrl,
-    string? Bio, string? City, string? Website,
-    bool IsVerified, bool IsContributor, DateTime CreatedAt,
-    int dealCount, int followerCount, int followingCount,
-    bool isFollowing
-);
 
 public record UpdateProfileFieldsRequest(string? Bio, string? City, string? Website);

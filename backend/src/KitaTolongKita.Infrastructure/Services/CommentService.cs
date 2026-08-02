@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using KitaTolongKita.Core.Entities;
+using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
 
 namespace KitaTolongKita.Infrastructure.Services;
@@ -66,36 +67,7 @@ public class CommentService : ICommentService
             IsHidden = false
         };
 
-        // AI moderation if available
-        if (_moderation != null)
-        {
-            try
-            {
-                var result = await _moderation.AnalyzeTextAsync(content);
-                if (result.Score >= 80)
-                {
-                    comment.ModerationStatus = "Approved";
-                    comment.IsHidden = false;
-                }
-                else if (result.Score >= 50)
-                {
-                    comment.ModerationStatus = "PendingReview";
-                    comment.IsHidden = true;
-                }
-                else
-                {
-                    comment.ModerationStatus = "Rejected";
-                    comment.IsHidden = true;
-                    _logger.LogInformation("Comment auto-rejected (score={Score}) for deal {DealId} by user {UserId}",
-                        result.Score, dealId, userId);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "AI moderation failed for comment, defaulting to approved");
-                // Fail open — publish comment if AI moderation is down
-            }
-        }
+        // Note: comment moderation can be added here when IModerationService gains text analysis support
 
         _db.DealComments.Add(comment);
         await _db.SaveChangesAsync();
@@ -148,7 +120,7 @@ public class CommentService : ICommentService
 
         try
         {
-            await _cache.SetStringAsync(cacheKey, JsonSerializer.SerializeToUtf8(comments),
+            await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(comments),
                 new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1) });
         }
         catch { /* ignore */ }

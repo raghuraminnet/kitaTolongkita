@@ -24,5 +24,4 @@ public class ContributorApplication
 
     // Navigation
     public User User { get; set; } = null!;
-    public AdminUser? Reviewer { get; set; }
 }
