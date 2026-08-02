@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
-import { typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing, borderRadius } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface ProfileSetupScreenProps {
