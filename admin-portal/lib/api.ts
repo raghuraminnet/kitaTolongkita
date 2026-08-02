@@ -208,6 +208,27 @@ export const api = {
 
   // ── User Activity Timeline ────────────────────────────────────────────────────
   userActivity: (userId: string) => request(`/users/${userId}/activity`),
+
+  // ── Comments Moderation ──────────────────────────────────────────────────────
+  comments: (params?: { dealId?: string; userId?: string; status?: string; page?: number; pageSize?: number }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/comments${q ? '?' + q : ''}`);
+  },
+  commentStats: () => request('/comments/stats'),
+  hideComment: (id: string) => request(`/comments/${id}/hide`, { method: 'PATCH' }),
+  approveComment: (id: string) => request(`/comments/${id}/approve`, { method: 'PATCH' }),
+  deleteComment: (id: string) => request(`/comments/${id}`, { method: 'DELETE' }),
+
+  // ── User Follows (read-only) ────────────────────────────────────────────────
+  userFollowStats: (userId: string) => request(`/users/${userId}/follow-stats`),
+  userFollowers: (userId: string, page = 1, pageSize = 20) =>
+    request(`/users/${userId}/followers?page=${page}&pageSize=${pageSize}`),
+  userFollowing: (userId: string, page = 1, pageSize = 20) =>
+    request(`/users/${userId}/following?page=${page}&pageSize=${pageSize}`),
+
+  // ── User Verification ───────────────────────────────────────────────────────
+  verifyUser: (userId: string, verify: boolean) =>
+    request(`/users/${userId}/verify`, { method: 'PATCH', body: JSON.stringify({ verify }) }),
 };
 
 export interface AiConfig {
