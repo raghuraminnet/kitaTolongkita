@@ -11,13 +11,15 @@ import {
   Linking,
   ActionSheetIOS,
   Share,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Button, ProgressBar, Avatar } from '../../components';
 import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
-import { dealsApi, savedDealsApi, request } from '../../api/client';
+import { dealsApi, savedDealsApi, commentsApi, repostsApi, request } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
 import type { Deal } from '../../api/client';
 
@@ -89,14 +91,22 @@ export const DealDetailScreen: React.FC = () => {
   const [savedListIds, setSavedListIds] = useState<string[]>([]);
   const [myLists, setMyLists] = useState<{ id: string; name: string }[]>([]);
 
+  // ── Comments ────────────────────────────────────────────────────────────
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentsTotal, setCommentsTotal] = useState(0);
+  const [commentsPage, setCommentsPage] = useState(1);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
+
+  // ── Repost ────────────────────────────────────────────────────────────────
+  const [hasReposted, setHasReposted] = useState(false);
+  const [repostCount, setRepostCount] = useState(0);
+
   const dealId = route.params?.dealId;
   const dealParam = route.params?.deal;
 
-  useEffect(() => {
-    loadDeal();
-    loadReactions();
-    loadSavedState();
-  }, []);
+  // ── Helpers (all defined before useEffect) ───────────────────────────────
 
   const loadDeal = async () => {
     try {
@@ -142,21 +152,86 @@ export const DealDetailScreen: React.FC = () => {
     } catch { /* ignore */ }
   };
 
+  // ── Comments ─────────────────────────────────────────────────────────────
+  const loadComments = async () => {
+    if (!dealId) return;
+    setCommentsLoading(true);
+    try {
+      const res: any = await commentsApi.getComments(dealId, 1, 20);
+      setComments(res?.comments ?? []);
+      setCommentsTotal(res?.total ?? 0);
+    } catch { /* ignore */ }
+    finally { setCommentsLoading(false); }
+  };
+
+  const handlePostComment = async () => {
+    if (!dealId || !newComment.trim()) return;
+    setPostingComment(true);
+    try {
+      const res: any = await commentsApi.addComment(dealId, newComment.trim());
+      if (res?.comment) {
+        setComments(prev => [res.comment, ...prev]);
+        setCommentsTotal(n => n + 1);
+        setNewComment('');
+      }
+    } catch { Alert.alert('Error', 'Could not post comment'); }
+    finally { setPostingComment(false); }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!commentId) return;
+    try {
+      await commentsApi.deleteComment(commentId);
+      setComments(prev => prev.filter(c => c.id !== commentId));
+      setCommentsTotal(n => n - 1);
+    } catch { Alert.alert('Error', 'Could not delete comment'); }
+  };
+
+  // ── Repost ────────────────────────────────────────────────────────────────
+  const loadRepostStatus = async () => {
+    if (!dealId) return;
+    try {
+      const res: any = await repostsApi.getRepostStatus(dealId);
+      setHasReposted(res?.hasReposted ?? false);
+      setRepostCount(res?.repostCount ?? 0);
+    } catch { /* ignore */ }
+  };
+
+  const handleRepost = async () => {
+    if (!dealId) return;
+    try {
+      if (hasReposted) {
+        await repostsApi.unrepost(dealId);
+        setHasReposted(false);
+        setRepostCount(n => n - 1);
+      } else {
+        await repostsApi.repost(dealId);
+        setHasReposted(true);
+        setRepostCount(n => n + 1);
+      }
+    } catch { Alert.alert('Error', 'Could not repost'); }
+  };
+
   const handleUpvote = async () => {
     if (!dealId) return;
-    // Optimistic update
     setUpvotes((n) => n + (userUpvoted ? -1 : 1));
     setUserUpvoted((v) => !v);
     try {
       await request('POST', `/deals/${dealId}/upvote`, undefined, true);
       loadReactions();
-    } catch {
-      // Rollback
-      setUpvotes((n) => n + (userUpvoted ? 1 : -1));
-      setUserUpvoted((v) => !v);
-      Alert.alert('Error', 'Could not register upvote. Please try again.');
-    }
+    } catch { /* ignore */ }
   };
+
+  // ── Effects ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    loadDeal();
+    loadReactions();
+    loadSavedState();
+    if (dealId) {
+      loadComments();
+      loadRepostStatus();
+    }
+  }, []);
 
   const handleLike = async () => {
     if (!dealId) return;
@@ -577,6 +652,74 @@ export const DealDetailScreen: React.FC = () => {
               )}
             </View>
           </View>
+
+          {/* Comments */}
+          <View style={styles.divider} />
+          <View style={styles.section}>
+            <View style={styles.commentsHeader}>
+              <Text style={styles.sectionTitle}>💬 Comments ({commentsTotal})</Text>
+              {/* Repost button */}
+              <TouchableOpacity
+                style={[styles.repostBtn, hasReposted && styles.repostBtnActive]}
+                onPress={handleRepost}
+              >
+                <Text style={[styles.repostBtnText, hasReposted && styles.repostBtnTextActive]}>
+                  🔁 {repostCount > 0 ? repostCount : ''} Repost
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Comment input */}
+            <View style={styles.commentInputRow}>
+              <View style={styles.commentInputWrap}>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Add a comment..."
+                  placeholderTextColor={colors['on-surface-variant']}
+                  value={newComment}
+                  onChangeText={setNewComment}
+                  maxLength={500}
+                  multiline
+                />
+                <Text style={styles.charCount}>{newComment.length}/500</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.commentSendBtn, (!newComment.trim() || postingComment) && styles.commentSendBtnDisabled]}
+                onPress={handlePostComment}
+                disabled={!newComment.trim() || postingComment}
+              >
+                {postingComment
+                  ? <ActivityIndicator size="small" color={colors.white} />
+                  : <Text style={styles.commentSendBtnText}>➤</Text>}
+              </TouchableOpacity>
+            </View>
+
+            {/* Comments list */}
+            {commentsLoading ? (
+              <ActivityIndicator style={{ marginVertical: spacing.lg }} color={colors.primary} />
+            ) : comments.length === 0 ? (
+              <Text style={styles.noCommentsText}>No comments yet. Be the first!</Text>
+            ) : (
+              comments.map(comment => (
+                <View key={comment.id} style={styles.commentItem}>
+                  <View style={styles.commentAvatar}>
+                    <Text style={styles.commentAvatarText}>
+                      {comment.userFullName?.[0]?.toUpperCase() ?? '?'}
+                    </Text>
+                  </View>
+                  <View style={styles.commentBody}>
+                    <View style={styles.commentHeader}>
+                      <Text style={styles.commentAuthor}>{comment.userFullName}</Text>
+                      <Text style={styles.commentTime}>
+                        {new Date(comment.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                      </Text>
+                    </View>
+                    <Text style={styles.commentContent}>{comment.content}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
         </View>
       </ScrollView>
 
@@ -751,4 +894,30 @@ const styles = StyleSheet.create({
   ctaPrice: { fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700', color: colors['on-surface'] },
   ctaLabel: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'] },
   ctaButton: { flex: 1 },
+
+  // ── Comments ────────────────────────────────────────────────────────────────
+  commentsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
+  repostBtn: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full, borderWidth: 1.5, borderColor: colors.primary,
+  },
+  repostBtnActive: { backgroundColor: colors.primary },
+  repostBtnText: { ...typography['label-sm'], color: colors.primary, fontWeight: '700' },
+  repostBtnTextActive: { color: colors.white },
+  commentInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginBottom: spacing.md },
+  commentInputWrap: { flex: 1, borderWidth: 1, borderColor: colors['outline-variant'], borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xs },
+  commentInput: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], minHeight: 40, maxHeight: 100 },
+  charCount: { fontSize: 11, color: colors['on-surface-variant'], textAlign: 'right' },
+  commentSendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  commentSendBtnDisabled: { backgroundColor: colors['outline-variant'] },
+  commentSendBtnText: { fontSize: 16, color: colors.white },
+  noCommentsText: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center', paddingVertical: spacing.lg },
+  commentItem: { flexDirection: 'row', marginBottom: spacing.md },
+  commentAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm },
+  commentAvatarText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  commentBody: { flex: 1 },
+  commentHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 2 },
+  commentAuthor: { ...typography['label-sm'], color: colors['on-surface'], fontWeight: '700' },
+  commentTime: { fontSize: 11, color: colors['on-surface-variant'] },
+  commentContent: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], lineHeight: 20 },
 });

@@ -289,6 +289,254 @@ export const notificationsApi = {
   },
 };
 
+// ── Follow API ─────────────────────────────────────────────────────────────────
+export const followApi = {
+  follow: (userId: string) =>
+    request<{ success: boolean }>('POST', `/users/${userId}/follow`),
+
+  unfollow: (userId: string) =>
+    request<{ success: boolean }>('DELETE', `/users/${userId}/follow`),
+
+  getFollowStatus: (userId: string) =>
+    request<{ isFollowing: boolean; followerCount: number; followingCount: number }>(
+      'GET', `/users/${userId}/follow-status}`),
+
+  getFollowers: (userId: string, page = 1, size = 20) =>
+    request<{ followers: FollowItem[]; totalFollowers: number; totalFollowing: number }>(
+      'GET', `/users/${userId}/followers?page=${page}&size=${size}`),
+
+  getFollowing: (userId: string, page = 1, size = 20) =>
+    request<{ following: FollowItem[]; totalFollowers: number; totalFollowing: number }>(
+      'GET', `/users/${userId}/following?page=${page}&size=${size}`),
+};
+
+export interface FollowItem {
+  userId: string;
+  fullName: string;
+  avatarUrl?: string;
+  followedAt: string;
+}
+
+// ── Comments API ────────────────────────────────────────────────────────────────
+export const commentsApi = {
+  getComments: (dealId: string, page = 1, size = 20) =>
+    request<{ comments: CommentItem[]; total: number; page: number; size: number }>(
+      'GET', `/deals/${dealId}/comments?page=${page}&size=${size}`),
+
+  addComment: (dealId: string, content: string) =>
+    request<{ success: boolean; comment: CommentItem }>(
+      'POST', `/deals/${dealId}/comments`, { content }),
+
+  deleteComment: (commentId: string) =>
+    request<{ success: boolean }>('DELETE', `/comments/${commentId}`),
+
+  getCommentCount: (dealId: string) =>
+    request<{ dealId: string; count: number }>('GET', `/deals/${dealId}/comments/count`),
+};
+
+export interface CommentItem {
+  id: string;
+  userId: string;
+  userFullName: string;
+  userAvatarUrl?: string;
+  content: string;
+  createdAt: string;
+  moderationStatus: string;
+  isHidden: boolean;
+}
+
+// ── Reposts API ────────────────────────────────────────────────────────────────
+export const repostsApi = {
+  repost: (dealId: string) =>
+    request<{ success: boolean }>('POST', `/deals/${dealId}/repost`),
+
+  unrepost: (dealId: string) =>
+    request<{ success: boolean }>('DELETE', `/deals/${dealId}/repost`),
+
+  getRepostStatus: (dealId: string) =>
+    request<{ hasReposted: boolean; repostCount: number }>(
+      'GET', `/deals/${dealId}/repost-status}`),
+
+  getMyReposts: (page = 1, size = 20) =>
+    request<{ reposts: RepostItem[]; page: number; size: number }>(
+      'GET', `/users/me/reposts?page=${page}&size=${size}`),
+
+  getUserReposts: (userId: string, page = 1, size = 20) =>
+    request<{ reposts: RepostItem[]; page: number; size: number }>(
+      'GET', `/users/${userId}/reposts?page=${page}&size=${size}`),
+};
+
+export interface RepostItem {
+  repostId: string;
+  dealId: string;
+  dealTitle: string;
+  dealImageUrl?: string;
+  category: string;
+  organizerName: string;
+  organizerId: string;
+  repostedAt: string;
+}
+
+// ── Notification Settings API ─────────────────────────────────────────────────
+export const notificationSettingsApi = {
+  getSettings: () =>
+    request<NotificationSettingsDto>('GET', '/users/me/notification-settings'),
+
+  updateSettings: (data: Partial<NotificationSettingsDto>) =>
+    request<NotificationSettingsDto>('PATCH', '/users/me/notification-settings', data),
+};
+
+export interface NotificationSettingsDto {
+  notifyFollow: boolean;
+  notifyFollowedDeal: boolean;
+  notifyLikes: boolean;
+  notifyComments: boolean;
+  notifyLookups: boolean;
+}
+
+// ── Lookups API ───────────────────────────────────────────────────────────────
+export const lookupsApi = {
+  getMyLookups: (status?: string) => {
+    const url = status ? `/lookups?status=${status}` : '/lookups';
+    return request<{ lookups: LookupItem[] }>('GET', url);
+  },
+
+  getLookupDetail: (lookupId: string) =>
+    request<LookupDetailItem>('GET', `/lookups/${lookupId}`),
+
+  joinDeal: (dealId: string, quantity = 1) =>
+    request<{ success: boolean; bookingId: string; status: string }>(
+      'POST', `/deals/${dealId}/join`, { quantity }),
+};
+
+export interface LookupItem {
+  id: string;
+  dealId: string;
+  dealTitle: string;
+  dealImageUrl?: string;
+  category: string;
+  bookingId: string;
+  status: string;
+  quantity: number;
+  totalPrice: number;
+  createdAt: string;
+  qrVerified: boolean;
+  contributorName: string;
+}
+
+export interface LookupDetailItem extends LookupItem {
+  pickupLocation: string;
+  deliveryMode?: string;
+  etd?: string;
+  dispatchNotes?: string;
+  contributorId: string;
+  qrVerifiedAt?: string;
+}
+
+// ── Ratings API ───────────────────────────────────────────────────────────────
+export const ratingsApi = {
+  rateContributor: (lookupId: string, rating: number, review?: string) =>
+    request<{ success: boolean; ratingId: string }>(
+      'POST', `/lookups/${lookupId}/rate`, { rating, review }),
+
+  getRatingSummary: (contributorId: string) =>
+    request<RatingSummary>('GET', `/contributors/${contributorId}/rating-summary`),
+
+  getContributorRatings: (contributorId: string, page = 1, size = 20) =>
+    request<{ ratings: RatingItem[]; page: number; size: number }>(
+      'GET', `/contributors/${contributorId}/ratings?page=${page}&size=${size}`),
+};
+
+export interface RatingSummary {
+  average: number;
+  count: number;
+  fiveStar: number;
+  fourStar: number;
+  threeStar: number;
+  twoStar: number;
+  oneStar: number;
+}
+
+export interface RatingItem {
+  id: string;
+  reviewerId: string;
+  reviewerName: string;
+  reviewerAvatar?: string;
+  reviewText?: string;
+  rating: number;
+  createdAt: string;
+}
+
+// ── Contributor API ──────────────────────────────────────────────────────────
+export const contributorApi = {
+  apply: (data: ContributorApplicationDto) =>
+    request<{ success: boolean; applicationId: string }>(
+      'POST', '/contributor/apply', data),
+
+  getApplicationStatus: () =>
+    request<ApplicationStatusDto>('GET', '/contributor/application/status'),
+
+  withdrawApplication: () =>
+    request<{ success: boolean }>('DELETE', '/contributor/application'),
+
+  getMyDeals: (status?: string) => {
+    const url = status ? `/contributor/deals?status=${status}` : '/contributor/deals';
+    return request<{ deals: ContributorDealItem[] }>('GET', url);
+  },
+
+  getDealLookups: (dealId: string, status?: string) => {
+    const url = status ? `/contributor/deals/${dealId}/lookups?status=${status}` : `/contributor/deals/${dealId}/lookups`;
+    return request<{ lookups: ContributorLookupItem[] }>('GET', url);
+  },
+
+  updateLookupStatus: (lookupId: string, status: string) =>
+    request<{ success: boolean }>('PATCH', `/contributor/lookups/${lookupId}/status`, { status }),
+
+  verifyQr: (lookupId: string, qrContent: string) =>
+    request<{ success: boolean }>('POST', `/contributor/lookups/${lookupId}/verify-qr`, { qrContent }),
+};
+
+export interface ContributorApplicationDto {
+  mobileNo: string;
+  icPassportNo: string;
+  nationality: string;
+  race: string;
+  residentStatus: string;
+}
+
+export interface ApplicationStatusDto {
+  id: string;
+  status: string;
+  rejectionReason?: string;
+  createdAt: string;
+  approvedAt?: string;
+}
+
+export interface ContributorDealItem {
+  id: string;
+  title: string;
+  category: string;
+  lookupStatus: string;
+  minLookups: number;
+  currentLookups: number;
+  lookupDeadline?: string;
+  deliveryMode?: string;
+  createdAt: string;
+}
+
+export interface ContributorLookupItem {
+  id: string;
+  userId: string;
+  userFullName: string;
+  userAvatar?: string;
+  bookingId: string;
+  status: string;
+  quantity: number;
+  createdAt: string;
+  qrVerified: boolean;
+  qrVerifiedAt?: string;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface AuthResponse {

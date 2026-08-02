@@ -8,14 +8,13 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { Avatar } from '../../components';
-import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
-import { usersApi, dealsApi } from '../../api/client';
+import { Avatar, Button } from '../../components';
+import { colors, typography, spacing, borderRadius } from '../../theme';
+import { usersApi, dealsApi, followApi } from '../../api/client';
 import type { PublicUserProfile, Deal } from '../../api/client';
 
 function DealCard({ deal, onPress }: { deal: Deal; onPress: () => void }) {
@@ -48,16 +47,9 @@ function DealCard({ deal, onPress }: { deal: Deal; onPress: () => void }) {
           )}
         </View>
         <View style={styles.dealStats}>
-          <Text style={styles.dealMembers}>
-            {deal.membersJoined}/{deal.minMembers} joined
-          </Text>
+          <Text style={styles.dealMembers}>{deal.membersJoined}/{deal.minMembers} joined</Text>
           <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${Math.min(100, (deal.membersJoined / deal.minMembers) * 100)}%` },
-              ]}
-            />
+            <View style={[styles.progressFill, { width: `${Math.min(100, (deal.membersJoined / deal.minMembers) * 100)}%` }]} />
           </View>
         </View>
       </View>
@@ -84,14 +76,24 @@ export const PublicProfileScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Follow state
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
+
   const load = useCallback(async () => {
     try {
       const [profileData, dealsData] = await Promise.all([
         usersApi.getPublicProfile(userId),
         usersApi.getDealsByUser(userId),
       ]);
-      setProfile(profileData as any);
+      const p = profileData as any;
+      setProfile(p);
       setDeals((dealsData as any) ?? []);
+      setIsFollowing(p?.isFollowing ?? false);
+      setFollowerCount(p?.followerCount ?? 0);
+      setFollowingCount(p?.followingCount ?? 0);
       setError(null);
     } catch (err: any) {
       setError('Could not load profile. This user may not exist.');
@@ -110,6 +112,25 @@ export const PublicProfileScreen: React.FC = () => {
 
   const handleDealPress = (deal: Deal) => {
     navigation.navigate('DealDetail', { dealId: deal.id });
+  };
+
+  const handleFollowPress = async () => {
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        await followApi.unfollow(userId);
+        setIsFollowing(false);
+        setFollowerCount(c => c - 1);
+      } else {
+        await followApi.follow(userId);
+        setIsFollowing(true);
+        setFollowerCount(c => c + 1);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setFollowLoading(false);
+    }
   };
 
   const joinedDate = profile
@@ -153,7 +174,12 @@ export const PublicProfileScreen: React.FC = () => {
           <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{profile.fullName}</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity
+          style={styles.msgBtn}
+          onPress={() => navigation.navigate('ChatInbox')}
+        >
+          <Text style={styles.msgBtnText}>💬</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -163,20 +189,66 @@ export const PublicProfileScreen: React.FC = () => {
           <>
             {/* Profile Card */}
             <View style={styles.profileCard}>
-              <Avatar name={profile.fullName} uri={profile.avatarUrl} size={80} verified />
+              <View style={styles.avatarRow}>
+                <Avatar name={profile.fullName} uri={profile.avatarUrl} size={80} verified={profile.isVerified} />
+                {profile.isVerified && <View style={styles.verifiedPill}><Text style={styles.verifiedPillText}>✓ Verified</Text></View>}
+              </View>
               <Text style={styles.userName}>{profile.fullName}</Text>
-              <Text style={styles.memberSince}>📅 Member since {joinedDate}</Text>
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{profile.activeDealsCount}</Text>
-                  <Text style={styles.statLabel}>Active Deals</Text>
+
+              {/* Bio */}
+              {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
+
+              {/* City + Website */}
+              <View style={styles.profileMeta}>
+                {profile.city && <Text style={styles.profileMetaText}>📍 {profile.city}</Text>}
+                {profile.website && <Text style={styles.profileMetaText}>🌐 {profile.website}</Text>}
+              </View>
+
+              {/* Contributor badge */}
+              {profile.isContributor && (
+                <View style={styles.contributorBadge}>
+                  <Text style={styles.contributorBadgeText}>🏅 Contributor · ★ {profile.contributorRating?.toFixed(1) ?? '—'}</Text>
                 </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{deals.length}</Text>
-                  <Text style={styles.statLabel}>Posted</Text>
+              )}
+
+              <Text style={styles.memberSince}>📅 Member since {joinedDate}</Text>
+
+              {/* Follow Stats */}
+              <View style={styles.followStatsRow}>
+                <TouchableOpacity
+                  style={styles.followStatItem}
+                  onPress={() => navigation.navigate('Followers', { userId })}
+                >
+                  <Text style={styles.followStatValue}>{followerCount}</Text>
+                  <Text style={styles.followStatLabel}>Followers</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.followStatItem}
+                  onPress={() => navigation.navigate('Following', { userId })}
+                >
+                  <Text style={styles.followStatValue}>{followingCount}</Text>
+                  <Text style={styles.followStatLabel}>Following</Text>
+                </TouchableOpacity>
+                <View style={styles.followStatItem}>
+                  <Text style={styles.followStatValue}>{deals.length}</Text>
+                  <Text style={styles.followStatLabel}>Deals</Text>
                 </View>
               </View>
+
+              {/* Follow / Unfollow Button */}
+              <TouchableOpacity
+                style={[styles.followBtn, isFollowing && styles.followingBtn]}
+                onPress={handleFollowPress}
+                disabled={followLoading}
+              >
+                {followLoading ? (
+                  <ActivityIndicator size="small" color={isFollowing ? colors.primary : colors.white} />
+                ) : (
+                  <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
+                    {isFollowing ? 'Following' : '+ Follow'}
+                  </Text>
+                )}
+              </TouchableOpacity>
             </View>
 
             {/* Section Header */}
@@ -186,9 +258,7 @@ export const PublicProfileScreen: React.FC = () => {
             </View>
           </>
         }
-        renderItem={({ item }) => (
-          <DealCard deal={item} onPress={() => handleDealPress(item)} />
-        )}
+        renderItem={({ item }) => <DealCard deal={item} onPress={() => handleDealPress(item)} />}
         ListEmptyComponent={
           dealsLoading ? (
             <View style={styles.emptyState}>
@@ -222,20 +292,37 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   backBtnText: { fontSize: 22, color: colors['on-surface'] },
   headerTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', flex: 1, textAlign: 'center' },
+  msgBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  msgBtnText: { fontSize: 20 },
 
   // Profile card
-  profileCard: {
-    alignItems: 'center', padding: spacing.xl,
-    backgroundColor: colors['surface-container-lowest'],
-    borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
-  },
+  profileCard: { alignItems: 'center', padding: spacing.xl, backgroundColor: colors['surface-container-lowest'] },
+  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  verifiedPill: { backgroundColor: '#e3f2fd', borderRadius: borderRadius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginLeft: spacing.xs },
+  verifiedPillText: { fontSize: 11, color: '#1565c0', fontWeight: '700' },
   userName: { ...typography['headline-sm'], color: colors['on-surface'], fontWeight: '800', marginTop: spacing.md },
+  bio: { ...typography['body-sm'], color: colors['on-surface-variant'], marginTop: spacing.sm, textAlign: 'center', paddingHorizontal: spacing.lg },
+  profileMeta: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs },
+  profileMetaText: { fontSize: 12, color: colors['on-surface-variant'] },
+  contributorBadge: { backgroundColor: '#fff8e1', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm },
+  contributorBadgeText: { fontSize: 11, color: '#e65100', fontWeight: '700' },
   memberSince: { ...typography['body-sm'], color: colors['on-surface-variant'], marginTop: spacing.xs },
-  statsRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.lg, gap: spacing.xl },
-  statItem: { alignItems: 'center' },
-  statValue: { ...typography['headline-sm'], color: colors['on-surface'], fontWeight: '800' },
-  statLabel: { ...typography['label-sm'], color: colors['on-surface-variant'], marginTop: 2 },
-  statDivider: { width: 1, height: 32, backgroundColor: colors['outline-variant'] },
+
+  // Follow stats
+  followStatsRow: { flexDirection: 'row', gap: spacing.xl, marginTop: spacing.lg },
+  followStatItem: { alignItems: 'center' },
+  followStatValue: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '800' },
+  followStatLabel: { ...typography['label-xs'], color: colors['on-surface-variant'], marginTop: 2 },
+
+  // Follow button
+  followBtn: {
+    marginTop: spacing.lg, paddingHorizontal: spacing.xl * 2, paddingVertical: spacing.md,
+    backgroundColor: colors.primary, borderRadius: borderRadius.full,
+    minWidth: 140, alignItems: 'center',
+  },
+  followingBtn: { backgroundColor: colors['surface-container-lowest'], borderWidth: 2, borderColor: colors.primary },
+  followBtnText: { ...typography['label-lg'], color: colors.white, fontWeight: '700' },
+  followingBtnText: { color: colors.primary },
 
   // Section
   sectionHeader: {
@@ -260,24 +347,15 @@ const styles = StyleSheet.create({
   },
   dealImagePlaceholderText: { fontSize: 32 },
   savedBadge: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute', top: 6, left: 6,
+    backgroundColor: 'rgba(255,255,255,0.95)', width: 26, height: 26,
+    borderRadius: 13, alignItems: 'center', justifyContent: 'center',
   },
   dealInfo: { flex: 1, padding: spacing.md },
   dealTitle: { ...typography['body-md'], color: colors['on-surface'], fontWeight: '600', marginBottom: spacing.xs },
   dealMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   dealPrice: { ...typography['title-md'], color: colors.primary, fontWeight: '800' },
-  discountBadge: {
-    backgroundColor: colors.secondary, paddingHorizontal: spacing.xs, paddingVertical: 2,
-    borderRadius: borderRadius.sm,
-  },
+  discountBadge: { backgroundColor: colors.secondary, paddingHorizontal: spacing.xs, paddingVertical: 2, borderRadius: borderRadius.sm },
   discountText: { ...typography['label-xs'], color: colors.white, fontWeight: '700' },
   dealStats: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   dealMembers: { ...typography['label-xs'], color: colors['on-surface-variant'] },

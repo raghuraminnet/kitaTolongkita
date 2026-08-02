@@ -21,9 +21,13 @@ import { PostDealScreen } from '../screens/deals';
 import { PostReviewScreen } from '../screens/deals';
 import { MyDealsScreen } from '../screens/deals';
 import { OrdersScreen } from '../screens/orders';
+import { LookupDetailScreen } from '../screens/orders/LookupDetailScreen';
 import { ProfileScreen } from '../screens/profile';
 import { ProfileSetupScreen } from '../screens/profile';
 import { PublicProfileScreen } from '../screens/profile/PublicProfileScreen';
+import { FollowersScreen } from '../screens/profile/FollowersScreen';
+import { FollowingScreen } from '../screens/profile/FollowingScreen';
+import { ContributorApplyScreen } from '../screens/profile/ContributorApplyScreen';
 import { NotificationsScreen } from '../screens/notifications';
 import { ChatInboxScreen } from '../screens/notifications';
 import { SettingsScreen } from '../screens/settings';
@@ -177,6 +181,16 @@ export default function AppNavigator() {
           component={PublicProfileScreen}
           options={{ animation: 'slide_from_right' }}
         />
+        <Stack.Screen
+          name="Followers"
+          component={FollowersScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="Following"
+          component={FollowingScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
 
         {/* Reports */}
         <Stack.Screen
@@ -193,6 +207,16 @@ export default function AppNavigator() {
           name="MySaves"
           component={MySavesScreen}
           options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="LookupDetail"
+          component={LookupDetailScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="ContributorApply"
+          component={ContributorApplyScreen}
+          options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../../theme';
-import { dealsApi, getAccessToken } from '../../api/client';
+import { dealsApi, getAccessToken, lookupsApi } from '../../api/client';
 import { startOrderPolling, stopOrderPolling, subscribeToOrders } from '../../api/orderPolling';
 import type { Order } from '../../api/client';
 
@@ -35,6 +35,9 @@ export const OrdersScreen: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'orders' | 'lookups'>('orders');
+  const [lookups, setLookups] = useState<any[]>([]);
+  const [lookupsLoading, setLookupsLoading] = useState(false);
 
   useEffect(() => {
     loadOrders();
@@ -47,6 +50,10 @@ export const OrdersScreen: React.FC = () => {
       stopOrderPolling();
     };
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'lookups' && lookups.length === 0) loadLookups();
+  }, [activeTab]);
 
   const loadOrders = async () => {
     try {
@@ -61,9 +68,19 @@ export const OrdersScreen: React.FC = () => {
     }
   };
 
+  const loadLookups = async () => {
+    setLookupsLoading(true);
+    try {
+      const res: any = await lookupsApi.getMyLookups();
+      setLookups(res?.lookups ?? []);
+    } catch { setLookups([]); }
+    finally { setLookupsLoading(false); }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadOrders();
+    if (activeTab === 'orders') await loadOrders();
+    else await loadLookups();
     setRefreshing(false);
   };
 
@@ -89,6 +106,28 @@ export const OrdersScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
+  const renderLookup = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={styles.orderCard}
+      onPress={() => navigation.navigate('LookupDetail', { lookupId: item.id })}
+      activeOpacity={0.8}
+    >
+      <View style={styles.orderHeader}>
+        <Text style={styles.orderTitle} numberOfLines={1}>{item.dealTitle}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] ?? '#6B7280' }]}>
+          <Text style={styles.statusText}>{item.status}</Text>
+        </View>
+      </View>
+      <View style={styles.orderMeta}>
+        <Text style={styles.orderQty}>Booking: {item.bookingId}</Text>
+        <Text style={styles.orderPrice}>RM {item.totalPrice.toFixed(2)}</Text>
+      </View>
+      <Text style={styles.orderDate}>
+        {item.qrVerified ? '✅ Verified Delivery' : '⏳ Pending Delivery'}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -98,18 +137,36 @@ export const OrdersScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Tabs */}
+      <View style={styles.tabsRow}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'orders' && styles.tabActive]}
+          onPress={() => setActiveTab('orders')}
+        >
+          <Text style={[styles.tabText, activeTab === 'orders' && styles.tabTextActive]}>Orders</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'lookups' && styles.tabActive]}
+          onPress={() => setActiveTab('lookups')}
+        >
+          <Text style={[styles.tabText, activeTab === 'lookups' && styles.tabTextActive]}>LookUps</Text>
+        </TouchableOpacity>
+      </View>
+
       <FlatList
-        data={orders}
-        renderItem={renderOrder}
-        keyExtractor={(item) => item.id}
+        data={activeTab === 'orders' ? orders : lookups}
+        renderItem={activeTab === 'orders' ? renderOrder : renderLookup}
+        keyExtractor={(item: any) => item.id}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         ListEmptyComponent={
-          !loading ? (
+          !(loading || lookupsLoading) ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>📦</Text>
-              <Text style={styles.emptyTitle}>No orders yet</Text>
-              <Text style={styles.emptySubtitle}>Join a group deal to get started!</Text>
+              <Text style={styles.emptyEmoji}>{activeTab === 'orders' ? '📦' : '🔍'}</Text>
+              <Text style={styles.emptyTitle}>{activeTab === 'orders' ? 'No orders yet' : 'No lookups yet'}</Text>
+              <Text style={styles.emptySubtitle}>
+                {activeTab === 'orders' ? 'Join a group deal to get started!' : 'Join a group buy deal to see it here.'}
+              </Text>
             </View>
           ) : null
         }
@@ -130,6 +187,16 @@ const styles = StyleSheet.create({
   },
   bell: { fontSize: 24 },
   list: { paddingHorizontal: spacing.md, paddingBottom: 120 },
+  tabsRow: { flexDirection: 'row', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm },
+  tab: {
+    flex: 1, paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors['surface-container-lowest'],
+    alignItems: 'center',
+  },
+  tabActive: { backgroundColor: colors.primary },
+  tabText: { ...typography['label-lg'], color: colors['on-surface-variant'], fontWeight: '700' },
+  tabTextActive: { color: colors.white },
   orderCard: {
     backgroundColor: colors['surface-container-lowest'],
     borderRadius: borderRadius.xl, padding: spacing.md,

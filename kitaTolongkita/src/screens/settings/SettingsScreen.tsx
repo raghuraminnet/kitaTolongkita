@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setLanguage } from '../../i18n';
 import {
@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import { notificationSettingsApi } from '../../api/client';
 import { clearTokens } from '../../api/client';
 import { useAuth } from '../../api/authContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -26,6 +27,7 @@ interface SettingRow {
   label: string;
   type: 'toggle' | 'chevron' | 'value';
   value?: boolean | string;
+  description?: string;
   onPress?: () => void;
   onToggle?: (v: boolean) => void;
 }
@@ -38,6 +40,36 @@ export const SettingsScreen: React.FC = () => {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
   const [langRefresh, setLangRefresh] = useState(0);
+
+  // Granular notification preferences
+  const [notifyFollow, setNotifyFollow] = useState(true);
+  const [notifyFollowedDeal, setNotifyFollowedDeal] = useState(false);
+  const [notifyLikes, setNotifyLikes] = useState(true);
+  const [notifyComments, setNotifyComments] = useState(true);
+  const [notifyLookups, setNotifyLookups] = useState(true);
+  const [prefsLoading, setPrefsLoading] = useState(true);
+
+  useEffect(() => {
+    loadNotificationPrefs();
+  }, []);
+
+  const loadNotificationPrefs = async () => {
+    try {
+      const prefs: any = await notificationSettingsApi.getSettings();
+      setNotifyFollow(prefs?.notifyFollow ?? true);
+      setNotifyFollowedDeal(prefs?.notifyFollowedDeal ?? false);
+      setNotifyLikes(prefs?.notifyLikes ?? true);
+      setNotifyComments(prefs?.notifyComments ?? true);
+      setNotifyLookups(prefs?.notifyLookups ?? true);
+    } catch { /* ignore */ }
+    finally { setPrefsLoading(false); }
+  };
+
+  const updatePref = async (key: string, value: boolean) => {
+    try {
+      await notificationSettingsApi.updateSettings({ [key]: value });
+    } catch { Alert.alert('Error', 'Could not save preference'); }
+  };
   const { isDark, toggleTheme } = useTheme();
 
   const Section: React.FC<{ title: string; children: React.ReactNode }> = ({
@@ -55,6 +87,7 @@ export const SettingsScreen: React.FC = () => {
     label,
     type,
     value,
+    description,
     onPress,
     onToggle,
   }) => (
@@ -65,7 +98,10 @@ export const SettingsScreen: React.FC = () => {
       activeOpacity={type === 'chevron' ? 0.7 : 1}
     >
       <Text style={styles.rowIcon}>{icon}</Text>
-      <Text style={styles.rowLabel}>{label}</Text>
+      <View style={styles.rowLabelWrap}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        {description && <Text style={styles.rowDescription}>{description}</Text>}
+      </View>
       {type === 'toggle' && onToggle && (
         <Switch
           value={value as boolean}
@@ -126,6 +162,48 @@ export const SettingsScreen: React.FC = () => {
             onToggle={setEmailEnabled}
           />
           <Row icon="🔕" label="Do Not Disturb" type="chevron" />
+        </Section>
+
+        {/* Social Notifications */}
+        <Section title="Social Notifications">
+          <Row
+            icon="👤"
+            label="When someone follows me"
+            description="Get notified when someone follows you"
+            type="toggle"
+            value={notifyFollow}
+            onToggle={(v) => { setNotifyFollow(v); updatePref('notifyFollow', v); }}
+          />
+          <Row
+            icon="📝"
+            label="When followed user posts"
+            description="Notify when someone you follow posts a deal"
+            type="toggle"
+            value={notifyFollowedDeal}
+            onToggle={(v) => { setNotifyFollowedDeal(v); updatePref('notifyFollowedDeal', v); }}
+          />
+          <Row
+            icon="❤️"
+            label="Likes & Upvotes"
+            type="toggle"
+            value={notifyLikes}
+            onToggle={(v) => { setNotifyLikes(v); updatePref('notifyLikes', v); }}
+          />
+          <Row
+            icon="💬"
+            label="Comments"
+            type="toggle"
+            value={notifyComments}
+            onToggle={(v) => { setNotifyComments(v); updatePref('notifyComments', v); }}
+          />
+          <Row
+            icon="📦"
+            label="Lookup Updates"
+            description="Deal status updates for your group buy orders"
+            type="toggle"
+            value={notifyLookups}
+            onToggle={(v) => { setNotifyLookups(v); updatePref('notifyLookups', v); }}
+          />
         </Section>
 
         {/* Appearance */}
@@ -271,6 +349,12 @@ const styles = StyleSheet.create({
     ...typography['body-lg'],
     color: colors['on-surface'],
     flex: 1,
+  },
+  rowLabelWrap: { flex: 1 },
+  rowDescription: {
+    ...typography['label-xs'],
+    color: colors['on-surface-variant'],
+    marginTop: 2,
   },
   chevron: {
     fontSize: 22,
