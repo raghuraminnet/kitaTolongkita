@@ -65,7 +65,6 @@ public class AdminApiController : ControllerBase
                 u.FullName,
                 u.AvatarUrl,
                 u.EmailVerified,
-                u.IsActive,
                 u.IsVerified,
                 u.IsContributor,
                 u.CreatedAt,
@@ -74,7 +73,7 @@ public class AdminApiController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(new PagedResult<object>(users, total, page, pageSize));
+        return Ok(new PagedResult<object>(users, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
     /// <summary>Get one user's full detail with their deals and orders.</summary>
@@ -104,7 +103,6 @@ public class AdminApiController : ControllerBase
             user.FullName,
             user.AvatarUrl,
             user.EmailVerified,
-            user.IsActive,
             user.IsVerified,
             user.IsContributor,
             user.Bio,
@@ -180,7 +178,7 @@ public class AdminApiController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(new PagedResult<object>(deals, total, page, pageSize));
+        return Ok(new PagedResult<object>(deals, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
     /// <summary>Get one deal's full details.</summary>
@@ -401,7 +399,7 @@ public class AdminApiController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(new PagedResult<object>(orders, total, page, pageSize));
+        return Ok(new PagedResult<object>(orders, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
     /// <summary>Get one order's detail.</summary>
@@ -475,7 +473,7 @@ public class AdminApiController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(new PagedResult<object>(items, total, page, size));
+        return Ok(new PagedResult<object>(items, total, page, size, (int)Math.Ceiling(total / (double)size)));
     }
 
     /// <summary>Comment moderation stats.</summary>
@@ -567,7 +565,7 @@ public class AdminApiController : ControllerBase
             });
         }
 
-        return Ok(new PagedResult<object>(items, total, page, pageSize));
+        return Ok(new PagedResult<object>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
     /// <summary>Get one saved list with all its deals.</summary>
@@ -636,7 +634,7 @@ public class AdminApiController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(new PagedResult<object>(notifs, total, page, pageSize));
+        return Ok(new PagedResult<object>(notifs, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
     /// <summary>Notification stats.</summary>
@@ -692,7 +690,7 @@ public class AdminApiController : ControllerBase
             });
         }
 
-        return Ok(new PagedResult<object>(items, total, page, pageSize));
+        return Ok(new PagedResult<object>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
     /// <summary>Get messages in a conversation.</summary>
@@ -757,7 +755,7 @@ public class AdminApiController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(new PagedResult<object>(tokens, total, page, pageSize));
+        return Ok(new PagedResult<object>(tokens, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -799,7 +797,7 @@ public class AdminApiController : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(new PagedResult<object>(items, total, page, size));
+        return Ok(new PagedResult<object>(items, total, page, size, (int)Math.Ceiling(total / (double)size)));
     }
 
     /// <summary>Get one contributor application.</summary>
@@ -870,7 +868,7 @@ public class AdminApiController : ControllerBase
             .Skip((page - 1) * size).Take(size)
             .Select(f => new { f.FollowerId, UserName = f.Follower != null ? f.Follower.FullName : "", f.Follower?.AvatarUrl, f.CreatedAt })
             .ToListAsync();
-        return Ok(new PagedResult<object>(items, total, page, size));
+        return Ok(new PagedResult<object>(items, total, page, size, (int)Math.Ceiling(total / (double)size)));
     }
 
     /// <summary>List users a user is following.</summary>
@@ -884,7 +882,7 @@ public class AdminApiController : ControllerBase
             .Skip((page - 1) * size).Take(size)
             .Select(f => new { f.FollowingId, UserName = f.Following != null ? f.Following.FullName : "", f.Following?.AvatarUrl, f.CreatedAt })
             .ToListAsync();
-        return Ok(new PagedResult<object>(items, total, page, size));
+        return Ok(new PagedResult<object>(items, total, page, size, (int)Math.Ceiling(total / (double)size)));
     }
 }
 
