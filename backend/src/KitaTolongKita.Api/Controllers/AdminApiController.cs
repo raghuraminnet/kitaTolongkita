@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Infrastructure.Data;
 using KitaTolongKita.Infrastructure.Services;
@@ -289,9 +290,8 @@ public class AdminApiController : ControllerBase
         var ordersToday = await _db.DealOrders.CountAsync(o => o.CreatedAt >= today);
         var newUsersToday = await _db.Users.CountAsync(u => u.CreatedAt >= today);
         var pendingModeration = await _db.Deals.CountAsync(d =>
-            d.ModerationStatus == ModerationStatus.PendingReview ||
-            d.ModerationStatus == ModerationStatus.UnderReview ||
-            d.ModerationStatus == ModerationStatus.Pending);
+            d.ModerationStatus == ModerationStatus.Pending ||
+            d.ModerationStatus == ModerationStatus.UnderReview);
         var todayRevenue = await _db.DealOrders.Where(o => o.CreatedAt >= today).SumAsync(o => o.TotalPrice);
         var weekAgoUsers = await _db.Users.CountAsync(u => u.CreatedAt < weekAgo);
         var growthPercent = weekAgoUsers > 0
@@ -333,8 +333,7 @@ public class AdminApiController : ControllerBase
         var approvedDeals = await _db.Deals.CountAsync(d => d.ModerationStatus == ModerationStatus.Approved);
         var pendingDeals = await _db.Deals.CountAsync(d =>
             d.ModerationStatus == ModerationStatus.Pending ||
-            d.ModerationStatus == ModerationStatus.UnderReview ||
-            d.ModerationStatus == ModerationStatus.PendingReview);
+            d.ModerationStatus == ModerationStatus.UnderReview);
         var totalOrders = await _db.DealOrders.CountAsync();
         var totalRevenue = await _db.DealOrders.SumAsync(o => o.TotalPrice);
 
@@ -899,13 +898,3 @@ public record FeatureDealRequest(bool Featured);
 public record BulkModerateRequest(List<string> Ids, string Action, string? Reason = null);
 public record UpdateOrderStatusRequest(string Status);
 public record ReviewContributorAppRequest(string Action, string? Reason);
-
-// ═══════════════════════════════════════════════════════════════
-// Request DTOs
-// ═══════════════════════════════════════════════════════════════
-
-public record ToggleStatusRequest(bool IsActive);
-public record VerifyUserRequest(bool Verify);
-public record FeatureDealRequest(bool Featured);
-public record BulkModerateRequest(List<string> Ids, string Action, string? Reason = null);
-public record UpdateOrderStatusRequest(string Status);
