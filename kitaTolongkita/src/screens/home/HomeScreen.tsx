@@ -79,8 +79,8 @@ export const HomeScreen: React.FC = () => {
         deadline={item.deadline}
         membersJoined={item.membersJoined}
         membersTarget={item.maxMembers}
-        likes={item.likes ?? 0}
-        upvotes={item.upvotes ?? 0}
+        likes={item.likeCount ?? 0}
+        upvotes={item.upvoteCount ?? 0}
         organizerName={item.organizerName}
         isSaved={item.isSaved}
         onPress={() => navigation.navigate('DealDetail', { dealId: item.id })}

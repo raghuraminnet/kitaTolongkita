@@ -152,8 +152,8 @@ export const LookupDetailScreen: React.FC = () => {
         {/* Status + Booking ID */}
         <View style={[styles.bookingCard, { borderLeftColor: statusColor }]}>
           <View style={styles.bookingHeader}>
-            <View style={[styles.statusBadge, { backgroundColor: tokenColors.bg }]}
-              <Text style={[styles.statusText, { color: statusColor }]}>{lookup.status}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: tokenColors.bg }]}>
+              <Text style={[styles.statusText, { color: tokenColors.text }]}>{lookup.status}</Text>
             </View>
             <Text style={styles.bookingId}>{lookup.bookingId}</Text>
           </View>
