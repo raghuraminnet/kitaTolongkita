@@ -123,7 +123,7 @@ public class AdminApiController : ControllerBase
     {
         var user = await _db.Users.FindAsync(id);
         if (user == null) return NotFound();
-        user.IsActive = req.IsActive;
+        user.Status = req.IsActive ? UserStatus.Active : UserStatus.Suspended;
         await _db.SaveChangesAsync();
         _logger.LogInformation("Admin {AdminId} toggled user {UserId} active={IsActive}", AdminId, id, req.IsActive);
         return Ok(new { success = true });
@@ -156,7 +156,7 @@ public class AdminApiController : ControllerBase
         var q = _db.Deals.Include(d => d.Organizer).AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(status) && status != "All")
-            q = q.Where(d => d.ModerationStatus == status);
+            q = q.Where(d => d.ModerationStatus.ToString() == status);
         if (!string.IsNullOrWhiteSpace(search))
             q = q.Where(d => EF.Functions.ILike(d.Title, $"%{search}%") || EF.Functions.ILike(d.Category, $"%{search}%"));
 
@@ -173,7 +173,6 @@ public class AdminApiController : ControllerBase
                 d.MembersJoined,
                 d.MinMembers,
                 d.ModerationStatus,
-                d.IsFeatured,
                 d.CreatedAt
             })
             .ToListAsync();
@@ -209,7 +208,6 @@ public class AdminApiController : ControllerBase
             d.ModerationRejectReason,
             d.UpvoteCount,
             d.LikeCount,
-            d.IsFeatured,
             d.Hashtags,
             Organizer = d.Organizer != null ? new { d.Organizer.Id, d.Organizer.FullName, d.Organizer.Email } : null,
             d.CreatedAt,
@@ -224,9 +222,9 @@ public class AdminApiController : ControllerBase
     {
         var deal = await _db.Deals.FindAsync(id);
         if (deal == null) return NotFound();
-        deal.IsFeatured = req.Featured;
+        // Feature functionality not yet implemented in Deal entity
         await _db.SaveChangesAsync();
-        _logger.LogInformation("Admin {AdminId} set deal {DealId} featured={Featured}", AdminId, id, req.Featured);
+        _logger.LogInformation("Admin {AdminId} attempted to feature deal {DealId} (not yet implemented)", AdminId, id);
         return Ok(new { success = true });
     }
 
@@ -259,10 +257,10 @@ public class AdminApiController : ControllerBase
                     deal.Status = DealStatus.Cancelled;
                     break;
                 case "feature":
-                    deal.IsFeatured = true;
+                    // IsFeatured field does not exist on Deal entity yet
                     break;
                 case "unfeature":
-                    deal.IsFeatured = false;
+                    // IsFeatured field does not exist on Deal entity yet
                     break;
                 default:
                     errors.Add($"Unknown action '{req.Action}' for {idStr}");
@@ -374,13 +372,12 @@ public class AdminApiController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        var q = _db.DealOrders.Include(o => o.User).Include(o => o.Deal).AsNoTracking().AsQueryable();
+        var q = _db.DealOrders.Include(o => o.Deal).AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(status))
-            q = q.Where(o => o.Status == status);
+            q = q.Where(o => o.Status.ToString() == status);
         if (!string.IsNullOrWhiteSpace(search))
             q = q.Where(o =>
-                (o.User != null && EF.Functions.ILike(o.User.Email, $"%{search}%")) ||
                 (o.Deal != null && EF.Functions.ILike(o.Deal.Title, $"%{search}%")));
 
         var total = await q.CountAsync();
@@ -389,8 +386,7 @@ public class AdminApiController : ControllerBase
             .Select(o => new
             {
                 o.Id,
-                BuyerName = o.User != null ? o.User.FullName : "",
-                BuyerEmail = o.User != null ? o.User.Email : "",
+                BuyerId = o.BuyerId,
                 DealTitle = o.Deal != null ? o.Deal.Title : "",
                 o.Status,
                 o.TotalPrice,
@@ -406,14 +402,12 @@ public class AdminApiController : ControllerBase
     [HttpGet("orders/{id:guid}")]
     public async Task<IActionResult> GetOrderDetail(Guid id)
     {
-        var o = await _db.DealOrders.Include(x => x.User).Include(x => x.Deal).AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        var o = await _db.DealOrders.Include(x => x.Deal).AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
         if (o == null) return NotFound();
         return Ok(new
         {
             o.Id,
-            BuyerName = o.User?.FullName ?? "",
-            BuyerEmail = o.User?.Email ?? "",
-            BuyerPhone = o.User?.Phone,
+            BuyerId = o.BuyerId,
             DealTitle = o.Deal?.Title ?? "",
             o.Status,
             o.TotalPrice,
@@ -429,7 +423,7 @@ public class AdminApiController : ControllerBase
     {
         var order = await _db.DealOrders.FindAsync(id);
         if (order == null) return NotFound();
-        order.Status = req.Status;
+        order.Status = Enum.TryParse<OrderStatus>(req.Status, true, out var os) ? os : order.Status;
         order.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         _logger.LogInformation("Admin {AdminId} updated order {OrderId} status to {Status}", AdminId, id, req.Status);
@@ -612,7 +606,7 @@ public class AdminApiController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        var q = _db.UserNotifications.Include(n => n.User).AsNoTracking().AsQueryable();
+        var q = _db.UserNotifications.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(type)) q = q.Where(n => n.Type == type);
         if (isRead.HasValue) q = q.Where(n => n.IsRead == isRead.Value);
@@ -624,8 +618,8 @@ public class AdminApiController : ControllerBase
             {
                 n.Id,
                 n.UserId,
-                UserEmail = n.User != null ? n.User.Email : "",
-                UserName = n.User != null ? n.User.FullName : "",
+                UserEmail = "",
+                UserName = "",
                 n.Type,
                 n.Title,
                 n.Body,
@@ -701,7 +695,6 @@ public class AdminApiController : ControllerBase
         [FromQuery] int pageSize = 50)
     {
         var messages = await _db.ChatMessages
-            .Include(m => m.Sender)
             .Where(m => m.ConversationId == conversationId)
             .OrderByDescending(m => m.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
@@ -710,7 +703,6 @@ public class AdminApiController : ControllerBase
             {
                 m.Id,
                 m.SenderId,
-                SenderName = m.Sender != null ? m.Sender.FullName : "",
                 m.Content,
                 m.IsRead,
                 m.CreatedAt
@@ -731,12 +723,7 @@ public class AdminApiController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
-        var q = _db.PushTokens.Include(pt => pt.User).AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(search))
-            q = q.Where(pt =>
-                (pt.User != null && EF.Functions.ILike(pt.User.Email, $"%{search}%")) ||
-                (pt.User != null && EF.Functions.ILike(pt.User.FullName, $"%{search}%")));
+        var q = _db.PushTokens.AsNoTracking().AsQueryable();
 
         var total = await q.CountAsync();
         var tokens = await q.OrderByDescending(pt => pt.CreatedAt)
@@ -745,8 +732,8 @@ public class AdminApiController : ControllerBase
             {
                 pt.Id,
                 pt.UserId,
-                UserEmail = pt.User != null ? pt.User.Email : "",
-                UserName = pt.User != null ? pt.User.FullName : "",
+                UserEmail = "",
+                UserName = "",
                 TokenMasked = pt.Token.Length > 8 ? $"{pt.Token[..4]}...{pt.Token[^4..]}" : "****",
                 pt.Platform,
                 pt.IsActive,

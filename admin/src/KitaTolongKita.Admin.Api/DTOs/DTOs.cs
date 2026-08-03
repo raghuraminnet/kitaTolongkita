@@ -57,7 +57,7 @@ public record DealModerationItem(
 public record DealListItem(
     string Id, string Title, string Category, string OrganizerName,
     decimal GroupPrice, int CurrentGroup, int MinGroup,
-    string Status, bool IsFeatured, DateTime CreatedAt
+    string Status, DateTime CreatedAt
 );
 
 // ── Orders ─────────────────────────────────────────────────────────────────────

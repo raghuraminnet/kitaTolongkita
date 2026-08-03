@@ -48,7 +48,6 @@ public class ExportController : ControllerBase
             CurrentMembers = d.CurrentGroup,
             Status = d.Status,
             ModerationStatus = d.Status,
-            IsFeatured = d.IsFeatured ? "Yes" : "No",
             CreatedAt = d.CreatedAt
         }).ToList();
 
