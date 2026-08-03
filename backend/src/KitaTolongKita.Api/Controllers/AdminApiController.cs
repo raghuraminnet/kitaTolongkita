@@ -5,7 +5,6 @@ using System.Security.Claims;
 using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Infrastructure.Data;
-using KitaTolongKita.Infrastructure.Services;
 
 namespace KitaTolongKita.Api.Controllers;
 
@@ -40,7 +39,6 @@ public class AdminApiController : ControllerBase
     // USERS
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>Search/list users in the platform.</summary>
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers(
         [FromQuery] string? search = null,
@@ -60,15 +58,9 @@ public class AdminApiController : ControllerBase
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(u => (object)new
             {
-                u.Id,
-                u.Email,
-                u.FullName,
-                u.AvatarUrl,
-                u.EmailVerified,
-                u.IsVerified,
-                u.IsContributor,
-                u.CreatedAt,
-                u.LastLoginAt,
+                u.Id, u.Email, u.FullName, u.AvatarUrl,
+                u.EmailVerified, u.IsVerified, u.IsContributor,
+                u.CreatedAt, u.LastLoginAt,
                 DealsPosted = _db.Deals.Count(d => d.OrganizerId == u.Id)
             })
             .ToListAsync();
@@ -76,7 +68,6 @@ public class AdminApiController : ControllerBase
         return Ok(new PagedResult<object>(users, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
-    /// <summary>Get one user's full detail with their deals and orders.</summary>
     [HttpGet("users/{id:guid}")]
     public async Task<IActionResult> GetUserDetail(Guid id)
     {
@@ -86,7 +77,7 @@ public class AdminApiController : ControllerBase
         var deals = await _db.Deals
             .Where(d => d.OrganizerId == id)
             .OrderByDescending(d => d.CreatedAt).Take(20)
-            .Select(d => (object)new { d.Id, d.Title, ModerationStatus = d.ModerationStatus.ToString(), d.CreatedAt })
+            .Select(d => (object)new { d.Id, d.Title, Status = d.ModerationStatus.ToString(), d.CreatedAt })
             .ToListAsync();
 
         var orders = await _db.DealOrders
@@ -98,26 +89,15 @@ public class AdminApiController : ControllerBase
 
         return Ok(new
         {
-            user.Id,
-            user.Email,
-            user.FullName,
-            user.AvatarUrl,
-            user.EmailVerified,
-            user.IsVerified,
-            user.IsContributor,
-            user.Bio,
-            user.City,
-            user.Website,
-            user.CreatedAt,
-            user.LastLoginAt,
-            user.ContributorSince,
-            user.ContributorRating,
-            DealsPosted = deals,
-            Orders = orders
+            user.Id, user.Email, user.FullName, user.AvatarUrl,
+            user.EmailVerified, user.IsVerified, user.IsContributor,
+            user.Bio, user.City, user.Website,
+            user.CreatedAt, user.LastLoginAt,
+            user.ContributorSince, user.ContributorRating,
+            DealsPosted = deals, Orders = orders
         });
     }
 
-    /// <summary>Toggle a user's active status.</summary>
     [HttpPatch("users/{id:guid}/toggle-status")]
     public async Task<IActionResult> ToggleUserStatus(Guid id, [FromBody] ToggleStatusRequest req)
     {
@@ -129,7 +109,6 @@ public class AdminApiController : ControllerBase
         return Ok(new { success = true });
     }
 
-    /// <summary>Verify or unverify a user.</summary>
     [HttpPatch("users/{id:guid}/verify")]
     public async Task<IActionResult> VerifyUser(Guid id, [FromBody] VerifyUserRequest req)
     {
@@ -145,7 +124,6 @@ public class AdminApiController : ControllerBase
     // DEALS
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>List all deals with optional status/search filters.</summary>
     [HttpGet("deals")]
     public async Task<IActionResult> GetAllDeals(
         [FromQuery] string? status = null,
@@ -165,22 +143,16 @@ public class AdminApiController : ControllerBase
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(d => (object)new
             {
-                d.Id,
-                d.Title,
-                d.Category,
+                d.Id, d.Title, d.Category,
                 OrganizerName = d.Organizer != null ? d.Organizer.FullName : "",
-                d.GroupPrice,
-                d.MembersJoined,
-                d.MinMembers,
-                Status = d.ModerationStatus.ToString(),
-                d.CreatedAt
+                d.GroupPrice, d.MembersJoined, d.MinMembers,
+                Status = d.ModerationStatus.ToString(), d.CreatedAt
             })
             .ToListAsync();
 
         return Ok(new PagedResult<object>(deals, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
-    /// <summary>Get one deal's full details.</summary>
     [HttpGet("deals/{id:guid}")]
     public async Task<IActionResult> GetDealDetail(Guid id)
     {
@@ -188,47 +160,30 @@ public class AdminApiController : ControllerBase
         if (d == null) return NotFound();
         return Ok(new
         {
-            d.Id,
-            d.Title,
-            d.Description,
-            d.Category,
-            d.OriginalPrice,
-            d.GroupPrice,
-            d.MinMembers,
-            d.MaxMembers,
-            d.MembersJoined,
-            d.Deadline,
-            d.PickupLocation,
-            d.ImageUrl,
-            d.ImageUrls,
-            d.Status,
-            d.ModerationStatus,
-            d.ModerationScore,
-            d.ModerationFlags,
-            d.ModerationRejectReason,
-            d.UpvoteCount,
-            d.LikeCount,
-            d.Hashtags,
+            d.Id, d.Title, d.Description, d.Category,
+            d.OriginalPrice, d.GroupPrice, d.MinMembers, d.MaxMembers,
+            d.MembersJoined, d.Deadline, d.PickupLocation,
+            d.ImageUrl, d.ImageUrls,
+            Status = d.Status.ToString(),
+            ModerationStatus = d.ModerationStatus.ToString(),
+            d.ModerationScore, d.ModerationFlags, d.ModerationRejectReason,
+            d.UpvoteCount, d.LikeCount, d.Hashtags,
             Organizer = d.Organizer != null ? new { d.Organizer.Id, d.Organizer.FullName, d.Organizer.Email } : null,
-            d.CreatedAt,
-            d.PublishedAt,
+            d.CreatedAt, d.PublishedAt,
             DealOrders = await _db.DealOrders.CountAsync(o => o.DealId == id)
         });
     }
 
-    /// <summary>Feature or unfeature a deal.</summary>
     [HttpPost("deals/{id:guid}/feature")]
     public async Task<IActionResult> FeatureDeal(Guid id, [FromBody] FeatureDealRequest req)
     {
         var deal = await _db.Deals.FindAsync(id);
         if (deal == null) return NotFound();
-        // Feature functionality not yet implemented in Deal entity
-        await _db.SaveChangesAsync();
-        _logger.LogInformation("Admin {AdminId} attempted to feature deal {DealId} (not yet implemented)", AdminId, id);
-        return Ok(new { success = true });
+        // IsFeatured is not yet in the Deal entity — no-op until field is added
+        _logger.LogInformation("Admin {AdminId} feature-deal {DealId} (not yet implemented)", AdminId, id);
+        return Ok(new { success = true, message = "IsFeatured field not yet available on Deal entity" });
     }
 
-    /// <summary>Bulk moderate deals: approve, reject, feature, unfeature.</summary>
     [HttpPost("deals/bulk-moderate")]
     public async Task<IActionResult> BulkModerateDeals([FromBody] BulkModerateRequest req)
     {
@@ -256,12 +211,6 @@ public class AdminApiController : ControllerBase
                     deal.ModerationRejectReason = req.Reason ?? "Bulk rejection";
                     deal.Status = DealStatus.Cancelled;
                     break;
-                case "feature":
-                    // IsFeatured field does not exist on Deal entity yet
-                    break;
-                case "unfeature":
-                    // IsFeatured field does not exist on Deal entity yet
-                    break;
                 default:
                     errors.Add($"Unknown action '{req.Action}' for {idStr}");
                     continue;
@@ -274,7 +223,10 @@ public class AdminApiController : ControllerBase
         return Ok(new { succeeded, failed = errors.Count, errors });
     }
 
-    /// <summary>Dashboard KPIs.</summary>
+    // ═══════════════════════════════════════════════════════════════
+    // DASHBOARD
+    // ═══════════════════════════════════════════════════════════════
+
     [HttpGet("dashboard")]
     public async Task<IActionResult> GetDashboard()
     {
@@ -308,19 +260,12 @@ public class AdminApiController : ControllerBase
 
         return Ok(new
         {
-            totalUsers,
-            activeDeals,
-            ordersToday,
-            todayRevenue,
-            pendingModeration,
-            newUsersToday,
-            growthPercent,
-            userStats,
-            dealStats
+            totalUsers, activeDeals, ordersToday, todayRevenue,
+            pendingModeration, newUsersToday, growthPercent,
+            userStats, dealStats
         });
     }
 
-    /// <summary>Deal category + revenue stats.</summary>
     [HttpGet("deals/stats")]
     public async Task<IActionResult> GetDealStats([FromQuery] int days = 30)
     {
@@ -337,26 +282,19 @@ public class AdminApiController : ControllerBase
             .Where(d => d.ModerationStatus == ModerationStatus.Approved)
             .GroupBy(d => d.Category)
             .Select(g => new { category = g.Key, count = g.Count() })
-            .OrderByDescending(x => x.count)
-            .Take(10)
+            .OrderByDescending(x => x.count).Take(10)
             .ToListAsync();
 
         var dailyDeals = await _db.Deals
             .Where(d => d.CreatedAt >= since)
             .GroupBy(d => d.CreatedAt.Date.ToString("yyyy-MM-dd"))
             .Select(g => new { date = g.Key, count = g.Count() })
-            .OrderBy(x => x.date)
-            .ToListAsync();
+            .OrderBy(x => x.date).ToListAsync();
 
         return Ok(new
         {
-            totalDeals,
-            approvedDeals,
-            pendingDeals,
-            totalOrders,
-            totalRevenue,
-            categories,
-            dailyDeals
+            totalDeals, approvedDeals, pendingDeals,
+            totalOrders, totalRevenue, categories, dailyDeals
         });
     }
 
@@ -364,7 +302,6 @@ public class AdminApiController : ControllerBase
     // ORDERS
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>List all deal orders.</summary>
     [HttpGet("orders")]
     public async Task<IActionResult> GetOrders(
         [FromQuery] string? status = null,
@@ -377,8 +314,7 @@ public class AdminApiController : ControllerBase
         if (!string.IsNullOrWhiteSpace(status))
             q = q.Where(o => o.Status.ToString() == status);
         if (!string.IsNullOrWhiteSpace(search))
-            q = q.Where(o =>
-                (o.Deal != null && EF.Functions.ILike(o.Deal.Title, $"%{search}%")));
+            q = q.Where(o => o.Deal != null && EF.Functions.ILike(o.Deal.Title, $"%{search}%"));
 
         var total = await q.CountAsync();
         var orders = await q.OrderByDescending(o => o.CreatedAt)
@@ -389,16 +325,13 @@ public class AdminApiController : ControllerBase
                 BuyerId = o.BuyerId,
                 DealTitle = o.Deal != null ? o.Deal.Title : "",
                 Status = o.Status.ToString(),
-                o.TotalPrice,
-                o.Quantity,
-                o.CreatedAt
+                o.TotalPrice, o.Quantity, o.CreatedAt
             })
             .ToListAsync();
 
         return Ok(new PagedResult<object>(orders, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
-    /// <summary>Get one order's detail.</summary>
     [HttpGet("orders/{id:guid}")]
     public async Task<IActionResult> GetOrderDetail(Guid id)
     {
@@ -409,14 +342,11 @@ public class AdminApiController : ControllerBase
             o.Id,
             BuyerId = o.BuyerId,
             DealTitle = o.Deal?.Title ?? "",
-            o.Status,
-            o.TotalPrice,
-            o.Quantity,
-            o.CreatedAt,
+            Status = o.Status.ToString(),
+            o.TotalPrice, o.Quantity, o.CreatedAt
         });
     }
 
-    /// <summary>Update order status.</summary>
     [HttpPatch("orders/{id:guid}/status")]
     public async Task<IActionResult> UpdateOrderStatus(Guid id, [FromBody] UpdateOrderStatusRequest req)
     {
@@ -432,7 +362,6 @@ public class AdminApiController : ControllerBase
     // COMMENTS
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>List all comments with filters.</summary>
     [HttpGet("comments")]
     public async Task<IActionResult> GetComments(
         [FromQuery] Guid? dealId = null,
@@ -452,23 +381,18 @@ public class AdminApiController : ControllerBase
             .Skip((page - 1) * size).Take(size)
             .Select(c => (object)new
             {
-                c.Id,
-                c.DealId,
+                c.Id, c.DealId,
                 DealTitle = c.Deal != null ? c.Deal.Title : "",
                 c.UserId,
                 UserFullName = c.User != null ? c.User.FullName : "",
                 UserAvatar = c.User != null ? c.User.AvatarUrl : "",
-                c.Content,
-                c.CreatedAt,
-                c.IsHidden,
-                Status = c.ModerationStatus
+                c.Content, c.CreatedAt, c.IsHidden, Status = c.ModerationStatus
             })
             .ToListAsync();
 
         return Ok(new PagedResult<object>(items, total, page, size, (int)Math.Ceiling(total / (double)size)));
     }
 
-    /// <summary>Comment moderation stats.</summary>
     [HttpGet("comments/stats")]
     public async Task<IActionResult> GetCommentStats()
     {
@@ -479,7 +403,6 @@ public class AdminApiController : ControllerBase
         return Ok(new { total, pendingReview = pending, approved, rejected });
     }
 
-    /// <summary>Hide a comment.</summary>
     [HttpPatch("comments/{id:guid}/hide")]
     public async Task<IActionResult> HideComment(Guid id)
     {
@@ -492,7 +415,6 @@ public class AdminApiController : ControllerBase
         return Ok(new { success = true });
     }
 
-    /// <summary>Approve a hidden/pending comment.</summary>
     [HttpPatch("comments/{id:guid}/approve")]
     public async Task<IActionResult> ApproveComment(Guid id)
     {
@@ -505,7 +427,6 @@ public class AdminApiController : ControllerBase
         return Ok(new { success = true });
     }
 
-    /// <summary>Delete a comment permanently.</summary>
     [HttpDelete("comments/{id:guid}")]
     public async Task<IActionResult> DeleteComment(Guid id)
     {
@@ -521,7 +442,6 @@ public class AdminApiController : ControllerBase
     // SAVED LISTS
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>List all saved lists.</summary>
     [HttpGet("saved-lists")]
     public async Task<IActionResult> GetSavedLists(
         [FromQuery] string? search = null,
@@ -546,49 +466,41 @@ public class AdminApiController : ControllerBase
             var dealCount = await _db.SavedDeals.CountAsync(sd => sd.ListId == sl.Id);
             items.Add(new
             {
-                sl.Id,
-                sl.UserId,
-                UserEmail = sl.User?.Email ?? "",
-                UserName = sl.User?.FullName ?? "",
-                sl.Name,
-                sl.IsPublic,
-                dealCount,
-                sl.CreatedAt
+                sl.Id, sl.UserId,
+                UserEmail = sl.User != null ? sl.User.Email : "",
+                UserName = sl.User != null ? sl.User.FullName : "",
+                sl.Name, sl.IsPublic, dealCount, sl.CreatedAt
             });
         }
 
         return Ok(new PagedResult<object>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
-    /// <summary>Get one saved list with all its deals.</summary>
     [HttpGet("saved-lists/{id:guid}")]
     public async Task<IActionResult> GetSavedListDetail(Guid id)
     {
-        var sl = await _db.SavedLists.Include(x => x.User).Include(x => x.SavedDeals).ThenInclude(sd => sd.Deal)
+        var sl = await _db.SavedLists
+            .Include(x => x.User)
+            .Include(x => x.SavedDeals).ThenInclude(sd => sd.Deal)
             .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
         if (sl == null) return NotFound();
 
         var deals = sl.SavedDeals.Select(sd => new
         {
-            sd.Id,
-            sd.DealId,
-            DealTitle = sd.Deal?.Title ?? "",
-            DealCategory = sd.Deal?.Category ?? "",
-            DealPrice = sd.Deal?.GroupPrice ?? 0,
-            DealStatus = sd.Deal?.ModerationStatus ?? "",
+            sd.Id, sd.DealId,
+            DealTitle = sd.Deal != null ? sd.Deal.Title : "",
+            DealCategory = sd.Deal != null ? sd.Deal.Category : "",
+            DealPrice = sd.Deal != null ? sd.Deal.GroupPrice : 0,
+            DealStatus = sd.Deal != null ? sd.Deal.ModerationStatus.ToString() : "",
             sd.SavedAt
         }).ToList();
 
         return Ok(new
         {
-            sl.Id,
-            sl.UserId,
-            UserEmail = sl.User?.Email ?? "",
-            UserName = sl.User?.FullName ?? "",
-            sl.Name,
-            sl.IsPublic,
-            sl.CreatedAt,
-            Deals = deals
+            sl.Id, sl.UserId,
+            UserEmail = sl.User != null ? sl.User.Email : "",
+            UserName = sl.User != null ? sl.User.FullName : "",
+            sl.Name, sl.IsPublic, sl.CreatedAt, Deals = deals
         });
     }
 
@@ -596,7 +508,6 @@ public class AdminApiController : ControllerBase
     // NOTIFICATIONS
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>List all user notifications.</summary>
     [HttpGet("notifications")]
     public async Task<IActionResult> GetNotifications(
         [FromQuery] string? type = null,
@@ -614,22 +525,14 @@ public class AdminApiController : ControllerBase
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(n => (object)new
             {
-                n.Id,
-                n.UserId,
-                UserEmail = "",
-                UserName = "",
-                n.Type,
-                n.Title,
-                n.Body,
-                n.IsRead,
-                n.CreatedAt
+                n.Id, n.UserId, n.Type, n.Title, n.Body,
+                n.IsRead, n.CreatedAt
             })
             .ToListAsync();
 
         return Ok(new PagedResult<object>(notifs, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
-    /// <summary>Notification stats.</summary>
     [HttpGet("notifications/stats")]
     public async Task<IActionResult> GetNotificationStats()
     {
@@ -642,7 +545,6 @@ public class AdminApiController : ControllerBase
     // CONVERSATIONS / CHAT
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>List all chat conversations.</summary>
     [HttpGet("conversations")]
     public async Task<IActionResult> GetConversations(
         [FromQuery] string? search = null,
@@ -672,20 +574,22 @@ public class AdminApiController : ControllerBase
                 .OrderByDescending(m => m.CreatedAt).FirstOrDefaultAsync();
             items.Add(new
             {
-                c.Id,
-                c.DealId,
-                Participants = c.Participants.Select(p => new { p.UserId, UserName = p.User?.FullName ?? "", p.User?.AvatarUrl }),
+                c.Id, c.DealId,
+                Participants = c.Participants.Select(p => new
+                {
+                    p.UserId,
+                    UserName = p.User != null ? p.User.FullName : "",
+                    UserAvatar = p.User != null ? p.User.AvatarUrl : ""
+                }),
                 messageCount = msgCount,
-                lastMessage = lastMsg?.Content,
-                c.LastMessageAt,
-                c.CreatedAt
+                lastMessage = lastMsg != null ? lastMsg.Content : "",
+                c.LastMessageAt, c.CreatedAt
             });
         }
 
         return Ok(new PagedResult<object>(items, total, page, pageSize, (int)Math.Ceiling(total / (double)pageSize)));
     }
 
-    /// <summary>Get messages in a conversation.</summary>
     [HttpGet("conversations/{conversationId}/messages")]
     public async Task<IActionResult> GetChatMessages(
         Guid conversationId,
@@ -697,14 +601,7 @@ public class AdminApiController : ControllerBase
             .OrderByDescending(m => m.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .AsNoTracking()
-            .Select(m => new
-            {
-                m.Id,
-                m.SenderId,
-                m.Content,
-                m.IsRead,
-                m.CreatedAt
-            })
+            .Select(m => new { m.Id, m.SenderId, m.Content, m.IsRead, m.CreatedAt })
             .ToListAsync();
 
         return Ok(messages);
@@ -714,7 +611,6 @@ public class AdminApiController : ControllerBase
     // PUSH TOKENS
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>List all FCM push tokens.</summary>
     [HttpGet("push-tokens")]
     public async Task<IActionResult> GetPushTokens(
         [FromQuery] string? search = null,
@@ -728,15 +624,9 @@ public class AdminApiController : ControllerBase
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(pt => (object)new
             {
-                pt.Id,
-                pt.UserId,
-                UserEmail = "",
-                UserName = "",
-                TokenMasked = pt.Token.Length > 8 ? $"{pt.Token[..4]}...{pt.Token[^4..]}" : "****",
-                pt.Platform,
-                pt.IsActive,
-                pt.CreatedAt,
-                pt.LastUsedAt
+                pt.Id, pt.UserId,
+                TokenMasked = pt.Token.Length > 4 ? pt.Token.Substring(0, 4) + "..." + pt.Token.Substring(pt.Token.Length - 4) : "****",
+                pt.Platform, pt.IsActive, pt.CreatedAt, pt.LastUsedAt
             })
             .ToListAsync();
 
@@ -747,7 +637,6 @@ public class AdminApiController : ControllerBase
     // CONTRIBUTOR APPLICATIONS
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>List all contributor applications.</summary>
     [HttpGet("contributor-applications")]
     public async Task<IActionResult> GetContributorApplications(
         [FromQuery] string? status = null,
@@ -765,27 +654,19 @@ public class AdminApiController : ControllerBase
             .Skip((page - 1) * size).Take(size)
             .Select(a => (object)new
             {
-                a.Id,
-                a.UserId,
+                a.Id, a.UserId,
                 FullName = a.User != null ? a.User.FullName : "",
                 Email = a.User != null ? a.User.Email : "",
                 Phone = a.User != null ? a.User.Phone : null,
-                a.MobileNo,
-                a.IcPassportNo,
-                a.Nationality,
-                a.Race,
-                a.ResidentStatus,
-                a.Status,
-                a.RejectionReason,
-                a.CreatedAt,
-                a.ApprovedAt
+                a.MobileNo, a.IcPassportNo, a.Nationality,
+                a.Race, a.ResidentStatus, a.Status,
+                a.RejectionReason, a.CreatedAt, a.ApprovedAt
             })
             .ToListAsync();
 
         return Ok(new PagedResult<object>(items, total, page, size, (int)Math.Ceiling(total / (double)size)));
     }
 
-    /// <summary>Get one contributor application.</summary>
     [HttpGet("contributor-applications/{id:guid}")]
     public async Task<IActionResult> GetContributorApplication(Guid id)
     {
@@ -795,7 +676,6 @@ public class AdminApiController : ControllerBase
         return Ok(a);
     }
 
-    /// <summary>Review (approve/reject) a contributor application.</summary>
     [HttpPost("contributor-applications/{id:guid}/review")]
     public async Task<IActionResult> ReviewContributorApplication(Guid id, [FromBody] ReviewContributorAppRequest req)
     {
@@ -833,7 +713,6 @@ public class AdminApiController : ControllerBase
     // FOLLOWS
     // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>Get follower/following counts for a user.</summary>
     [HttpGet("users/{userId:guid}/follow-stats")]
     public async Task<IActionResult> GetFollowStats(Guid userId)
     {
@@ -842,7 +721,6 @@ public class AdminApiController : ControllerBase
         return Ok(new { followers, following });
     }
 
-    /// <summary>List followers of a user.</summary>
     [HttpGet("users/{userId:guid}/followers")]
     public async Task<IActionResult> GetFollowers(Guid userId, [FromQuery] int page = 1, [FromQuery] int size = 20)
     {
@@ -851,12 +729,17 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var items = await q.OrderByDescending(f => f.CreatedAt)
             .Skip((page - 1) * size).Take(size)
-            .Select(f => (object)new { f.FollowerId, UserName = f.Follower != null ? f.Follower.FullName : "", UserAvatar = f.Follower != null ? f.Follower.AvatarUrl : null, f.CreatedAt })
+            .Select(f => (object)new
+            {
+                f.FollowerId,
+                UserName = f.Follower != null ? f.Follower.FullName : "",
+                UserAvatar = f.Follower != null ? f.Follower.AvatarUrl : "",
+                f.CreatedAt
+            })
             .ToListAsync();
         return Ok(new PagedResult<object>(items, total, page, size, (int)Math.Ceiling(total / (double)size)));
     }
 
-    /// <summary>List users a user is following.</summary>
     [HttpGet("users/{userId:guid}/following")]
     public async Task<IActionResult> GetFollowing(Guid userId, [FromQuery] int page = 1, [FromQuery] int size = 20)
     {
@@ -865,7 +748,13 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var items = await q.OrderByDescending(f => f.CreatedAt)
             .Skip((page - 1) * size).Take(size)
-            .Select(f => (object)new { f.FollowingId, UserName = f.Following != null ? f.Following.FullName : "", UserAvatar = f.Following != null ? f.Following.AvatarUrl : null, f.CreatedAt })
+            .Select(f => (object)new
+            {
+                f.FollowingId,
+                UserName = f.Following != null ? f.Following.FullName : "",
+                UserAvatar = f.Following != null ? f.Following.AvatarUrl : "",
+                f.CreatedAt
+            })
             .ToListAsync();
         return Ok(new PagedResult<object>(items, total, page, size, (int)Math.Ceiling(total / (double)size)));
     }
