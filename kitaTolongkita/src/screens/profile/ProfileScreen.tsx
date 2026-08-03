@@ -55,17 +55,17 @@ export const ProfileScreen: React.FC = () => {
       paddingHorizontal: spacing.lg,
     },
     verifiedBadge: {
-      backgroundColor: '#e3f2fd', borderRadius: borderRadius.full,
+      backgroundColor: colors['secondary-container'], borderRadius: borderRadius.full,
       paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm,
     },
-    verifiedText: { fontSize: 11, color: '#1565c0', fontWeight: '700' },
+    verifiedText: { fontSize: 11, color: colors['on-secondary-container'], fontWeight: '700' },
     contributorBadge: {
-      backgroundColor: '#fff8e1', borderRadius: borderRadius.full,
+      backgroundColor: colors['primary-container'], borderRadius: borderRadius.full,
       paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm,
     },
-    contributorBadgeText: { fontSize: 11, color: '#e65100', fontWeight: '700' },
+    contributorBadgeText: { fontSize: 11, color: colors['on-primary-container'], fontWeight: '700' },
     becomeContributorBtn: {
-      marginTop: spacing.md, backgroundColor: '#e65100',
+      marginTop: spacing.md, backgroundColor: colors['primary'],
       borderRadius: borderRadius.full, paddingVertical: spacing.sm, alignItems: 'center',
     },
     becomeContributorBtnText: { ...typography['label-sm'], color: colors.white, fontWeight: '700' },
@@ -140,7 +140,7 @@ export const ProfileScreen: React.FC = () => {
     ratingDealTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors['on-surface'] },
     ratingContributor: { fontSize: 12, color: colors['on-surface-variant'], marginTop: 2 },
     ratingStars: { flexDirection: 'row', marginTop: spacing.xs },
-    star: { fontSize: 16, color: '#f59e0b' },
+    star: { fontSize: 16, color: colors.tertiary },
     menuSection: {
       marginHorizontal: spacing.md, backgroundColor: colors['surface-container-lowest'],
       borderRadius: borderRadius.xl, overflow: 'hidden', marginTop: spacing.lg,
@@ -334,8 +334,8 @@ export const ProfileScreen: React.FC = () => {
   const renderLookupItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.lookupCard}>
       <View style={styles.lookupHeader}>
-        <View style={lookupStatusBadge(item.status)}>
-          <Text style={lookupStatusText(item.status)}>{item.status}</Text>
+        <View style={lookupStatusBadge(item.status, colors)}>
+          <Text style={lookupStatusText(item.status, colors)}>{item.status}</Text>
         </View>
         <Text style={styles.bookingId}>{item.bookingId}</Text>
       </View>
@@ -513,21 +513,25 @@ export const ProfileScreen: React.FC = () => {
   );
 };
 
-// Helper for lookup status badge colors
-const lookupStatusBadge = (status: string) => ({
-  backgroundColor:
-    status === 'Delivered' ? '#e8f5e9' :
-    status === 'Secured' ? '#e3f2fd' :
-    status === 'InProcess' ? '#fff3e0' :
-    status === 'Cancelled' ? '#ffebee' : '#f5f5f5',
-});
-const lookupStatusText = (status: string) => ({
-  color:
-    status === 'Delivered' ? '#2e7d32' :
-    status === 'Secured' ? '#1565c0' :
-    status === 'InProcess' ? '#e65100' :
-    status === 'Cancelled' ? '#c62828' : '#666',
-  fontSize: 11, fontWeight: '700' as const,
-});
+// Helper for lookup status badge colors — uses token semantic colors
+const lookupStatusBadge = (status: string, c: Record<string, string>) => {
+  const map: Record<string, { bg: string; text: string }> = {
+    Delivered:   { bg: c['status-success-bg'], text: c['status-success-text'] },
+    Secured:     { bg: c['status-info-bg'],    text: c['status-info-text']    },
+    InProcess:   { bg: c['status-warning-bg'], text: c['status-warning-text'] },
+    Cancelled:   { bg: c['status-error-bg'],   text: c['status-error-text']   },
+  };
+  const s = map[status] ?? { bg: c['status-neutral-bg'], text: c['status-neutral-text'] };
+  return { backgroundColor: s.bg, color: s.text, fontSize: 11, fontWeight: '700' as const };
+};
+const lookupStatusText = (status: string, c: Record<string, string>) => {
+  const map: Record<string, string> = {
+    Delivered: c['status-success-text'],
+    Secured:   c['status-info-text'],
+    InProcess: c['status-warning-text'],
+    Cancelled: c['status-error-text'],
+  };
+  return { color: map[status] ?? c['status-neutral-text'], fontSize: 11, fontWeight: '700' as const };
+};
 
 

@@ -117,7 +117,7 @@ export const DealDetailScreen: React.FC = () => {
     // Content
     content: { padding: spacing.md },
     priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-    price: { fontFamily: 'NunitoSans_800ExtraBold', fontSize: 32, fontWeight: '800', color: colors['primary-container'] },
+    price: { fontFamily: 'NunitoSans_800ExtraBold', fontSize: 32, fontWeight: '800', color: colors.primary },
     originalPrice: {
       fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
       color: colors['on-surface-variant'], textDecorationLine: 'line-through',

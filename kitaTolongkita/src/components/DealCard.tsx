@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
+import { timeUntil } from '../utils/time';
 
 interface DealCardProps {
   title: string;
@@ -8,9 +9,18 @@ interface DealCardProps {
   originalPrice?: string;
   location: string;
   imageUrl?: string;
-  countdown?: string;
+  /** ISO deadline string */
+  deadline?: string;
   membersJoined: number;
   membersTarget: number;
+  /** Number of likes — shown as social proof */
+  likes?: number;
+  /** Number of upvotes — shown as social proof */
+  upvotes?: number;
+  /** Organizer display name */
+  organizerName?: string;
+  /** Organizer avatar URL */
+  organizerAvatar?: string;
   isSaved?: boolean;
   onPress?: () => void;
 }
@@ -21,47 +31,54 @@ export const DealCard: React.FC<DealCardProps> = ({
   originalPrice,
   location,
   imageUrl,
-  countdown,
+  deadline,
   membersJoined,
   membersTarget,
+  likes = 0,
+  upvotes = 0,
+  organizerName,
+  organizerAvatar,
   isSaved,
   onPress,
 }) => {
   const progress = Math.min((membersJoined / membersTarget) * 100, 100);
+  const countdown = deadline ? timeUntil(deadline) : null;
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
-      {/* Image Header */}
+      {/* ── Image Header ─────────────────────────────── */}
       <View style={styles.imageContainer}>
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.image} />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Text style={styles.placeholderText}>🛒</Text>
+            <Text style={styles.placeholderEmoji}>🛒</Text>
           </View>
         )}
 
-        {/* Countdown Badge */}
+        {/* Countdown badge */}
         {countdown && (
           <View style={styles.countdownBadge}>
             <Text style={styles.countdownText}>{countdown}</Text>
           </View>
         )}
 
-        {/* Saved Bookmark */}
+        {/* Saved bookmark */}
         {isSaved && (
           <View style={styles.savedBadge}>
-            <Text style={{ fontSize: 12 }}>📌</Text>
+            <Text style={{ fontSize: 13 }}>🔖</Text>
           </View>
         )}
       </View>
 
-      {/* Body */}
+      {/* ── Body ─────────────────────────────────────── */}
       <View style={styles.body}>
+        {/* Title */}
         <Text style={styles.title} numberOfLines={2}>
           {title}
         </Text>
 
+        {/* Price row */}
         <View style={styles.priceRow}>
           <Text style={styles.price}>{price}</Text>
           {originalPrice && (
@@ -69,23 +86,56 @@ export const DealCard: React.FC<DealCardProps> = ({
           )}
         </View>
 
-        <View style={styles.locationRow}>
+        {/* Social proof row */}
+        {(likes > 0 || upvotes > 0) && (
+          <View style={styles.socialRow}>
+            {upvotes > 0 && (
+              <View style={styles.socialItem}>
+                <Text style={styles.socialIcon}>👍</Text>
+                <Text style={styles.socialCount}>{upvotes}</Text>
+              </View>
+            )}
+            {likes > 0 && (
+              <View style={styles.socialItem}>
+                <Text style={styles.socialIcon}>❤️</Text>
+                <Text style={styles.socialCount}>{likes}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Location + Organizer row */}
+        <View style={styles.metaRow}>
           <Text style={styles.locationIcon}>📍</Text>
           <Text style={styles.location} numberOfLines={1}>
             {location}
           </Text>
         </View>
+
+        {/* Organizer */}
+        {organizerName && (
+          <View style={styles.organizerRow}>
+            {organizerAvatar ? (
+              <Image source={{ uri: organizerAvatar }} style={styles.organizerAvatar} />
+            ) : (
+              <View style={styles.organizerAvatarPlaceholder}>
+                <Text style={styles.organizerInitial}>
+                  {organizerName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.organizerName} numberOfLines={1}>
+              {organizerName}
+            </Text>
+          </View>
+        )}
       </View>
 
-      {/* Footer - Progress Bar */}
+      {/* ── Footer — Progress Bar ────────────────────── */}
       <View style={styles.footer}>
         <View style={styles.progressHeader}>
-          <Text style={styles.progressLabel}>
-            {membersJoined} joined
-          </Text>
-          <Text style={styles.progressTarget}>
-            {membersTarget} needed
-          </Text>
+          <Text style={styles.progressLabel}>{membersJoined} joined</Text>
+          <Text style={styles.progressTarget}>{membersTarget} needed</Text>
         </View>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${progress}%` }]} />
@@ -102,6 +152,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.card,
   },
+
+  /* ── Image ─────────────────────────────────────── */
   imageContainer: {
     position: 'relative',
     height: 140,
@@ -119,7 +171,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors['surface-container-high'],
   },
-  placeholderText: {
+  placeholderEmoji: {
     fontSize: 40,
   },
   countdownBadge: {
@@ -131,52 +183,79 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: borderRadius.full,
   },
-  savedBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   countdownText: {
     ...typography['label-sm'],
     color: colors.white,
     fontWeight: '700',
     fontSize: 11,
   },
+  savedBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* ── Body ──────────────────────────────────────── */
   body: {
     padding: spacing.md,
+    paddingBottom: spacing.sm,
+    gap: spacing.xs,
   },
   title: {
     ...typography['body-lg'],
     color: colors['on-surface'],
     fontWeight: '600',
-    marginBottom: spacing.xs,
+    lineHeight: 22,
+    marginBottom: 2,
   },
   priceRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     gap: spacing.sm,
-    marginBottom: spacing.sm,
   },
   price: {
     ...typography['title-md'],
-    color: colors['primary-container'],
-    fontWeight: '700',
+    color: colors.primary,          // darker amber — readable on warm bg
+    fontWeight: '800',
+    fontSize: 18,
   },
   originalPrice: {
     ...typography['body-md'],
     color: colors['on-surface-variant'],
     textDecorationLine: 'line-through',
   },
-  locationRow: {
+
+  /* Social proof */
+  socialRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: 2,
+  },
+  socialItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  socialIcon: {
+    fontSize: 13,
+  },
+  socialCount: {
+    ...typography['label-sm'],
+    color: colors['on-surface-variant'],
+  },
+
+  /* Location */
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
   },
   locationIcon: {
     fontSize: 12,
@@ -185,7 +264,43 @@ const styles = StyleSheet.create({
     ...typography['body-md'],
     color: colors['on-surface-variant'],
     flex: 1,
+    fontSize: 13,
   },
+
+  /* Organizer */
+  organizerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: 4,
+  },
+  organizerAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors['surface-container-high'],
+  },
+  organizerAvatarPlaceholder: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors['secondary-container'],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  organizerInitial: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors['on-secondary-container'],
+  },
+  organizerName: {
+    ...typography['label-sm'],
+    color: colors['on-surface-variant'],
+    flex: 1,
+    fontSize: 12,
+  },
+
+  /* ── Footer ────────────────────────────────────── */
   footer: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,

@@ -5,6 +5,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { LocationProvider } from './src/contexts/LocationContext';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { initLanguage } from './src/i18n';
+import { colors } from './src/theme';
 
 function AppContent() {
   const { isDark } = useTheme();
@@ -29,7 +30,7 @@ function App() {
   if (!langReady) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#FF7A30" />
+        <ActivityIndicator size="large" color={colors['primary-container']} />
       </View>
     );
   }
@@ -48,7 +49,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.background,
   },
 });
 

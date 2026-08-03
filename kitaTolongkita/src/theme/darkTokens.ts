@@ -64,4 +64,16 @@ export const darkColors = {
   'on-error': '#690005',
   'error-container': '#93000a',
   'on-error-container': '#ffdad6',
+
+  // Semantic Status — order/report lookup badges (dark-adjusted)
+  'status-success-bg': '#1b3a1f',
+  'status-success-text': '#81c784',
+  'status-info-bg': '#1a2f4a',
+  'status-info-text': '#90caf9',
+  'status-warning-bg': '#3d2a00',
+  'status-warning-text': '#ffb74d',
+  'status-error-bg': '#3a1010',
+  'status-error-text': '#ef9a9a',
+  'status-neutral-bg': '#2a2a2a',
+  'status-neutral-text': '#9e9e9e',
 };

@@ -18,6 +18,17 @@ const STATUS_COLORS: Record<string, string> = {
   Cancelled: '#c62828',
 };
 
+function getStatusTokenColors(status: string, c: Record<string, string>) {
+  const map: Record<string, { bg: string; text: string }> = {
+    Delivered:   { bg: c['status-success-bg'], text: c['status-success-text'] },
+    Secured:     { bg: c['status-info-bg'],    text: c['status-info-text']    },
+    InProcess:   { bg: c['status-warning-bg'], text: c['status-warning-text'] },
+    Cancelled:   { bg: c['status-error-bg'],   text: c['status-error-text']   },
+    Pending:     { bg: c['status-warning-bg'], text: c['status-warning-text'] },
+  };
+  return map[status] ?? { bg: c['status-neutral-bg'], text: c['status-neutral-text'] };
+}
+
 export const LookupDetailScreen: React.FC = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -67,12 +78,12 @@ export const LookupDetailScreen: React.FC = () => {
     qrNote: { ...typography['label-sm'], color: colors['on-surface-variant'] },
     qrId: { fontFamily: 'monospace', fontSize: 18, fontWeight: '800', color: colors['on-surface'], marginTop: spacing.xs },
     verifiedBanner: {
-      backgroundColor: '#e8f5e9', borderRadius: borderRadius.lg,
+      backgroundColor: colors['status-success-bg'], borderRadius: borderRadius.lg,
       padding: spacing.md, marginTop: spacing.md, alignItems: 'center',
     },
-    verifiedText: { ...typography['body-md'], color: '#2e7d32', fontWeight: '700' },
-    verifiedTime: { ...typography['label-sm'], color: '#2e7d32', marginTop: 4 },
-    pendingText: { ...typography['body-md'], color: '#FF9800', textAlign: 'center', marginTop: spacing.md },
+    verifiedText: { ...typography['body-md'], color: colors['status-success-text'], fontWeight: '700' },
+    verifiedTime: { ...typography['label-sm'], color: colors['status-success-text'], marginTop: 4 },
+    pendingText: { ...typography['body-md'], color: colors['status-warning-text'], textAlign: 'center', marginTop: spacing.md },
     deliverySection: { marginBottom: spacing.lg },
     deliveryCard: {
       backgroundColor: colors['surface-container-lowest'],
@@ -81,9 +92,9 @@ export const LookupDetailScreen: React.FC = () => {
     deliveryLabel: { ...typography['label-sm'], color: colors['on-surface-variant'], marginBottom: 2 },
     deliveryValue: { ...typography['body-md'], color: colors['on-surface'], fontWeight: '600', marginBottom: spacing.md },
     deliveryModeRow: { marginTop: spacing.xs },
-    dispatchNotes: { marginTop: spacing.sm, backgroundColor: '#fff8e1', borderRadius: borderRadius.md, padding: spacing.sm },
-    dispatchNotesLabel: { ...typography['label-sm'], color: '#e65100', fontWeight: '700' },
-    dispatchNotesText: { ...typography['body-md'], color: '#e65100', marginTop: 2 },
+    dispatchNotes: { marginTop: spacing.sm, backgroundColor: colors['status-warning-bg'], borderRadius: borderRadius.md, padding: spacing.sm },
+    dispatchNotesLabel: { ...typography['label-sm'], color: colors['status-warning-text'], fontWeight: '700' },
+    dispatchNotesText: { ...typography['body-md'], color: colors['status-warning-text'], marginTop: 2 },
     actionsSection: { marginTop: spacing.md },
     cancelBtn: {
       padding: spacing.md, borderRadius: borderRadius.lg,
@@ -124,6 +135,7 @@ export const LookupDetailScreen: React.FC = () => {
   }
 
   const statusColor = STATUS_COLORS[lookup.status] ?? '#666';
+  const tokenColors = getStatusTokenColors(lookup.status, colors);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -140,7 +152,7 @@ export const LookupDetailScreen: React.FC = () => {
         {/* Status + Booking ID */}
         <View style={[styles.bookingCard, { borderLeftColor: statusColor }]}>
           <View style={styles.bookingHeader}>
-            <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
+            <View style={[styles.statusBadge, { backgroundColor: tokenColors.bg }]}
               <Text style={[styles.statusText, { color: statusColor }]}>{lookup.status}</Text>
             </View>
             <Text style={styles.bookingId}>{lookup.bookingId}</Text>

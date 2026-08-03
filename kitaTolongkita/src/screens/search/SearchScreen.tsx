@@ -9,21 +9,23 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { Search, SlidersHorizontal, Bell } from 'lucide-react-native';
 import { useLocation } from '../../contexts/LocationContext';
 import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
 import { dealsApi } from '../../api/client';
+import { EmptyState } from '../../components';
+import { timeUntil } from '../../utils/time';
 import type { Deal } from '../../api/client';
 
 const API_BASE = 'http://76.13.219.191:5000/api';
 const CATEGORIES = ['All', 'Food', 'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Drinks'];
 const SORT_OPTIONS = [
   { key: 'newest', label: 'Newest' },
-  { key: 'price_asc', label: 'Price (Low-High)' },
+  { key: 'price_asc', label: 'Price (Low–High)' },
   { key: 'popular', label: 'Most Popular' },
 ];
 
@@ -47,15 +49,6 @@ const MOCK_DEALS: Deal[] = [
     imageUrls: [], status: 'Active', organizerName: 'Batik Heritage', createdAt: new Date().toISOString(),
   },
 ];
-
-function getCountdown(deadline: string): string {
-  const diff = new Date(deadline).getTime() - Date.now();
-  if (diff <= 0) return 'Ended';
-  const d = Math.floor(diff / 86400000);
-  const h = Math.floor((diff % 864000000) / 3600000);
-  if (d > 0) return `${d}d ${h}h`;
-  return `${h}h ${Math.floor((diff % 3600000) / 60000)}m`;
-}
 
 function calcDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -89,6 +82,7 @@ export const SearchScreen: React.FC = () => {
 
   useEffect(() => {
     loadDeals(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadDeals = async (reset = false) => {
@@ -98,58 +92,26 @@ export const SearchScreen: React.FC = () => {
     try {
       let results: Deal[] = [];
 
+      const params: Record<string, string | number> = {
+        page: currentPage,
+        pageSize: 20,
+        ...(query.trim() ? { query: query.trim() } : {}),
+        ...(activeCategory !== 'All' ? { category: activeCategory } : {}),
+        sortBy,
+      };
+
       if (userLat && userLon) {
-        // Geo-aware search: backend sorts by distance automatically
-        const params = new URLSearchParams({
-          lat: String(userLat),
-          lon: String(userLon),
-          radiusKm: '10',
-          page: String(currentPage),
-          pageSize: '20',
-          ...(query.trim() ? { query: query.trim() } : {}),
-          ...(activeCategory !== 'All' ? { category: activeCategory } : {}),
-          sortBy,
-        });
-        try {
-          const res = await fetch(`${API_BASE}/deals?${params.toString()}`);
-          if (res.ok) {
-            const data = await res.json();
-            results = data.items ?? data ?? [];
-          }
-        } catch { /* fall through to fallback */ }
-      } else {
-        // No location — search without geo filters
-        const params = new URLSearchParams({
-          page: String(currentPage),
-          pageSize: '20',
-          ...(query.trim() ? { query: query.trim() } : {}),
-          ...(activeCategory !== 'All' ? { category: activeCategory } : {}),
-          sortBy,
-        });
-        try {
-          const res = await fetch(`${API_BASE}/deals?${params.toString()}`);
-          if (res.ok) {
-            const data = await res.json();
-            results = data.items ?? data ?? [];
-          }
-        } catch { /* fall through to fallback */ }
+        params.lat = userLat;
+        params.lon = userLon;
+        params.radiusKm = 10;
       }
+
+      const res = await dealsApi.search(params);
+      results = res.items ?? [];
 
       if (results.length === 0) {
-        // Fallback to dealsApi (no location)
-        const fallbackParams: Record<string, string | number> = {
-          sortBy,
-          page: currentPage,
-          pageSize: 20,
-          ...(query.trim() ? { query: query.trim() } : {}),
-        };
-        const result = await dealsApi.search(fallbackParams);
-        results = result.items ?? MOCK_DEALS;
-      }
-
-      // Filter by category client-side if API didn't handle it
-      if (activeCategory !== 'All') {
-        results = results.filter((d) => d.category === activeCategory);
+        const fallback = await dealsApi.search({ sortBy, page: currentPage, pageSize: 20 });
+        results = fallback.items ?? MOCK_DEALS;
       }
 
       if (reset) {
@@ -163,7 +125,10 @@ export const SearchScreen: React.FC = () => {
       }
       setHasMore(results.length >= 20);
     } catch {
-      setDeals(reset ? MOCK_DEALS : deals);
+      if (reset) {
+        setDeals(MOCK_DEALS);
+        setAllDeals(MOCK_DEALS);
+      }
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -205,8 +170,6 @@ export const SearchScreen: React.FC = () => {
     await loadDeals(false);
   };
 
-  const filteredDeals = allDeals;
-
   const renderDeal = ({ item }: { item: Deal }) => {
     const distance =
       item.latitude && item.longitude && userLat && userLon
@@ -215,52 +178,74 @@ export const SearchScreen: React.FC = () => {
 
     return (
       <TouchableOpacity
-        style={styles.dealCard}
+        style={[styles.dealCard, { backgroundColor: colors['surface-container-lowest'] }]}
         onPress={() => navigation.navigate('DealDetail', { dealId: item.id })}
         activeOpacity={0.8}
       >
         {/* Thumbnail */}
-        {item.imageUrls?.[0] ? (
-          <Image source={{ uri: item.imageUrls[0] }} style={styles.dealThumbnail} />
-        ) : (
-          <View style={styles.thumbnailPlaceholder}>
+        <View style={[styles.thumbnail, { backgroundColor: colors['surface-container-high'] }]}>
+          {item.imageUrls?.[0] ? (
+            <Image source={{ uri: item.imageUrls[0] }} style={styles.thumbnailImage} />
+          ) : (
             <Text style={styles.thumbnailEmoji}>🛒</Text>
-          </View>
-        )}
-        {item.isSaved && (
-          <View style={styles.savedBadge}>
-            <Text style={{ fontSize: 11 }}>📌</Text>
-          </View>
-        )}
+          )}
+          {item.isSaved && (
+            <View style={[styles.savedBadge, { backgroundColor: colors['surface-container-lowest'] }]}>
+              <Text style={{ fontSize: 11 }}>🔖</Text>
+            </View>
+          )}
+        </View>
 
         {/* Info */}
         <View style={styles.dealInfo}>
           <View style={styles.dealTopRow}>
-            <Text style={styles.dealCategoryChip}>{item.category}</Text>
+            <View style={[styles.categoryChip, { backgroundColor: colors['secondary-container'] }]}>
+              <Text style={[styles.categoryChipText, { color: colors['on-secondary-container'] }]}>
+                {item.category}
+              </Text>
+            </View>
             {distance !== null && (
-              <Text style={styles.dealDistance}>
-                {distance < 1 ? `${(distance * 1000).toFixed(0)}m away` : `${distance.toFixed(1)} km away`}
+              <Text style={[styles.distance, { color: colors['on-surface-variant'] }]}>
+                {distance < 1 ? `${(distance * 1000).toFixed(0)}m` : `${distance.toFixed(1)} km`}
               </Text>
             )}
           </View>
-          <Text style={styles.dealTitle} numberOfLines={2}>{item.title}</Text>
-          <View style={styles.dealPriceRow}>
-            <Text style={styles.dealGroupPrice}>RM {item.groupPrice.toFixed(0)}</Text>
-            <Text style={styles.dealOriginalPrice}>RM {item.originalPrice.toFixed(0)}</Text>
+
+          <Text style={[styles.dealTitle, { color: colors['on-surface'] }]} numberOfLines={2}>
+            {item.title}
+          </Text>
+
+          <View style={styles.priceRow}>
+            <Text style={[styles.groupPrice, { color: colors.primary }]}>
+              RM {item.groupPrice.toFixed(0)}
+            </Text>
+            <Text style={[styles.originalPrice, { color: colors['on-surface-variant'] }]}>
+              RM {item.originalPrice.toFixed(0)}
+            </Text>
           </View>
-          {/* Members progress */}
-          <View style={styles.membersRow}>
-            <View style={styles.progressBarWrap}>
+
+          <View style={styles.dealFooter}>
+            <View style={[styles.progressTrack, { backgroundColor: colors['surface-container-high'] }]}>
               <View
                 style={[
                   styles.progressFill,
-                  { width: `${Math.min(100, (item.membersJoined / item.maxMembers) * 100)}%` },
+                  {
+                    width: `${Math.min(100, (item.membersJoined / item.maxMembers) * 100)}%`,
+                    backgroundColor: colors.secondary,
+                  },
                 ]}
               />
             </View>
-            <Text style={styles.membersText}>
-              {item.membersJoined}/{item.maxMembers} joined
-            </Text>
+            <View style={styles.dealFooterMeta}>
+              <Text style={[styles.membersText, { color: colors['on-surface-variant'] }]}>
+                {item.membersJoined}/{item.maxMembers} joined
+              </Text>
+              {item.deadline && (
+                <Text style={[styles.deadlineText, { color: colors.secondary }]}>
+                  {timeUntil(item.deadline)}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -270,22 +255,25 @@ export const SearchScreen: React.FC = () => {
   const sortLabel = SORT_OPTIONS.find((s) => s.key === sortBy)?.label ?? 'Sort';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Search</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
-          <Text style={styles.bell}>🔔</Text>
+        <Text style={[styles.headerTitle, { color: colors['on-background'] }]}>Search</Text>
+        <TouchableOpacity
+          style={[styles.notificationBtn, { backgroundColor: colors['surface-container'] }]}
+          onPress={() => navigation.navigate('Notifications')}
+        >
+          <Bell size={20} color={colors['on-surface-variant']} strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+        <View style={[styles.searchBar, { backgroundColor: colors['surface-container'] }]}>
+          <Search size={16} color={colors['on-surface-variant']} strokeWidth={2} style={{ marginRight: spacing.sm }} />
           <TextInput
-            style={styles.searchInput}
-            placeholder={t('search.placeholder')}
+            style={[styles.searchInput, { color: colors['on-surface'] }]}
+            placeholder={t('search.placeholder', 'Search deals...')}
             placeholderTextColor={colors['on-surface-variant']}
             value={query}
             onChangeText={setQuery}
@@ -294,25 +282,40 @@ export const SearchScreen: React.FC = () => {
           />
           {searching && <ActivityIndicator size="small" color={colors['primary-container']} />}
         </View>
-        {/* Sort Button */}
-        <TouchableOpacity style={styles.sortBtn} onPress={() => setShowSortMenu(!showSortMenu)}>
-          <Text style={styles.sortBtnText}>⚙️ {sortLabel}</Text>
+
+        <TouchableOpacity
+          style={[styles.sortBtn, { backgroundColor: colors['surface-container'] }]}
+          onPress={() => setShowSortMenu(!showSortMenu)}
+        >
+          <SlidersHorizontal size={16} color={colors['on-surface']} strokeWidth={2} />
+          <Text style={[styles.sortBtnText, { color: colors['on-surface'] }]}>{sortLabel}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Sort Dropdown */}
       {showSortMenu && (
-        <View style={styles.sortMenu}>
+        <View style={[styles.sortMenu, { backgroundColor: colors['surface-container-lowest'] }, shadows.card]}>
           {SORT_OPTIONS.map((opt) => (
             <TouchableOpacity
               key={opt.key}
-              style={[styles.sortMenuItem, sortBy === opt.key && styles.sortMenuItemActive]}
+              style={[
+                styles.sortMenuItem,
+                sortBy === opt.key && { backgroundColor: colors['primary-container'] },
+              ]}
               onPress={() => handleSortChange(opt.key)}
             >
-              <Text style={[styles.sortMenuText, sortBy === opt.key && styles.sortMenuTextActive]}>
+              <Text
+                style={[
+                  styles.sortMenuText,
+                  { color: colors['on-surface'] },
+                  sortBy === opt.key && { color: colors.white, fontWeight: '700' },
+                ]}
+              >
                 {opt.label}
               </Text>
-              {sortBy === opt.key && <Text style={styles.sortMenuCheck}>✓</Text>}
+              {sortBy === opt.key && (
+                <Text style={{ color: colors.white, fontWeight: '700' }}>✓</Text>
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -323,10 +326,20 @@ export const SearchScreen: React.FC = () => {
         {CATEGORIES.map((cat) => (
           <TouchableOpacity
             key={cat}
-            style={[styles.categoryChip, activeCategory === cat && styles.categoryChipActive]}
+            style={[
+              styles.categoryFilterChip,
+              { backgroundColor: colors['surface-container'] },
+              activeCategory === cat && { backgroundColor: colors['primary-container'] },
+            ]}
             onPress={() => handleCategoryChange(cat)}
           >
-            <Text style={[styles.categoryChipText, activeCategory === cat && styles.categoryChipTextActive]}>
+            <Text
+              style={[
+                styles.categoryFilterText,
+                { color: colors['on-surface'] },
+                activeCategory === cat && { color: colors.white, fontWeight: '700' },
+              ]}
+            >
               {cat}
             </Text>
           </TouchableOpacity>
@@ -335,21 +348,26 @@ export const SearchScreen: React.FC = () => {
 
       {/* Results */}
       {loading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors['primary-container']} />
+        <View style={styles.loadingContainer}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View key={i} style={[styles.skeletonCard, { backgroundColor: colors['surface-container-lowest'] }]}>
+              <View style={[styles.skeletonThumb, { backgroundColor: colors['surface-container-high'] }]} />
+              <View style={styles.skeletonBody}>
+                <View style={[styles.skeletonLine, { width: '50%', backgroundColor: colors['surface-container-high'] }]} />
+                <View style={[styles.skeletonLine, { width: '80%', backgroundColor: colors['surface-container-high'] }]} />
+                <View style={[styles.skeletonLine, { width: '35%', backgroundColor: colors['surface-container-high'] }]} />
+              </View>
+            </View>
+          ))}
         </View>
       ) : (
         <FlatList
-          data={filteredDeals}
+          data={allDeals}
           renderItem={renderDeal}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={[colors['primary-container']]}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors['primary-container']} />
           }
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
@@ -359,11 +377,13 @@ export const SearchScreen: React.FC = () => {
             ) : null
           }
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>🔍</Text>
-              <Text style={styles.emptyText}>{t('search.noResults')}</Text>
-              <Text style={styles.emptyHint}>{t('search.noResultsHint')}</Text>
-            </View>
+            <EmptyState
+              icon="🔍"
+              title="No deals found"
+              message={query ? `No results for "${query}"` : 'Try a different category or check back later'}
+              actionLabel="Clear Search"
+              onAction={() => { setQuery(''); setActiveCategory('All'); setPage(1); loadDeals(true); }}
+            />
           }
         />
       )}
@@ -372,116 +392,104 @@ export const SearchScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: spacing.md, paddingVertical: spacing.md,
   },
   headerTitle: {
     fontFamily: 'NunitoSans_700Bold', fontSize: 24, fontWeight: '700',
-    color: colors['on-background'],
   },
-  bell: { fontSize: 24 },
+  notificationBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center',
+  },
   searchContainer: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md,
-    gap: spacing.sm, marginBottom: spacing.sm,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.sm,
   },
   searchBar: {
     flex: 1, flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors['surface-container'], borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.md, height: 44,
+    borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 44,
   },
   searchIcon: { fontSize: 16, marginRight: spacing.sm },
   searchInput: {
     flex: 1, fontFamily: 'Inter_400Regular', fontSize: 16,
-    color: colors['on-surface'],
   },
   sortBtn: {
-    backgroundColor: colors['surface-container'], borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.md, height: 44, justifyContent: 'center',
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 44, justifyContent: 'center',
   },
-  sortBtnText: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors['on-surface'] },
+  sortBtnText: { fontFamily: 'Inter_400Regular', fontSize: 13 },
   sortMenu: {
     marginHorizontal: spacing.md, marginBottom: spacing.sm,
-    backgroundColor: colors['surface-container-lowest'], borderRadius: borderRadius.lg,
-    ...shadows.card, overflow: 'hidden',
+    borderRadius: borderRadius.lg, overflow: 'hidden', paddingVertical: spacing.xs,
   },
   sortMenuItem: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
   },
-  sortMenuItemActive: { backgroundColor: colors['primary-container'] },
-  sortMenuText: { ...typography['body-md'], color: colors['on-surface'] },
-  sortMenuTextActive: { color: colors.white, fontWeight: '700' },
-  sortMenuCheck: { color: colors.white, fontWeight: '700' },
+  sortMenuText: { ...typography['body-md'] },
   categoriesScroll: {
     flexDirection: 'row', paddingHorizontal: spacing.md,
     gap: spacing.sm, marginBottom: spacing.md,
   },
-  categoryChip: {
+  categoryFilterChip: {
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full, backgroundColor: colors['surface-container'],
+    borderRadius: borderRadius.full,
   },
-  categoryChipActive: { backgroundColor: colors['primary-container'] },
-  categoryChipText: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors['on-surface'] },
-  categoryChipTextActive: { color: colors.white, fontWeight: '700' },
+  categoryFilterText: {
+    fontFamily: 'Inter_400Regular', fontSize: 13,
+  },
   list: { paddingHorizontal: spacing.md, paddingBottom: 120 },
   dealCard: {
-    flexDirection: 'row', backgroundColor: colors['surface-container-lowest'],
+    flexDirection: 'row',
     borderRadius: borderRadius.lg, padding: spacing.sm, marginBottom: spacing.sm,
     ...shadows.card,
   },
-  dealThumbnail: { width: 80, height: 80, borderRadius: borderRadius.md },
-  thumbnailPlaceholder: {
-    width: 80, height: 80, borderRadius: borderRadius.md,
-    backgroundColor: colors['surface-container-high'], alignItems: 'center', justifyContent: 'center',
+  thumbnail: {
+    width: 88, height: 88, borderRadius: borderRadius.md,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
-  thumbnailEmoji: { fontSize: 32 },
+  thumbnailImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  thumbnailEmoji: { fontSize: 36 },
   savedBadge: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute', top: 4, left: 4,
+    width: 22, height: 22, borderRadius: 11,
+    alignItems: 'center', justifyContent: 'center',
   },
   dealInfo: { flex: 1, marginLeft: spacing.sm, justifyContent: 'space-between' },
-  dealTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
-  dealCategoryChip: {
-    backgroundColor: colors['secondary-container'], paddingHorizontal: 6, paddingVertical: 1,
-    borderRadius: borderRadius.sm, ...typography['label-sm'], color: colors['on-secondary-container'],
+  dealTopRow: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', marginBottom: 4,
   },
-  dealDistance: { ...typography['label-sm'], color: colors['on-surface-variant'] },
+  categoryChip: {
+    paddingHorizontal: 6, paddingVertical: 1,
+    borderRadius: borderRadius.sm,
+  },
+  categoryChipText: { ...typography['label-sm'], fontSize: 10 },
+  distance: { ...typography['label-sm'], fontSize: 11 },
   dealTitle: {
-    fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors['on-surface'],
-    marginBottom: 4, lineHeight: 18,
+    fontFamily: 'Inter_600SemiBold', fontSize: 14, lineHeight: 18, marginBottom: 4,
   },
-  dealPriceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  dealGroupPrice: {
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  groupPrice: {
     fontFamily: 'NunitoSans_700Bold', fontSize: 16, fontWeight: '800',
-    color: colors['primary-container'],
   },
-  dealOriginalPrice: {
-    fontFamily: 'Inter_400Regular', fontSize: 12,
-    color: colors['on-surface-variant'], textDecorationLine: 'line-through',
+  originalPrice: {
+    fontFamily: 'Inter_400Regular', fontSize: 12, textDecorationLine: 'line-through',
   },
-  membersRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
-  progressBarWrap: {
-    flex: 1, height: 4, backgroundColor: colors['surface-container-high'],
-    borderRadius: 2,
+  dealFooter: { gap: 4 },
+  progressTrack: { height: 4, borderRadius: 2 },
+  progressFill: { height: '100%', borderRadius: 2 },
+  dealFooterMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  membersText: { ...typography['label-sm'], fontSize: 11 },
+  deadlineText: { ...typography['label-sm'], fontSize: 11, fontWeight: '700' },
+  loadingContainer: { padding: spacing.md, gap: spacing.sm },
+  skeletonCard: {
+    flexDirection: 'row', borderRadius: borderRadius.lg, padding: spacing.sm,
   },
-  progressFill: { height: '100%', backgroundColor: colors['primary-container'], borderRadius: 2 },
-  membersText: { ...typography['label-sm'], color: colors['on-surface-variant'] },
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  empty: { alignItems: 'center', paddingTop: 80 },
-  emptyEmoji: { fontSize: 56, marginBottom: spacing.md },
-  emptyText: { fontFamily: 'Inter_400Regular', fontSize: 16, color: colors['on-surface-variant'] },
-  emptyHint: {
-    fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
-    marginTop: spacing.xs,
-  },
+  skeletonThumb: { width: 88, height: 88, borderRadius: borderRadius.md },
+  skeletonBody: { flex: 1, marginLeft: spacing.sm, justifyContent: 'center', gap: spacing.sm },
+  skeletonLine: { height: 12, borderRadius: borderRadius.sm },
 });

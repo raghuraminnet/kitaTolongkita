@@ -66,6 +66,18 @@ export const colors = {
   'on-error': '#ffffff',
   'error-container': '#ffdad6',
   'on-error-container': '#93000a',
+
+  // Semantic Status — order/report lookup badges
+  'status-success-bg': '#e8f5e9',
+  'status-success-text': '#2e7d32',
+  'status-info-bg': '#e3f2fd',
+  'status-info-text': '#1565c0',
+  'status-warning-bg': '#fff3e0',
+  'status-warning-text': '#e65100',
+  'status-error-bg': '#ffebee',
+  'status-error-text': '#c62828',
+  'status-neutral-bg': '#f5f5f5',
+  'status-neutral-text': '#616161',
 } as const;
 
 export const typography = {
