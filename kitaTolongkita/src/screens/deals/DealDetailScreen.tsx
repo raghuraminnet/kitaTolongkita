@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Alert,
   Platform,
@@ -13,16 +12,19 @@ import {
   Share,
   TextInput,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { Button, ProgressBar, Avatar } from '../../components';
+import { Button, ProgressBar, Avatar, ImageCarousel, ExpandableText, QuickActionsSheet } from '../../components';
 import { typography, spacing, borderRadius, shadows } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi, savedDealsApi, commentsApi, repostsApi, request } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
 import type { Deal } from '../../api/client';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const API_BASE = 'http://76.13.219.191:5000/api';
 
@@ -82,24 +84,21 @@ export const DealDetailScreen: React.FC = () => {
     loadingText: { ...typography['body-lg'], color: colors['on-surface-variant'] },
     scrollContent: { paddingBottom: 160 },
     imageContainer: { height: 300, backgroundColor: colors['surface-container'], position: 'relative' },
-    image: { width: '100%', height: '100%', resizeMode: 'cover' },
-    imagePlaceholder: {
-      width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center',
-      backgroundColor: colors['surface-container-high'],
-    },
-    placeholderEmoji: { fontSize: 64 },
     backBtn: {
       position: 'absolute', left: spacing.md, width: 40, height: 40, borderRadius: 20,
       backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
+      zIndex: 10,
     },
     backBtnText: { fontSize: 20, fontWeight: '600', color: colors['on-surface'] },
     saveBtn: {
       position: 'absolute', width: 40, height: 40, borderRadius: 20,
       backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
+      zIndex: 10,
     },
     shareBtn: {
       position: 'absolute', right: spacing.md, width: 40, height: 40, borderRadius: 20,
       backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
+      zIndex: 10,
     },
     // Verify prompt
     verifyBanner: {
@@ -263,6 +262,7 @@ export const DealDetailScreen: React.FC = () => {
   // ── Repost ────────────────────────────────────────────────────────────────
   const [hasReposted, setHasReposted] = useState(false);
   const [repostCount, setRepostCount] = useState(0);
+  const [showActionsSheet, setShowActionsSheet] = useState(false);
 
   const dealId = route.params?.dealId;
   const dealParam = route.params?.deal;
@@ -422,43 +422,6 @@ export const DealDetailScreen: React.FC = () => {
     }
   };
 
-  const handleShare = async () => {
-    const deal = displayDeal;
-    const shareUrl = `kitatolong://deal/${dealId ?? deal.id}`;
-    const message = `Check out this deal: ${deal.title} for RM${deal.groupPrice}!\n${shareUrl}`;
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', 'Share Deal', 'Save to List', 'Report this Deal'],
-          cancelButtonIndex: 0,
-          destructiveButtonIndex: 3,
-        },
-        async (buttonIndex) => {
-          if (buttonIndex === 1) {
-            await Share.share({ message });
-          } else if (buttonIndex === 2) {
-            handleSave();
-          } else if (buttonIndex === 3) {
-            navigation.navigate('ReportForm', {
-              type: 'Deal',
-              targetId: dealId!,
-              targetTitle: deal.title,
-            });
-          }
-        }
-      );
-    } else {
-      Alert.alert('Deal Options', `\"${deal.title}\"`, [
-        { text: 'Share Deal', onPress: async () => { try { await Share.share({ message }); } catch {} } },
-        { text: 'Save to List', onPress: handleSave },
-        { text: 'Report this Deal', style: 'destructive', onPress: () => {
-          navigation.navigate('ReportForm', { type: 'Deal', targetId: dealId!, targetTitle: deal.title });
-        }},
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-    }
-  };
 
   const handleSave = () => {
     if (myLists.length === 0) {
@@ -642,36 +605,41 @@ export const DealDetailScreen: React.FC = () => {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 160 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Product Image */}
+        {/* Product Image — Carousel */}
         <View style={styles.imageContainer}>
-          {displayDeal.imageUrls?.[0] ? (
-            <Image source={{ uri: displayDeal.imageUrls[0] }} style={styles.image} />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <Text style={styles.placeholderEmoji}>🛒</Text>
-            </View>
-          )}
+          <ImageCarousel
+            images={displayDeal.imageUrls ?? []}
+            height={300}
+            placeholderEmoji="🛍️"
+            placeholder="No images available"
+            renderOverlay={() => (
+              <>
+                {/* Back Button */}
+                <TouchableOpacity
+                  style={[styles.backBtn, { top: insets.top + 8 }]}
+                  onPress={() => navigation.goBack()}
+                >
+                  <Text style={styles.backBtnText}>←</Text>
+                </TouchableOpacity>
 
-          {/* Back Button */}
-          <TouchableOpacity
-            style={[styles.backBtn, { top: insets.top + 8 }]}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backBtnText}>←</Text>
-          </TouchableOpacity>
+                {/* Save Button */}
+                <TouchableOpacity
+                  style={[styles.saveBtn, { top: insets.top + 8, right: spacing.md + 48 }]}
+                  onPress={handleSave}
+                >
+                  <Text style={{ fontSize: 18 }}>{isSaved ? '📌' : '🔖'}</Text>
+                </TouchableOpacity>
 
-          {/* Save Button */}
-          <TouchableOpacity
-            style={[styles.saveBtn, { top: insets.top + 8, right: spacing.md + 48 }]}
-            onPress={handleSave}
-          >
-            <Text style={{ fontSize: 18 }}>{isSaved ? '📌' : '🔖'}</Text>
-          </TouchableOpacity>
-
-          {/* Share Button */}
-          <TouchableOpacity style={[styles.shareBtn, { top: insets.top + 8 }]} onPress={handleShare}>
-            <Text style={{ fontSize: 18 }}>📤</Text>
-          </TouchableOpacity>
+                {/* Share / Actions Button */}
+                <TouchableOpacity
+                  style={[styles.shareBtn, { top: insets.top + 8 }]}
+                  onPress={() => setShowActionsSheet(true)}
+                >
+                  <Text style={{ fontSize: 18 }}>⋯</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          />
         </View>
 
         {/* Verify Prompt Banner */}
@@ -786,7 +754,13 @@ export const DealDetailScreen: React.FC = () => {
           <View style={styles.divider} />
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Description</Text>
-            <Text style={styles.description}>{displayDeal.description}</Text>
+            <ExpandableText
+              text={displayDeal.description}
+              collapsedLines={4}
+              expandLabel="Read more"
+              collapseLabel="Read less"
+              textStyle={styles.description}
+            />
           </View>
 
           {/* Pickup Location */}
@@ -929,6 +903,43 @@ export const DealDetailScreen: React.FC = () => {
           />
         </View>
       </View>
+
+      {/* Quick Actions Bottom Sheet */}
+      <QuickActionsSheet
+        visible={showActionsSheet}
+        onClose={() => setShowActionsSheet(false)}
+        title={displayDeal.title}
+        actions={[
+          {
+            icon: '💬',
+            label: 'Share Deal',
+            description: 'Share this deal with friends',
+            onPress: async () => {
+              const message = `Check out this deal: ${displayDeal.title} for RM${displayDeal.groupPrice}!\nkitatolong://deal/${dealId ?? displayDeal.id}`;
+              try { await Share.share({ message }); } catch {}
+            },
+          },
+          {
+            icon: isSaved ? '★' : '☆',
+            label: isSaved ? 'Saved to List' : 'Save to List',
+            description: 'Remove from your saved list',
+            onPress: handleSave,
+          },
+          {
+            icon: '⚠️',
+            label: 'Report this Deal',
+            description: 'Flag inappropriate content',
+            onPress: () => {
+              navigation.navigate('ReportForm', {
+                type: 'Deal',
+                targetId: dealId!,
+                targetTitle: displayDeal.title,
+              });
+            },
+            destructive: false,
+          },
+        ]}
+      />
     </View>
   );
 };

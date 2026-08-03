@@ -32,6 +32,18 @@ const STATUS_COLORS: Record<string, string> = {
   Refunded: '#EF4444',
 };
 
+function getStatusColors(status: string, c: Record<string, string>) {
+  const map: Record<string, { bg: string; text: string }> = {
+    Pending:   { bg: c['status-warning-bg'], text: c['status-warning-text'] },
+    Confirmed: { bg: c['status-info-bg'],    text: c['status-info-text']    },
+    Ready:     { bg: c['status-success-bg'], text: c['status-success-text'] },
+    Collected: { bg: c['status-neutral-bg'], text: c['status-neutral-text'] },
+    Cancelled: { bg: c['status-error-bg'],   text: c['status-error-text']   },
+    Refunded:  { bg: c['status-error-bg'],   text: c['status-error-text']   },
+  };
+  return map[status] ?? { bg: c['status-neutral-bg'], text: c['status-neutral-text'] };
+}
+
 export const OrdersScreen: React.FC = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -210,8 +222,8 @@ export const OrdersScreen: React.FC = () => {
     >
       <View style={styles.orderHeader}>
         <Text style={styles.orderTitle} numberOfLines={1}>{item.dealTitle}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] ?? '#6B7280' }]}>
-          <Text style={styles.statusText}>{item.status}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColors(item.status, colors).bg }]}>
+          <Text style={[styles.statusText, { color: getStatusColors(item.status, colors).text }]}>{item.status}</Text>
         </View>
       </View>
       <View style={styles.orderMeta}>
@@ -232,8 +244,8 @@ export const OrdersScreen: React.FC = () => {
     >
       <View style={styles.orderHeader}>
         <Text style={styles.orderTitle} numberOfLines={1}>{item.dealTitle}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] ?? '#6B7280' }]}>
-          <Text style={styles.statusText}>{item.status}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColors(item.status, colors).bg }]}>
+          <Text style={[styles.statusText, { color: getStatusColors(item.status, colors).text }]}>{item.status}</Text>
         </View>
       </View>
       <View style={styles.orderMeta}>

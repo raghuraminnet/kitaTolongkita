@@ -40,7 +40,7 @@ export const LoginScreen: React.FC = () => {
     container: { flex: 1, backgroundColor: colors.background },
     scrollContent: { padding: spacing.md, paddingTop: spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.xl) },
     demoBanner: {
-      backgroundColor: '#FF7A30',
+      backgroundColor: colors['primary-container'],
       borderRadius: borderRadius.lg,
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.lg,
@@ -70,7 +70,7 @@ export const LoginScreen: React.FC = () => {
     tagline: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'] },
     demoBadge: {
       marginTop: spacing.xs,
-      backgroundColor: '#FF7A30',
+      backgroundColor: colors['primary-container'],
       color: colors.white,
       fontFamily: 'Inter_700Bold',
       fontSize: 10,

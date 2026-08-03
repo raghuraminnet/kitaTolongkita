@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
+  ScrollView,
   View,
   Text,
   StyleSheet,
@@ -16,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, SlidersHorizontal, Bell } from 'lucide-react-native';
 import { useLocation } from '../../contexts/LocationContext';
 import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { dealsApi } from '../../api/client';
 import { EmptyState } from '../../components';
 import { timeUntil } from '../../utils/time';
@@ -50,6 +52,14 @@ const MOCK_DEALS: Deal[] = [
   },
 ];
 
+// Trending tags — in production these would come from an API
+const TRENDING_TAGS = [
+  'ramadan', 'kereta', 'batik', 'kuih', 'wireless', 'fashion', 'electronics', 'food', 'homemade', 'limited'
+];
+
+const MAX_RECENT_SEARCHES = 8;
+const RECENT_SEARCHES_KEY = 'recent_searches';
+
 function calcDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -79,9 +89,12 @@ export const SearchScreen: React.FC = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     loadDeals(true);
+    loadRecentSearches();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -136,14 +149,63 @@ export const SearchScreen: React.FC = () => {
     }
   };
 
+  const loadRecentSearches = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+      if (stored) setRecentSearches(JSON.parse(stored));
+    } catch { /* ignore */ }
+  };
+
+  const saveRecentSearch = async (term: string) => {
+    if (!term.trim()) return;
+    const trimmed = term.trim();
+    try {
+      const updated = [trimmed, ...recentSearches.filter(s => s !== trimmed)].slice(0, MAX_RECENT_SEARCHES);
+      setRecentSearches(updated);
+      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+    } catch { /* ignore */ }
+  };
+
+  const clearRecentSearches = async () => {
+    try {
+      setRecentSearches([]);
+      await AsyncStorage.removeItem(RECENT_SEARCHES_KEY);
+    } catch { /* ignore */ }
+  };
+
   const handleSearch = async () => {
+    await saveRecentSearch(query);
     setSearching(true);
     setPage(1);
+    setShowSuggestions(false);
     try {
       await loadDeals(true);
     } finally {
       setSearching(false);
     }
+  };
+
+  const handleRecentTap = (term: string) => {
+    setQuery(term);
+    setShowSuggestions(false);
+    setSearching(true);
+    setPage(1);
+    // Small delay to let state settle
+    setTimeout(async () => {
+      await loadDeals(true);
+      setSearching(false);
+    }, 100);
+  };
+
+  const handleTrendingTap = (tag: string) => {
+    setQuery(tag);
+    setShowSuggestions(false);
+    setSearching(true);
+    setPage(1);
+    setTimeout(async () => {
+      await loadDeals(true);
+      setSearching(false);
+    }, 100);
   };
 
   const handleCategoryChange = async (cat: string) => {
@@ -276,7 +338,11 @@ export const SearchScreen: React.FC = () => {
             placeholder={t('search.placeholder', 'Search deals...')}
             placeholderTextColor={colors['on-surface-variant']}
             value={query}
-            onChangeText={setQuery}
+            onChangeText={(text) => {
+              setQuery(text);
+              setShowSuggestions(text.length === 0);
+            }}
+            onFocus={() => setShowSuggestions(true)}
             onSubmitEditing={handleSearch}
             returnKeyType="search"
           />
@@ -346,6 +412,56 @@ export const SearchScreen: React.FC = () => {
         ))}
       </View>
 
+      {/* Search Suggestions — shown when input is empty */}
+      {showSuggestions && !query && !loading && (
+        <ScrollView style={styles.suggestionsWrap} showsVerticalScrollIndicator={false}>
+          {/* Recent Searches */}
+          {recentSearches.length > 0 && (
+            <View style={styles.suggestionsSection}>
+              <View style={styles.suggestionsSectionHeader}>
+                <Text style={[styles.suggestionsSectionTitle, { color: colors['on-surface'] }]}>
+                  Recent
+                </Text>
+                <TouchableOpacity onPress={clearRecentSearches}>
+                  <Text style={[styles.clearText, { color: colors['on-surface-variant'] }]}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.chipsRow}>
+                {recentSearches.map((term) => (
+                  <TouchableOpacity
+                    key={term}
+                    style={[styles.suggestionChip, { backgroundColor: colors['surface-container'] }]}
+                    onPress={() => handleRecentTap(term)}
+                  >
+                    <Text style={styles.chipIcon}>🕐</Text>
+                    <Text style={[styles.chipText, { color: colors['on-surface'] }]}>{term}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Trending Tags */}
+          <View style={styles.suggestionsSection}>
+            <Text style={[styles.suggestionsSectionTitle, { color: colors['on-surface'] }]}>
+              🔥 Trending
+            </Text>
+            <View style={styles.chipsRow}>
+              {TRENDING_TAGS.map((tag) => (
+                <TouchableOpacity
+                  key={tag}
+                  style={[styles.suggestionChip, { backgroundColor: colors['primary-container'] }]}
+                  onPress={() => handleTrendingTap(tag)}
+                >
+                  <Text style={styles.chipIcon}>#</Text>
+                  <Text style={[styles.chipText, { color: colors.white }]}>{tag}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      )}
+
       {/* Results */}
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -374,6 +490,15 @@ export const SearchScreen: React.FC = () => {
           ListFooterComponent={
             loadingMore ? (
               <ActivityIndicator size="small" color={colors['primary-container']} style={{ marginVertical: spacing.md }} />
+            ) : null
+          }
+          ListHeaderComponent={
+            query && activeCategory !== 'All' ? (
+              <View style={styles.activeFiltersRow}>
+                <Text style={[styles.activeFilterText, { color: colors['on-surface-variant'] }]}>
+                  Showing results for "{query}" in {activeCategory}
+                </Text>
+              </View>
             ) : null
           }
           ListEmptyComponent={
@@ -492,4 +617,54 @@ const styles = StyleSheet.create({
   skeletonThumb: { width: 88, height: 88, borderRadius: borderRadius.md },
   skeletonBody: { flex: 1, marginLeft: spacing.sm, justifyContent: 'center', gap: spacing.sm },
   skeletonLine: { height: 12, borderRadius: borderRadius.sm },
+  /* Search Suggestions */
+  suggestionsWrap: {
+    maxHeight: 240,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  suggestionsSection: {
+    marginBottom: spacing.lg,
+  },
+  suggestionsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  suggestionsSectionTitle: {
+    ...typography['title-md'],
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  clearText: {
+    ...typography['label-sm'],
+    fontWeight: '600',
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  suggestionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    gap: 4,
+  },
+  chipIcon: {
+    fontSize: 13,
+  },
+  chipText: {
+    ...typography['label-sm'],
+    fontWeight: '600',
+  },
+  activeFiltersRow: {
+    paddingBottom: spacing.sm,
+  },
+  activeFilterText: {
+    ...typography['body-md'],
+  },
 });

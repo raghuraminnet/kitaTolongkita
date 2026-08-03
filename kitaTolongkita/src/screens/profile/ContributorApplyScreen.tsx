@@ -51,10 +51,10 @@ export const ContributorApplyScreen: React.FC = () => {
     chipText: { ...typography['label-sm'], color: colors['on-surface-variant'] },
     chipTextActive: { color: colors.white, fontWeight: '700' },
     disclaimer: {
-      backgroundColor: '#e3f2fd', borderRadius: borderRadius.lg,
+      backgroundColor: colors['status-info-bg'], borderRadius: borderRadius.lg,
       padding: spacing.md, marginBottom: spacing.lg,
     },
-    disclaimerText: { ...typography['label-sm'], color: '#1565c0', lineHeight: 18 },
+    disclaimerText: { ...typography['label-sm'], color: colors['status-info-text'], lineHeight: 18 },
     submitBtn: {
       backgroundColor: colors.primary, borderRadius: borderRadius.lg,
       paddingVertical: spacing.md, alignItems: 'center',

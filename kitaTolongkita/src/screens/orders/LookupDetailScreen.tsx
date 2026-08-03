@@ -9,19 +9,25 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { typography, spacing, borderRadius } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { lookupsApi } from '../../api/client';
+import { OrderStatusStepper } from '../../components';
 
-const STATUS_COLORS: Record<string, string> = {
-  Pending: '#FF9800',
-  Secured: '#1565c0',
-  InProcess: '#e65100',
-  Delivered: '#2e7d32',
-  Cancelled: '#c62828',
+const STATUS_BORDER_COLORS: Record<string, string> = {
+  Pending: '#F59E0B',
+  Confirmed: '#3B82F6',
+  Preparing: '#e65100',
+  Ready: '#10B981',
+  Delivered: '#10B981',
+  Collected: '#10B981',
+  Cancelled: '#EF4444',
 };
 
 function getStatusTokenColors(status: string, c: Record<string, string>) {
   const map: Record<string, { bg: string; text: string }> = {
     Delivered:   { bg: c['status-success-bg'], text: c['status-success-text'] },
-    Secured:     { bg: c['status-info-bg'],    text: c['status-info-text']    },
+    Collected:   { bg: c['status-success-bg'], text: c['status-success-text'] },
+    Ready:       { bg: c['status-info-bg'],    text: c['status-info-text']    },
+    Confirmed:   { bg: c['status-info-bg'],    text: c['status-info-text']    },
+    Preparing:   { bg: c['status-warning-bg'], text: c['status-warning-text'] },
     InProcess:   { bg: c['status-warning-bg'], text: c['status-warning-text'] },
     Cancelled:   { bg: c['status-error-bg'],   text: c['status-error-text']   },
     Pending:     { bg: c['status-warning-bg'], text: c['status-warning-text'] },
@@ -134,7 +140,7 @@ export const LookupDetailScreen: React.FC = () => {
     );
   }
 
-  const statusColor = STATUS_COLORS[lookup.status] ?? '#666';
+  const statusColor = STATUS_BORDER_COLORS[lookup.status] ?? '#666';
   const tokenColors = getStatusTokenColors(lookup.status, colors);
 
   return (
@@ -149,6 +155,13 @@ export const LookupDetailScreen: React.FC = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Delivery Status Stepper */}
+        <OrderStatusStepper
+          status={lookup.status}
+          isCollected={lookup.deliveryMode === 'SelfCollect'}
+          compact={false}
+        />
+
         {/* Status + Booking ID */}
         <View style={[styles.bookingCard, { borderLeftColor: statusColor }]}>
           <View style={styles.bookingHeader}>

@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     color: colors['on-surface-variant'],
   },
   demoBanner: {
-    backgroundColor: '#FF7A30',
+    backgroundColor: colors['primary-container'],
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     alignItems: 'center',

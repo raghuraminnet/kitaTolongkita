@@ -44,7 +44,7 @@ export const NotificationsScreen: React.FC = () => {
       borderBottomColor: colors['outline-variant'],
       backgroundColor: colors['surface-container-lowest'],
     },
-    unread: { backgroundColor: '#FFF3E0' },
+    unread: { backgroundColor: colors['status-warning-bg'] },
     notifIcon: { fontSize: 24, marginRight: spacing.md, marginTop: 2 },
     notifContent: { flex: 1 },
     notifHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },

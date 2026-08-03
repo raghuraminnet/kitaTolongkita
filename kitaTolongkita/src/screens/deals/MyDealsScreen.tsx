@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { typography, spacing, borderRadius, shadows } from '../../theme';
+import { typography, spacing, borderRadius, shadows, colors as ColorsType } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { request, getAccessToken } from '../../api/client';
 import { useTranslation } from 'react-i18next';
@@ -37,21 +37,27 @@ interface DealListItem {
   moderationRejectReason?: string;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  Draft:       { label: 'Draft',       color: '#6B7280', bg: '#F3F4F6' },
-  Active:       { label: 'Active',      color: '#059669', bg: '#D1FAE5' },
-  Fulfilled:    { label: 'Fulfilled',   color: '#3B82F6', bg: '#DBEAFE' },
-  Cancelled:    { label: 'Cancelled',   color: '#DC2626', bg: '#FEE2E2' },
-  Expired:      { label: 'Expired',     color: '#92400E', bg: '#FEF3C7' },
-};
+function getDealStatusStyle(status: string, col: Record<string, string>) {
+  const map: Record<string, { label: string; color: string; bg: string }> = {
+    Draft:     { label: 'Draft',     color: col['on-surface-variant'], bg: col['status-neutral-bg'] },
+    Active:    { label: 'Active',    color: col['status-success-text'], bg: col['status-success-bg'] },
+    Fulfilled: { label: 'Fulfilled', color: col['status-info-text'],    bg: col['status-info-bg']    },
+    Cancelled: { label: 'Cancelled', color: col['status-error-text'],   bg: col['status-error-bg']   },
+    Expired:   { label: 'Expired',   color: col['status-warning-text'], bg: col['status-warning-bg'] },
+  };
+  return map[status] ?? { label: status, color: col['on-surface-variant'], bg: col['status-neutral-bg'] };
+}
 
-const MODERATION_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  Pending:     { label: '⏳ Pending Review',  color: '#92400E', bg: '#FEF3C7' },
-  UnderReview: { label: '🔍 Under Review',   color: '#1D4ED8', bg: '#DBEAFE' },
-  Approved:    { label: '✅ Approved',        color: '#065F46', bg: '#D1FAE5' },
-  Rejected:    { label: '❌ Rejected',        color: '#991B1B', bg: '#FEE2E2' },
-  Expired:     { label: '⏰ Expired',         color: '#6B7280', bg: '#F3F4F6' },
-};
+function getModerationStyle(status: string, col: Record<string, string>) {
+  const map: Record<string, { label: string; color: string; bg: string }> = {
+    Pending:    { label: '⏳ Pending Review', color: col['status-warning-text'], bg: col['status-warning-bg'] },
+    UnderReview:{ label: '🔍 Under Review',  color: col['status-info-text'],    bg: col['status-info-bg']    },
+    Approved:   { label: '✅ Approved',       color: col['status-success-text'], bg: col['status-success-bg'] },
+    Rejected:   { label: '❌ Rejected',       color: col['status-error-text'],   bg: col['status-error-bg']   },
+    Expired:    { label: '⏰ Expired',        color: col['status-neutral-text'], bg: col['status-neutral-bg'] },
+  };
+  return map[status] ?? { label: status, color: col['status-neutral-text'], bg: col['status-neutral-bg'] };
+}
 
 export const MyDealsScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -70,15 +76,15 @@ export const MyDealsScreen: React.FC = () => {
     backBtn: { padding: spacing.sm },
     backBtnText: { fontSize: 22, fontWeight: '700' },
     headerTitle: { ...typography['title-md'], fontWeight: '800', flex: 1, textAlign: 'center' },
-    addBtn: { backgroundColor: '#0e6a5b', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.md },
-    addBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+    addBtn: { backgroundColor: colors.secondary, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.md },
+    addBtnText: { color: colors.white, fontWeight: '700', fontSize: 13 },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
     loadingText: { ...typography['body-lg'], color: colors['on-surface-variant'] },
     emptyIcon: { fontSize: 64, marginBottom: spacing.md },
     emptyTitle: { ...typography['title-md'], fontWeight: '800', marginBottom: spacing.sm },
     emptySubtitle: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center', marginBottom: spacing.xl },
-    postDealBtn: { backgroundColor: '#0e6a5b', paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: borderRadius.md },
-    postDealBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+    postDealBtn: { backgroundColor: colors.secondary, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: borderRadius.md },
+    postDealBtnText: { color: colors.white, fontWeight: '700', fontSize: 16 },
     list: { padding: spacing.md },
     card: {
       backgroundColor: colors['surface-container-lowest'],
@@ -97,12 +103,12 @@ export const MyDealsScreen: React.FC = () => {
       position: 'absolute',
       top: spacing.sm,
       right: spacing.sm,
-      backgroundColor: '#EF4444',
+      backgroundColor: colors.error,
       borderRadius: borderRadius.sm,
       paddingHorizontal: spacing.sm,
       paddingVertical: 2,
     },
-    discountText: { color: '#fff', fontWeight: '800', fontSize: 12 },
+    discountText: { color: colors.white, fontWeight: '800', fontSize: 12 },
     cardContent: { padding: spacing.md },
     cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 4 },
     cardTitle: { ...typography['title-md'], fontWeight: '700', flex: 1 },
@@ -110,7 +116,7 @@ export const MyDealsScreen: React.FC = () => {
     statusText: { fontSize: 11, fontWeight: '700' },
     cardCategory: { ...typography['body-md'], color: colors['on-surface-variant'], marginBottom: spacing.xs },
     priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginBottom: spacing.sm },
-    groupPrice: { ...typography['title-md'], fontWeight: '800', color: '#0e6a5b' },
+    groupPrice: { ...typography['title-md'], fontWeight: '800', color: colors.secondary },
     originalPrice: { ...typography['body-md'], color: colors['on-surface-variant'], textDecorationLine: 'line-through' },
     modChip: { alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: borderRadius.sm, marginBottom: spacing.sm },
     modText: { fontSize: 12, fontWeight: '600' },
@@ -150,8 +156,8 @@ export const MyDealsScreen: React.FC = () => {
   const onRefresh = () => { setRefreshing(true); loadDeals(); };
 
   const renderDeal = ({ item }: { item: DealListItem }) => {
-    const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.Draft;
-    const mod = MODERATION_CONFIG[item.moderationStatus] ?? MODERATION_CONFIG.Pending;
+    const status = getDealStatusStyle(item.status, colors);
+    const mod = getModerationStyle(item.moderationStatus, colors);
     const discount = Math.round((1 - item.groupPrice / item.originalPrice) * 100);
     const deadline = new Date(item.deadline);
     const isExpired = deadline < new Date();

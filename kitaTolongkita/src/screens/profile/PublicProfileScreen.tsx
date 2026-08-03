@@ -84,14 +84,14 @@ export const PublicProfileScreen: React.FC = () => {
     // Profile card
     profileCard: { alignItems: 'center', padding: spacing.xl, backgroundColor: colors['surface-container-lowest'] },
     avatarRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    verifiedPill: { backgroundColor: '#e3f2fd', borderRadius: borderRadius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginLeft: spacing.xs },
-    verifiedPillText: { fontSize: 11, color: '#1565c0', fontWeight: '700' },
+    verifiedPill: { backgroundColor: colors['status-info-bg'], borderRadius: borderRadius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginLeft: spacing.xs },
+    verifiedPillText: { fontSize: 11, color: colors['status-info-text'], fontWeight: '700' },
     userName: { ...typography['headline-lg'], color: colors['on-surface'], fontWeight: '800', marginTop: spacing.md },
     bio: { ...typography['body-md'], color: colors['on-surface-variant'], marginTop: spacing.sm, textAlign: 'center', paddingHorizontal: spacing.lg },
     profileMeta: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs },
     profileMetaText: { fontSize: 12, color: colors['on-surface-variant'] },
-    contributorBadge: { backgroundColor: '#fff8e1', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm },
-    contributorBadgeText: { fontSize: 11, color: '#e65100', fontWeight: '700' },
+    contributorBadge: { backgroundColor: colors['status-warning-bg'], borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm },
+    contributorBadgeText: { fontSize: 11, color: colors['status-warning-text'], fontWeight: '700' },
     memberSince: { ...typography['body-md'], color: colors['on-surface-variant'], marginTop: spacing.xs },
 
     // Follow stats

@@ -1,9 +1,13 @@
 export { Avatar } from './Avatar';
 export { BottomTabBar } from './BottomTabBar';
+export { BottomSheetModal, QuickActionsSheet } from './BottomSheetModal';
 export { Button } from './Button';
 export { CategoryChip } from './CategoryChip';
 export { DealCard } from './DealCard';
 export { EmptyState } from './EmptyState';
+export { ExpandableText } from './ExpandableText';
+export { ImageCarousel } from './ImageCarousel';
 export { Input } from './Input';
+export { OrderStatusStepper } from './OrderStatusStepper';
 export { ProgressBar } from './ProgressBar';
 export { SkeletonCard, SkeletonLine } from './SkeletonCard';

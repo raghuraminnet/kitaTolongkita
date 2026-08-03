@@ -15,13 +15,16 @@ import { colors, typography, spacing, borderRadius } from '../../theme';
 import { reportsApi } from '../../api/client';
 import type { Report } from '../../api/client';
 
-const STATUS_COLORS: Record<string, string> = {
-  New: '#FF9800',
-  UnderReview: '#2196F3',
-  ActionTaken: '#9C27B0',
-  Dismissed: '#9E9E9E',
-  Resolved: '#4CAF50',
-};
+function getReportStatusColors(status: string, col: typeof colors) {
+  const map: Record<string, { bg: string; text: string }> = {
+    New:        { bg: col['status-warning-bg'], text: col['status-warning-text'] },
+    UnderReview:{ bg: col['status-info-bg'],    text: col['status-info-text']    },
+    ActionTaken:{ bg: col['status-warning-bg'], text: col['status-warning-text'] },
+    Dismissed:  { bg: col['status-neutral-bg'], text: col['status-neutral-text'] },
+    Resolved:   { bg: col['status-success-bg'], text: col['status-success-text'] },
+  };
+  return map[status] ?? { bg: col['status-neutral-bg'], text: col['status-neutral-text'] };
+}
 
 const STATUS_LABELS: Record<string, string> = {
   New: 'New',
@@ -64,7 +67,7 @@ export const MyReportsScreen: React.FC = () => {
   };
 
   const renderReport = ({ item }: { item: Report }) => {
-    const statusColor = STATUS_COLORS[item.status] ?? '#9E9E9E';
+    const statusColor = getReportStatusColors(item.status, colors).text;
     return (
       <View style={styles.reportCard}>
         <View style={styles.reportCardHeader}>
@@ -189,5 +192,5 @@ const styles = StyleSheet.create({
   moreReasonsText: { ...typography['label-sm'], color: colors['on-surface-variant'], alignSelf: 'center' },
   reportCardFooter: { flexDirection: 'row', justifyContent: 'space-between' },
   reportDate: { ...typography['label-sm'], color: colors['on-surface-variant'] },
-  resolvedDate: { ...typography['label-sm'], color: '#4CAF50' },
+  resolvedDate: { ...typography['label-sm'], color: colors['status-success-text'] },
 });
