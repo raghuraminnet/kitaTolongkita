@@ -11,8 +11,7 @@ public record ChangePasswordRequest(string OldPassword, string NewPassword);
 public record DashboardKpis(
     int TotalUsers, int ActiveDeals, int OrdersToday, decimal TodayRevenue,
     int PendingModeration, int NewUsersToday, decimal GrowthPercent,
-    List<DailyStat> UserStats, List<DailyStat> DealStats,
-    List<RecentActivity> RecentActivity
+    List<DailyStat> UserStats, List<DailyStat> DealStats, List<RecentActivity> RecentActivity
 );
 public record DailyStat(string Date, int Count, decimal Amount = 0);
 public record RecentActivity(string Action, string EntityType, string EntityId, string Summary, DateTime At);
@@ -24,7 +23,7 @@ public record CreateAdminUserRequest(string Email, string Password, string FullN
 // ── Users ─────────────────────────────────────────────────────────────────────
 public record UserListItem(
     string Id, string Email, string FullName, string? AvatarUrl,
-    bool EmailVerified, bool IsActive, DateTime CreatedAt, int DealsPosted, int DealsJoined
+    bool EmailVerified, bool IsActive, DateTime CreatedAt, int DealsPosted, int DealsJoined = 0
 );
 public record UserDetail(
     string Id, string Email, string FullName, string? AvatarUrl,
@@ -41,8 +40,7 @@ public record AppDealItem(
     int MinMembers, int MaxMembers, int MembersJoined,
     DateTime Deadline, string PickupLocation, string? ImageUrl,
     string Status, string ModerationStatus, int? ModerationScore, string? ModerationRejectReason,
-    int UpvoteCount, int LikeCount,
-    Guid OrganizerId, DateTime CreatedAt, DateTime? PublishedAt
+    int UpvoteCount, int LikeCount, Guid OrganizerId, DateTime CreatedAt, DateTime? PublishedAt
 );
 public record AppUserItem(
     Guid Id, string Email, string FullName, string? Phone, string? AvatarUrl,
@@ -51,7 +49,7 @@ public record AppUserItem(
 
 // ── Deals ─────────────────────────────────────────────────────────────────────
 public record DealModerationItem(
-    string Id, string Title, string Category, string OrganizerName, string OrganizerEmail,
+    string Id, string Title, string Category, string OrganizerName,
     decimal GroupPrice, decimal OriginalPrice, int MinGroup, int CurrentGroup,
     string Status, double? ModerationScore, string? ModerationReason,
     List<string> ImageUrls, List<string> Hashtags, DateTime CreatedAt, DateTime? Deadline
@@ -108,22 +106,21 @@ public record SavedListItem(
 );
 public record SavedListDetail(
     Guid Id, Guid UserId, string UserEmail, string UserName,
-    string Name, bool IsPublic, DateTime CreatedAt,
-    List<SavedDealItem> Deals
+    string Name, bool IsPublic, DateTime CreatedAt, List<SavedDealItem> Deals
 );
 public record SavedDealItem(
     Guid Id, Guid DealId, string DealTitle, string DealCategory,
     decimal DealPrice, string DealStatus, DateTime SavedAt
 );
 
-// ── Notifications ────────────────────────────────────────────────────────────────
+// ── Notifications ─────────────────────────────────────────────────────────────---
 public record NotificationItem(
     Guid Id, Guid UserId, string UserEmail, string UserName,
     string Type, string Title, string Body, bool IsRead, DateTime CreatedAt
 );
 public record NotificationStats(int Total, int Unread, int Read);
 
-// ── Conversations / Chat ────────────────────────────────────────────────────────
+// ── Conversations / Chat ─────────────────────────────────────────────────────---
 public record ConversationItem(
     Guid Id, Guid? DealId, string? DealTitle,
     List<ParticipantInfo> Participants, int MessageCount,
@@ -131,24 +128,22 @@ public record ConversationItem(
 );
 public record ParticipantInfo(Guid UserId, string FullName, string? AvatarUrl);
 public record ChatMessageItem(
-    Guid Id, Guid SenderId, string SenderName, string Content,
-    bool IsRead, DateTime CreatedAt
+    Guid Id, Guid SenderId, string SenderName, string Content, bool IsRead, DateTime CreatedAt
 );
 
-// ── Push Tokens ────────────────────────────────────────────────────────────────
+// ── Push Tokens ─────────────────────────────────────────────────────────────---
 public record PushTokenItem(
     Guid Id, Guid UserId, string UserEmail, string UserName,
-    string TokenMasked, string Platform, bool IsActive,
-    DateTime CreatedAt, DateTime? LastUsedAt
+    string TokenMasked, string Platform, bool IsActive, DateTime CreatedAt, DateTime? LastUsedAt
 );
 
 // ── Deal Statistics ─────────────────────────────────────────────────────────────
 public record DealStats(
     int TotalDeals, int ApprovedDeals, int RejectedDeals, int PendingDeals,
     int FeaturedDeals, int TotalOrders, decimal TotalRevenue,
-    List<CategoryStat> TopCategories, List<DailyStat> DealsOverTime
+    List<CategoryStat> TopCategories, List<DailyStat> DailyDeals
 );
-public record CategoryStat(string Category, int Count, int TotalOrders, decimal TotalRevenue);
+public record CategoryStat(string Category, int Count, int TotalOrders = 0, decimal TotalRevenue = 0);
 
 // ── User Activity Timeline ──────────────────────────────────────────────────────
 public record UserActivityTimeline(
@@ -158,7 +153,7 @@ public record UserActivityTimeline(
 );
 public record ActivityItem(string Type, string Summary, string EntityId, DateTime At);
 
-// ── Bulk Actions ────────────────────────────────────────────────────────────────
+// ── Bulk Actions ───────────────────────────────────────────────────────────────
 public record BulkActionRequest(List<string> Ids, string Action, string? Reason);
 public record BulkActionResult(int Succeeded, int Failed, List<string> Errors);
 
@@ -171,12 +166,11 @@ public record UpdateCategoryRequest(string? Name, string? Description, bool? IsA
 public record CommentItem(
     Guid Id, Guid DealId, string DealTitle,
     Guid UserId, string UserFullName, string? UserAvatar,
-    string Content, DateTime CreatedAt,
-    bool IsHidden, string ModerationStatus
+    string Content, DateTime CreatedAt, bool IsHidden, string ModerationStatus
 );
 public record CommentStats(int Total, int PendingReview, int Approved, int Rejected);
 
-// ── Follows (read-only) ────────────────────────────────────────────────────────
+// ── Follows (read-only) ───────────────────────────────────────────────────────
 public record FollowerItem(Guid UserId, string FullName, string? AvatarUrl, DateTime FollowedAt);
 public record FollowStats(int Followers, int Following);
 
@@ -184,7 +178,7 @@ public record FollowStats(int Followers, int Following);
 public record ExportResult(string DownloadUrl, string FileName, int RowCount, DateTime GeneratedAt);
 
 // ── Common ─────────────────────────────────────────────────────────────────────
-public record PagedResult<T>(List<T> Items, int TotalCount, int Page, int PageSize, int TotalPages);
+public record PagedResult<T>(List<T> Items, int TotalCount, int Page, int PageSize, int TotalPages = 0);
 public record ApiResponse(bool Success, string? Message = null, object? Data = null);
 public record ApiMessage(bool Success, string Message);
 

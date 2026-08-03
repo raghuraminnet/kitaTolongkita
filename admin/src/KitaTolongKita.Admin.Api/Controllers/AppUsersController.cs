@@ -10,22 +10,24 @@ namespace KitaTolongKita.Admin.Api.Controllers;
 [Authorize(Policy = "Viewer")]
 public class AppUsersController : ControllerBase
 {
-    private readonly IMainDbService _mainDb;
-
-    public AppUsersController(IMainDbService mainDb) => _mainDb = mainDb;
+    private readonly IAdminService _svc;
+    public AppUsersController(IAdminService svc) => _svc = svc;
 
     [HttpGet]
-    public async Task<IActionResult> GetUsers([FromQuery] string? search = null)
+    public async Task<IActionResult> GetUsers(
+        [FromQuery] string? search = null,
+        [FromQuery] string? filter = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
-        var users = await _mainDb.GetUsersAsync(search);
-        var total = await _mainDb.GetUserCountAsync();
-        return Ok(new { data = users, total, count = users.Count });
+        var result = await _svc.GetUsersAsync(search, filter, page, pageSize);
+        return Ok(new { data = result.Items, total = result.TotalCount, count = result.Items.Count });
     }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetUser(Guid id)
     {
-        var user = await _mainDb.GetUserByIdAsync(id);
+        var user = await _svc.GetUserDetailAsync(id.ToString());
         if (user == null) return NotFound(new ApiResponse(false, "User not found"));
         return Ok(new ApiResponse(true, null, user));
     }

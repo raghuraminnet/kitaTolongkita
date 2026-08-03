@@ -14,12 +14,11 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 // ── Databases ────────────────────────────────────────────────────────────────────
 var connString = builder.Configuration.GetConnectionString("Default")
     ?? "Host=postgres;Database=kitatolongkita_admin;Username=postgres;Password=postgres";
-var mainConnString = builder.Configuration.GetConnectionString("MainDb")
-    ?? "Host=postgres;Database=kitatolongkita;Username=postgres;Password=postgres";
 
 builder.Services.AddDbContext<AdminDbContext>(opts => opts.UseNpgsql(connString));
-builder.Services.AddDbContext<MainDbContext>(opts => opts.UseNpgsql(mainConnString), ServiceLifetime.Transient);
-builder.Services.AddScoped<IMainDbService, MainDbService>();
+
+// ── HTTP client for Kita API (main app DB reads/writes) ─────────────────────────
+builder.Services.AddHttpClient<IMainApiClient, MainApiClient>();
 
 // ── Redis Distributed Cache ───────────────────────────────────────────────────────
 var adminRedisUrl = builder.Configuration["Redis:Url"] ?? "redis://redis:6379";

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using KitaTolongKita.Api.Services;
+using KitaTolongKita.Api.Middleware;
 using Nest;
 using Hellang.Middleware.ProblemDetails;
 using KitaTolongKita.Core.Interfaces;
@@ -173,6 +174,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseProblemDetails();
 app.UseCors("AllowMobile");
+
+// ── Internal Service Auth (must run BEFORE authentication) ──────────────────
+app.UseInternalServiceAuth();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

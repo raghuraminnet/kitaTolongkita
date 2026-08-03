@@ -16,7 +16,7 @@ public interface IDashboardService
 public class DashboardService : IDashboardService
 {
     private readonly AdminDbContext _db;
-    private readonly MainDbContext _mainDb;
+    private readonly IMainApiClient _api;
     private readonly IDistributedCache _cache;
     private readonly ILogger<DashboardService> _logger;
     private const string CacheKey = "admin:dashboard:kpis";
@@ -24,12 +24,12 @@ public class DashboardService : IDashboardService
 
     public DashboardService(
         AdminDbContext db,
-        MainDbContext mainDb,
+        IMainApiClient api,
         IDistributedCache cache,
         ILogger<DashboardService> logger)
     {
         _db = db;
-        _mainDb = mainDb;
+        _api = api;
         _cache = cache;
         _logger = logger;
     }
@@ -55,7 +55,7 @@ public class DashboardService : IDashboardService
             _logger.LogWarning(ex, "Redis cache miss for dashboard KPIs");
         }
 
-        // Compute fresh
+        // Compute fresh from Kita API
         var result = await ComputeKpisAsync();
 
         // Cache the result
@@ -83,64 +83,19 @@ public class DashboardService : IDashboardService
 
     private async Task<DashboardKpis> ComputeKpisAsync()
     {
-        var today = DateTime.UtcNow.Date;
-        var weekAgo = today.AddDays(-7);
+        // Get KPIs from Kita API dashboard endpoint
+        DashboardKpis? apiKpis;
+        try
+        {
+            apiKpis = await _api.GetDashboardKpisAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch dashboard KPIs from Kita API");
+            throw;
+        }
 
-        // KPIs from main database — run in parallel
-        var totalUsersTask = _mainDb.Users.CountAsync();
-        var activeDealsTask = _mainDb.Deals.CountAsync(d => d.ModerationStatus == "Approved");
-        var ordersTodayTask = _mainDb.Orders.CountAsync(o => o.CreatedAt >= today);
-        var newUsersTodayTask = _mainDb.Users.CountAsync(u => u.CreatedAt >= today);
-        var pendingModerationTask = _mainDb.Deals.CountAsync(d =>
-            d.ModerationStatus == "PendingReview" || d.ModerationStatus == "UnderReview" || d.ModerationStatus == "Pending");
-
-        await Task.WhenAll(totalUsersTask, activeDealsTask, ordersTodayTask, newUsersTodayTask, pendingModerationTask);
-
-        var totalUsers = await totalUsersTask;
-        var activeDeals = await activeDealsTask;
-        var ordersToday = await ordersTodayTask;
-        var newUsersToday = await newUsersTodayTask;
-        var pendingModeration = await pendingModerationTask;
-
-        // Revenue today
-        var todayOrders = await _mainDb.Orders.Where(o => o.CreatedAt >= today).ToListAsync();
-        var todayRevenue = todayOrders.Sum(o => o.TotalPrice);
-
-        // 7-day user growth
-        var weekAgoUsers = await _mainDb.Users.CountAsync(u => u.CreatedAt < weekAgo);
-        var growthPercent = weekAgoUsers > 0
-            ? Math.Round((decimal)(totalUsers - weekAgoUsers) / weekAgoUsers * 100, 1)
-            : 0;
-
-        // User stats (last 7 days) — single query
-        var userStatsData = await _mainDb.Users
-            .Where(u => u.CreatedAt >= weekAgo)
-            .GroupBy(u => u.CreatedAt.Date)
-            .Select(g => new { Date = g.Key, Count = g.Count() })
-            .ToListAsync();
-        var userStats = Enumerable.Range(0, 8)
-            .Select(i =>
-            {
-                var d = weekAgo.AddDays(i);
-                var count = userStatsData.FirstOrDefault(x => x.Date == d)?.Count ?? 0;
-                return new DailyStat(d.ToString("yyyy-MM-dd"), count);
-            }).ToList();
-
-        // Deal stats (last 7 days) — single query
-        var dealStatsData = await _mainDb.Deals
-            .Where(de => de.CreatedAt >= weekAgo)
-            .GroupBy(de => de.CreatedAt.Date)
-            .Select(g => new { Date = g.Key, Count = g.Count() })
-            .ToListAsync();
-        var dealStats = Enumerable.Range(0, 8)
-            .Select(i =>
-            {
-                var d = weekAgo.AddDays(i);
-                var count = dealStatsData.FirstOrDefault(x => x.Date == d)?.Count ?? 0;
-                return new DailyStat(d.ToString("yyyy-MM-dd"), count);
-            }).ToList();
-
-        // Recent admin actions
+        // Recent admin actions from our own DB
         var recentActivity = await _db.AuditLogs
             .OrderByDescending(x => x.CreatedAt)
             .Take(10)
@@ -152,15 +107,15 @@ public class DashboardService : IDashboardService
             .ToListAsync();
 
         return new DashboardKpis(
-            TotalUsers: totalUsers,
-            ActiveDeals: activeDeals,
-            OrdersToday: ordersToday,
-            TodayRevenue: todayRevenue,
-            PendingModeration: pendingModeration,
-            NewUsersToday: newUsersToday,
-            GrowthPercent: growthPercent,
-            UserStats: userStats,
-            DealStats: dealStats,
+            TotalUsers: apiKpis.TotalUsers,
+            ActiveDeals: apiKpis.ActiveDeals,
+            OrdersToday: apiKpis.OrdersToday,
+            TodayRevenue: apiKpis.TodayRevenue,
+            PendingModeration: apiKpis.PendingModeration,
+            NewUsersToday: apiKpis.NewUsersToday,
+            GrowthPercent: apiKpis.GrowthPercent,
+            UserStats: apiKpis.UserStats,
+            DealStats: apiKpis.DealStats,
             RecentActivity: recentActivity
         );
     }

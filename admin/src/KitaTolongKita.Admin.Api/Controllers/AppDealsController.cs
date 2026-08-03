@@ -1,34 +1,36 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using KitaTolongKita.Admin.Api.DTOs;
 using KitaTolongKita.Admin.Api.Services;
 
 namespace KitaTolongKita.Admin.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/app-deals")]
-[Authorize(Policy = "Viewer")]
 public class AppDealsController : ControllerBase
 {
-    private readonly IMainDbService _mainDb;
-
-    public AppDealsController(IMainDbService mainDb) => _mainDb = mainDb;
+    private readonly IAdminService _svc;
+    public AppDealsController(IAdminService svc) => _svc = svc;
 
     [HttpGet]
-    public async Task<IActionResult> GetDeals(
+    public async Task<IActionResult> GetAllDeals(
         [FromQuery] string? status = null,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
-        var deals = await _mainDb.GetDealsAsync(status, search);
-        var total = await _mainDb.GetDealCountAsync(status);
-        return Ok(new { data = deals, total, count = deals.Count });
+        var result = await _svc.GetAllDealsAsync(status, search, page, pageSize);
+        return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetDeal(Guid id)
     {
-        var deal = await _mainDb.GetDealByIdAsync(id);
-        if (deal == null) return NotFound(new ApiResponse(false, "Deal not found"));
-        return Ok(new ApiResponse(true, null, deal));
+        // Uses Kita API via IAdminService.GetAllDealsAsync — for a full detail view
+        // we fetch from the list (admin panel uses this for quick lookups)
+        var result = await _svc.GetAllDealsAsync(null, null, 1, 500);
+        var deal = result.Items.FirstOrDefault(d => d.Id == id.ToString());
+        if (deal == null) return NotFound();
+        return Ok(deal);
     }
 }
