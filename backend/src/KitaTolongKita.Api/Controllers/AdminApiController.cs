@@ -58,7 +58,7 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var users = await q.OrderByDescending(u => u.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(u => new
+            .Select(u => (object)new
             {
                 u.Id,
                 u.Email,
@@ -86,14 +86,14 @@ public class AdminApiController : ControllerBase
         var deals = await _db.Deals
             .Where(d => d.OrganizerId == id)
             .OrderByDescending(d => d.CreatedAt).Take(20)
-            .Select(d => new { d.Id, d.Title, d.ModerationStatus, d.CreatedAt })
+            .Select(d => (object)new { d.Id, d.Title, ModerationStatus = d.ModerationStatus.ToString(), d.CreatedAt })
             .ToListAsync();
 
         var orders = await _db.DealOrders
             .Where(o => o.BuyerId == id)
             .OrderByDescending(o => o.CreatedAt).Take(20)
             .Include(o => o.Deal)
-            .Select(o => new { o.Id, DealTitle = o.Deal != null ? o.Deal.Title : "", o.Status, o.TotalPrice, o.CreatedAt })
+            .Select(o => (object)new { o.Id, DealTitle = o.Deal != null ? o.Deal.Title : "", Status = o.Status.ToString(), o.TotalPrice, o.CreatedAt })
             .ToListAsync();
 
         return Ok(new
@@ -163,7 +163,7 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var deals = await q.OrderByDescending(d => d.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(d => new
+            .Select(d => (object)new
             {
                 d.Id,
                 d.Title,
@@ -172,7 +172,7 @@ public class AdminApiController : ControllerBase
                 d.GroupPrice,
                 d.MembersJoined,
                 d.MinMembers,
-                d.ModerationStatus,
+                Status = d.ModerationStatus.ToString(),
                 d.CreatedAt
             })
             .ToListAsync();
@@ -383,12 +383,12 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var orders = await q.OrderByDescending(o => o.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(o => new
+            .Select(o => (object)new
             {
                 o.Id,
                 BuyerId = o.BuyerId,
                 DealTitle = o.Deal != null ? o.Deal.Title : "",
-                o.Status,
+                Status = o.Status.ToString(),
                 o.TotalPrice,
                 o.Quantity,
                 o.CreatedAt
@@ -413,7 +413,6 @@ public class AdminApiController : ControllerBase
             o.TotalPrice,
             o.Quantity,
             o.CreatedAt,
-            o.UpdatedAt
         });
     }
 
@@ -424,7 +423,6 @@ public class AdminApiController : ControllerBase
         var order = await _db.DealOrders.FindAsync(id);
         if (order == null) return NotFound();
         order.Status = Enum.TryParse<OrderStatus>(req.Status, true, out var os) ? os : order.Status;
-        order.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         _logger.LogInformation("Admin {AdminId} updated order {OrderId} status to {Status}", AdminId, id, req.Status);
         return Ok(new { success = true });
@@ -452,7 +450,7 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var items = await q.OrderByDescending(c => c.CreatedAt)
             .Skip((page - 1) * size).Take(size)
-            .Select(c => new
+            .Select(c => (object)new
             {
                 c.Id,
                 c.DealId,
@@ -463,7 +461,7 @@ public class AdminApiController : ControllerBase
                 c.Content,
                 c.CreatedAt,
                 c.IsHidden,
-                c.ModerationStatus
+                Status = c.ModerationStatus
             })
             .ToListAsync();
 
@@ -614,7 +612,7 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var notifs = await q.OrderByDescending(n => n.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(n => new
+            .Select(n => (object)new
             {
                 n.Id,
                 n.UserId,
@@ -728,7 +726,7 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var tokens = await q.OrderByDescending(pt => pt.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(pt => new
+            .Select(pt => (object)new
             {
                 pt.Id,
                 pt.UserId,
@@ -765,7 +763,7 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var items = await q.OrderByDescending(a => a.CreatedAt)
             .Skip((page - 1) * size).Take(size)
-            .Select(a => new
+            .Select(a => (object)new
             {
                 a.Id,
                 a.UserId,
@@ -853,7 +851,7 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var items = await q.OrderByDescending(f => f.CreatedAt)
             .Skip((page - 1) * size).Take(size)
-            .Select(f => new { f.FollowerId, UserName = f.Follower != null ? f.Follower.FullName : "", f.Follower?.AvatarUrl, f.CreatedAt })
+            .Select(f => (object)new { f.FollowerId, UserName = f.Follower != null ? f.Follower.FullName : "", UserAvatar = f.Follower != null ? f.Follower.AvatarUrl : null, f.CreatedAt })
             .ToListAsync();
         return Ok(new PagedResult<object>(items, total, page, size, (int)Math.Ceiling(total / (double)size)));
     }
@@ -867,7 +865,7 @@ public class AdminApiController : ControllerBase
         var total = await q.CountAsync();
         var items = await q.OrderByDescending(f => f.CreatedAt)
             .Skip((page - 1) * size).Take(size)
-            .Select(f => new { f.FollowingId, UserName = f.Following != null ? f.Following.FullName : "", f.Following?.AvatarUrl, f.CreatedAt })
+            .Select(f => (object)new { f.FollowingId, UserName = f.Following != null ? f.Following.FullName : "", UserAvatar = f.Following != null ? f.Following.AvatarUrl : null, f.CreatedAt })
             .ToListAsync();
         return Ok(new PagedResult<object>(items, total, page, size, (int)Math.Ceiling(total / (double)size)));
     }
