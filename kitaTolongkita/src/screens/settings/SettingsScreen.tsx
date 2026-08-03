@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   },
   rowLabelWrap: { flex: 1 },
   rowDescription: {
-    ...typography['label-xs'],
+    ...typography['label-sm'],
     color: colors['on-surface-variant'],
     marginTop: 2,
   },

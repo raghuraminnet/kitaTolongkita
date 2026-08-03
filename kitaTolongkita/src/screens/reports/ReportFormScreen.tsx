@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
   },
   targetLabel: { ...typography['label-sm'], color: colors['on-surface-variant'], marginBottom: spacing.xs },
   targetTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700' },
-  sectionTitle: { ...typography['title-sm'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.xs },
-  sectionHint: { ...typography['body-sm'], color: colors['on-surface-variant'], marginBottom: spacing.md },
+  sectionTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.xs },
+  sectionHint: { ...typography['body-md'], color: colors['on-surface-variant'], marginBottom: spacing.md },
   reasonGrid: { gap: spacing.sm, marginBottom: spacing.xl },
   reasonChip: {
     flexDirection: 'row', alignItems: 'center',
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   reasonTextGroup: { flex: 1 },
   reasonLabel: { ...typography['body-md'], color: colors['on-surface'], fontWeight: '600' },
   reasonLabelSelected: { color: colors.white, fontWeight: '700' },
-  reasonHint: { ...typography['label-xs'], color: colors['on-surface-variant'], marginTop: 2 },
+  reasonHint: { ...typography['label-sm'], color: colors['on-surface-variant'], marginTop: 2 },
   reasonHintSelected: { color: 'rgba(255,255,255,0.8)' },
   reasonCheck: { color: colors.white, fontWeight: '800', fontSize: 16 },
   descriptionInput: {
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,183,77,0.15)', borderRadius: borderRadius.lg,
     padding: spacing.md, borderWidth: 1, borderColor: 'rgba(255,183,77,0.3)',
   },
-  warningText: { ...typography['body-sm'], color: colors['on-surface-variant'], lineHeight: 20 },
+  warningText: { ...typography['body-md'], color: colors['on-surface-variant'], lineHeight: 20 },
   bottomCta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: colors['surface-container-lowest'],

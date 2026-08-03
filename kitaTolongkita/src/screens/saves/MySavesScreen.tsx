@@ -75,7 +75,7 @@ export const MySavesScreen: React.FC = () => {
       'Enter a name for your list (max 30 chars)',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Create', onPress: async (name) => {
+        { text: 'Create', onPress: async (name?: string) => {
           if (!name?.trim()) return;
           try {
             const newList = await savedDealsApi.createList(name.trim());
@@ -137,7 +137,7 @@ export const MySavesScreen: React.FC = () => {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Save',
-          onPress: async (name) => {
+          onPress: async (name?: string) => {
             if (!name?.trim()) return;
             try {
               await savedDealsApi.updateList(list.id, { name: name.trim() });
@@ -228,7 +228,7 @@ export const MySavesScreen: React.FC = () => {
             )}
           </View>
           <View style={styles.dealMeta}>
-            <Text style={styles.dealMetaText}>📍 {d.pickupLocation.split(',')[0]}</Text>
+            <Text style={styles.dealMetaText}>📍 Location available via map</Text>
             <Text style={styles.dealMetaText}>
               👥 {d.membersJoined}/{d.minMembers} joined
             </Text>
@@ -320,14 +320,14 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   loadingText: { ...typography['body-lg'], color: colors['on-surface-variant'] },
   emptyEmoji: { fontSize: 64, marginBottom: spacing.md },
-  emptyTitle: { ...typography['title-lg'], fontWeight: '700', color: colors['on-surface'], marginBottom: spacing.sm },
+  emptyTitle: { ...typography['title-md'], fontWeight: '700', color: colors['on-surface'], marginBottom: spacing.sm },
   emptyText: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
   },
   backBtn: { fontSize: 28, color: colors['on-surface'] },
-  headerTitle: { ...typography['title-lg'], fontWeight: '700', color: colors['on-surface'] },
+  headerTitle: { ...typography['title-md'], fontWeight: '700', color: colors['on-surface'] },
   headerRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.md, paddingBottom: spacing.sm,
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full, paddingHorizontal: 6, paddingVertical: 1,
   },
   listCountBadgeSelected: { backgroundColor: 'rgba(255,255,255,0.3)' },
-  listCountText: { ...typography['label-xs'], color: colors['on-surface-variant'] },
+  listCountText: { ...typography['label-sm'], color: colors['on-surface-variant'] },
   listCountTextSelected: { color: colors.white },
   privacyRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary, paddingHorizontal: 6, paddingVertical: 1,
     borderRadius: borderRadius.sm,
   },
-  discountText: { ...typography['label-xs'], color: colors.white, fontWeight: '700' },
+  discountText: { ...typography['label-sm'], color: colors.white, fontWeight: '700' },
   dealMeta: { gap: 2 },
-  dealMetaText: { ...typography['label-xs'], color: colors['on-surface-variant'] },
+  dealMetaText: { ...typography['label-sm'], color: colors['on-surface-variant'] },
 });

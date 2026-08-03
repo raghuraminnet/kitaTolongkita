@@ -24,6 +24,7 @@ export const DealCard: React.FC<DealCardProps> = ({
   countdown,
   membersJoined,
   membersTarget,
+  isSaved,
   onPress,
 }) => {
   const progress = Math.min((membersJoined / membersTarget) * 100, 100);

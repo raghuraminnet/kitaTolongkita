@@ -62,7 +62,8 @@ export async function request<T>(
   method: string,
   path: string,
   body?: unknown,
-  auth: boolean = false
+  auth: boolean = false,
+  token?: string
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -71,7 +72,9 @@ export async function request<T>(
   if (_globalLat != null) headers['X-Latitude'] = String(_globalLat);
   if (_globalLon != null) headers['X-Longitude'] = String(_globalLon);
 
-  if (auth) {
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  } else if (auth) {
     const storedToken = await getAccessToken();
     if (storedToken) headers['Authorization'] = `Bearer ${storedToken}`;
   }
@@ -554,6 +557,14 @@ export interface User {
   avatarUrl?: string;
   emailVerified: boolean;
   phoneVerified: boolean;
+  bio?: string;
+  isVerified?: boolean;
+  isContributor?: boolean;
+  city?: string;
+  website?: string;
+  contributorRating?: number;
+  followersCount?: number;
+  followingCount?: number;
 }
 
 export interface Deal {
@@ -731,6 +742,14 @@ export interface PublicUserProfile {
   avatarUrl?: string;
   createdAt: string;
   activeDealsCount: number;
+  bio?: string;
+  isVerified?: boolean;
+  isContributor?: boolean;
+  city?: string;
+  website?: string;
+  contributorRating?: number;
+  followersCount?: number;
+  followingCount?: number;
 }
 
 export const usersApi = {

@@ -152,7 +152,7 @@ export const PostDealScreen: React.FC = () => {
     },
     hashtagChipText: { ...typography['label-sm'], color: colors.white },
     hashtagRemove: { color: colors.white, fontSize: 16, lineHeight: 16, fontWeight: '700' },
-    hashtagHint: { ...typography['body-sm'], color: colors['on-surface-variant'], marginBottom: spacing.md },
+    hashtagHint: { ...typography['body-md'], color: colors['on-surface-variant'], marginBottom: spacing.md },
     priceRow: { flexDirection: 'row', gap: spacing.md },
     priceInput: { flex: 1 },
     discountPreview: {
@@ -172,9 +172,9 @@ export const PostDealScreen: React.FC = () => {
     locationIcon: { fontSize: 24, marginRight: spacing.md },
     locationInfo: { flex: 1 },
     locationName: { ...typography['body-lg'], color: colors['on-surface'], fontWeight: '600' },
-    locationCoords: { ...typography['body-sm'], color: colors['on-surface-variant'] },
+    locationCoords: { ...typography['body-md'], color: colors['on-surface-variant'] },
     changeBtn: { ...typography['body-md'], color: colors.primary, fontWeight: '600' },
-    accuracyText: { ...typography['label-xs'], color: colors.secondary, marginTop: 2 },
+    accuracyText: { ...typography['label-sm'], color: colors.secondary, marginTop: 2 },
     toggleRow: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       backgroundColor: colors['surface-container'], padding: spacing.md, borderRadius: borderRadius.lg,
@@ -182,7 +182,7 @@ export const PostDealScreen: React.FC = () => {
     },
     toggleInfo: { flex: 1 },
     toggleLabel: { ...typography['body-lg'], color: colors['on-surface'], fontWeight: '600' },
-    toggleHint: { ...typography['body-sm'], color: colors['on-surface-variant'] },
+    toggleHint: { ...typography['body-md'], color: colors['on-surface-variant'] },
     toggleSwitch: {
       width: 50, height: 30, borderRadius: 15, backgroundColor: colors['outline-variant'],
       justifyContent: 'center', paddingHorizontal: 2,
@@ -193,7 +193,7 @@ export const PostDealScreen: React.FC = () => {
       alignSelf: 'flex-end',
     },
     toggleThumbActive: { alignSelf: 'flex-start', backgroundColor: colors.white },
-    lookupActiveText: { ...typography['label-xs'], color: colors.secondary, marginBottom: spacing.md, marginLeft: spacing.xs },
+    lookupActiveText: { ...typography['label-sm'], color: colors.secondary, marginBottom: spacing.md, marginLeft: spacing.xs },
     nearbySection: { marginBottom: spacing.md },
     nearbyLoading: { ...typography['body-md'], color: colors['on-surface-variant'] },
     nearbyCard: {
@@ -206,8 +206,8 @@ export const PostDealScreen: React.FC = () => {
       backgroundColor: colors['surface-container-high'], alignItems: 'center', justifyContent: 'center',
     },
     nearbyTitle: { ...typography['label-sm'], color: colors['on-surface'], marginBottom: 2 },
-    nearbyPrice: { ...typography['body-sm'], color: colors['primary-container'], fontWeight: '700' },
-    nearbyCategory: { ...typography['label-xs'], color: colors['on-surface-variant'] },
+    nearbyPrice: { ...typography['body-md'], color: colors['primary-container'], fontWeight: '700' },
+    nearbyCategory: { ...typography['label-sm'], color: colors['on-surface-variant'] },
   });
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();

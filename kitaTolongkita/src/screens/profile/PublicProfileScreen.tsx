@@ -65,6 +65,99 @@ interface RouteParams {
 
 export const PublicProfileScreen: React.FC = () => {
   const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    centerState: { alignItems: 'center', justifyContent: 'center' },
+    header: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+      borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
+      backgroundColor: colors['surface-container-lowest'],
+    },
+    backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+    backBtnText: { fontSize: 22, color: colors['on-surface'] },
+    headerTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', flex: 1, textAlign: 'center' },
+    msgBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+    msgBtnText: { fontSize: 20 },
+
+    // Profile card
+    profileCard: { alignItems: 'center', padding: spacing.xl, backgroundColor: colors['surface-container-lowest'] },
+    avatarRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    verifiedPill: { backgroundColor: '#e3f2fd', borderRadius: borderRadius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginLeft: spacing.xs },
+    verifiedPillText: { fontSize: 11, color: '#1565c0', fontWeight: '700' },
+    userName: { ...typography['headline-lg'], color: colors['on-surface'], fontWeight: '800', marginTop: spacing.md },
+    bio: { ...typography['body-md'], color: colors['on-surface-variant'], marginTop: spacing.sm, textAlign: 'center', paddingHorizontal: spacing.lg },
+    profileMeta: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs },
+    profileMetaText: { fontSize: 12, color: colors['on-surface-variant'] },
+    contributorBadge: { backgroundColor: '#fff8e1', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm },
+    contributorBadgeText: { fontSize: 11, color: '#e65100', fontWeight: '700' },
+    memberSince: { ...typography['body-md'], color: colors['on-surface-variant'], marginTop: spacing.xs },
+
+    // Follow stats
+    followStatsRow: { flexDirection: 'row', gap: spacing.xl, marginTop: spacing.lg },
+    followStatItem: { alignItems: 'center' },
+    followStatValue: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '800' },
+    followStatLabel: { ...typography['label-sm'], color: colors['on-surface-variant'], marginTop: 2 },
+
+    // Follow button
+    followBtn: {
+      marginTop: spacing.lg, paddingHorizontal: spacing.xl * 2, paddingVertical: spacing.md,
+      backgroundColor: colors.primary, borderRadius: borderRadius.full,
+      minWidth: 140, alignItems: 'center',
+    },
+    followingBtn: { backgroundColor: colors['surface-container-lowest'], borderWidth: 2, borderColor: colors.primary },
+    followBtnText: { ...typography['label-sm'], color: colors.white, fontWeight: '700' },
+    followingBtnText: { color: colors.primary },
+
+    // Section
+    sectionHeader: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    },
+    sectionTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700' },
+    sectionCount: { ...typography['label-sm'], color: colors['on-surface-variant'] },
+
+    listContent: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
+
+    // Deal card
+    dealCard: {
+      flexDirection: 'row', backgroundColor: colors['surface-container-lowest'],
+      borderRadius: borderRadius.lg, overflow: 'hidden',
+      borderWidth: 1, borderColor: colors['outline-variant'],
+    },
+    dealImage: { width: 100, height: '100%', minHeight: 100 },
+    dealImagePlaceholder: {
+      width: 100, height: '100%', minHeight: 100, backgroundColor: colors['surface-container'],
+      alignItems: 'center', justifyContent: 'center',
+    },
+    dealImagePlaceholderText: { fontSize: 32 },
+    savedBadge: {
+      position: 'absolute', top: 6, left: 6,
+      backgroundColor: 'rgba(255,255,255,0.95)', width: 26, height: 26,
+      borderRadius: 13, alignItems: 'center', justifyContent: 'center',
+    },
+    dealInfo: { flex: 1, padding: spacing.md },
+    dealTitle: { ...typography['body-md'], color: colors['on-surface'], fontWeight: '600', marginBottom: spacing.xs },
+    dealMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+    dealPrice: { ...typography['title-md'], color: colors.primary, fontWeight: '800' },
+    discountBadge: { backgroundColor: colors.secondary, paddingHorizontal: spacing.xs, paddingVertical: 2, borderRadius: borderRadius.sm },
+    discountText: { ...typography['label-sm'], color: colors.white, fontWeight: '700' },
+    dealStats: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    dealMembers: { ...typography['label-sm'], color: colors['on-surface-variant'] },
+    progressBar: { flex: 1, height: 4, backgroundColor: colors['outline-variant'], borderRadius: 2 },
+    progressFill: { height: 4, backgroundColor: colors.primary, borderRadius: 2 },
+
+    // States
+    emptyState: { alignItems: 'center', padding: spacing.xl * 2 },
+    emptyEmoji: { fontSize: 48, marginBottom: spacing.md },
+    emptyTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.xs },
+    emptyHint: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center' },
+    errorEmoji: { fontSize: 48, marginBottom: spacing.md },
+    errorText: { ...typography['body-lg'], color: colors.error, textAlign: 'center', marginBottom: spacing.md },
+    retryText: { ...typography['body-md'], color: colors.primary, fontWeight: '600' },
+  });
+
   const navigation = useNavigation<any>();
   const route = useRoute();
   const insets = useSafeAreaInsets();
@@ -282,94 +375,3 @@ export const PublicProfileScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  centerState: { alignItems: 'center', justifyContent: 'center' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-    borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
-    backgroundColor: colors['surface-container-lowest'],
-  },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  backBtnText: { fontSize: 22, color: colors['on-surface'] },
-  headerTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', flex: 1, textAlign: 'center' },
-  msgBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  msgBtnText: { fontSize: 20 },
-
-  // Profile card
-  profileCard: { alignItems: 'center', padding: spacing.xl, backgroundColor: colors['surface-container-lowest'] },
-  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  verifiedPill: { backgroundColor: '#e3f2fd', borderRadius: borderRadius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginLeft: spacing.xs },
-  verifiedPillText: { fontSize: 11, color: '#1565c0', fontWeight: '700' },
-  userName: { ...typography['headline-sm'], color: colors['on-surface'], fontWeight: '800', marginTop: spacing.md },
-  bio: { ...typography['body-sm'], color: colors['on-surface-variant'], marginTop: spacing.sm, textAlign: 'center', paddingHorizontal: spacing.lg },
-  profileMeta: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs },
-  profileMetaText: { fontSize: 12, color: colors['on-surface-variant'] },
-  contributorBadge: { backgroundColor: '#fff8e1', borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm },
-  contributorBadgeText: { fontSize: 11, color: '#e65100', fontWeight: '700' },
-  memberSince: { ...typography['body-sm'], color: colors['on-surface-variant'], marginTop: spacing.xs },
-
-  // Follow stats
-  followStatsRow: { flexDirection: 'row', gap: spacing.xl, marginTop: spacing.lg },
-  followStatItem: { alignItems: 'center' },
-  followStatValue: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '800' },
-  followStatLabel: { ...typography['label-xs'], color: colors['on-surface-variant'], marginTop: 2 },
-
-  // Follow button
-  followBtn: {
-    marginTop: spacing.lg, paddingHorizontal: spacing.xl * 2, paddingVertical: spacing.md,
-    backgroundColor: colors.primary, borderRadius: borderRadius.full,
-    minWidth: 140, alignItems: 'center',
-  },
-  followingBtn: { backgroundColor: colors['surface-container-lowest'], borderWidth: 2, borderColor: colors.primary },
-  followBtnText: { ...typography['label-lg'], color: colors.white, fontWeight: '700' },
-  followingBtnText: { color: colors.primary },
-
-  // Section
-  sectionHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-  },
-  sectionTitle: { ...typography['title-sm'], color: colors['on-surface'], fontWeight: '700' },
-  sectionCount: { ...typography['label-sm'], color: colors['on-surface-variant'] },
-
-  listContent: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
-
-  // Deal card
-  dealCard: {
-    flexDirection: 'row', backgroundColor: colors['surface-container-lowest'],
-    borderRadius: borderRadius.lg, overflow: 'hidden',
-    borderWidth: 1, borderColor: colors['outline-variant'],
-  },
-  dealImage: { width: 100, height: '100%', minHeight: 100 },
-  dealImagePlaceholder: {
-    width: 100, height: '100%', minHeight: 100, backgroundColor: colors['surface-container'],
-    alignItems: 'center', justifyContent: 'center',
-  },
-  dealImagePlaceholderText: { fontSize: 32 },
-  savedBadge: {
-    position: 'absolute', top: 6, left: 6,
-    backgroundColor: 'rgba(255,255,255,0.95)', width: 26, height: 26,
-    borderRadius: 13, alignItems: 'center', justifyContent: 'center',
-  },
-  dealInfo: { flex: 1, padding: spacing.md },
-  dealTitle: { ...typography['body-md'], color: colors['on-surface'], fontWeight: '600', marginBottom: spacing.xs },
-  dealMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  dealPrice: { ...typography['title-md'], color: colors.primary, fontWeight: '800' },
-  discountBadge: { backgroundColor: colors.secondary, paddingHorizontal: spacing.xs, paddingVertical: 2, borderRadius: borderRadius.sm },
-  discountText: { ...typography['label-xs'], color: colors.white, fontWeight: '700' },
-  dealStats: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  dealMembers: { ...typography['label-xs'], color: colors['on-surface-variant'] },
-  progressBar: { flex: 1, height: 4, backgroundColor: colors['outline-variant'], borderRadius: 2 },
-  progressFill: { height: 4, backgroundColor: colors.primary, borderRadius: 2 },
-
-  // States
-  emptyState: { alignItems: 'center', padding: spacing.xl * 2 },
-  emptyEmoji: { fontSize: 48, marginBottom: spacing.md },
-  emptyTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.xs },
-  emptyHint: { ...typography['body-sm'], color: colors['on-surface-variant'], textAlign: 'center' },
-  errorEmoji: { fontSize: 48, marginBottom: spacing.md },
-  errorText: { ...typography['body-lg'], color: colors.error, textAlign: 'center', marginBottom: spacing.md },
-  retryText: { ...typography['body-md'], color: colors.primary, fontWeight: '600' },
-});

@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface ProfileSetupScreenProps {
@@ -22,6 +22,63 @@ interface ProfileSetupScreenProps {
 export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigation }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    },
+    skipBtn: { ...typography['body-lg'], color: colors['on-surface-variant'] },
+    stepText: { ...typography['body-md'], color: colors['on-surface-variant'] },
+    progressBar: {
+      height: 4, backgroundColor: colors['outline-variant'],
+      marginHorizontal: spacing.md, borderRadius: 2, marginBottom: spacing.xl,
+    },
+    progressFill: { height: '100%', backgroundColor: colors['primary-container'], borderRadius: 2 },
+    scrollContent: { padding: spacing.md, paddingBottom: 100 },
+    title: { ...typography['display-lg'], color: colors['on-background'], marginBottom: spacing.sm },
+    subtitle: { ...typography['body-lg'], color: colors['on-surface-variant'], marginBottom: spacing.xl, lineHeight: 26 },
+    avatarSection: { alignItems: 'center', marginBottom: spacing.xl },
+    avatarWrapper: { position: 'relative', marginBottom: spacing.sm },
+    avatarPlaceholder: {
+      width: 100, height: 100, borderRadius: 50,
+      backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center',
+    },
+    avatarEmoji: { fontSize: 40 },
+    cameraBtn: {
+      position: 'absolute', bottom: 0, right: 0, width: 36, height: 36, borderRadius: 18,
+      backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center',
+      borderWidth: 3, borderColor: colors.white,
+    },
+    cameraIcon: { fontSize: 16 },
+    avatarHint: { ...typography['body-md'], color: colors['on-surface-variant'] },
+    input: { marginBottom: spacing.md },
+    sectionLabel: {
+      ...typography['label-sm'], color: colors['on-surface-variant'],
+      textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm,
+    },
+    locationSelector: { marginBottom: spacing.lg },
+    locationOption: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: colors['secondary-container'], padding: spacing.md, borderRadius: borderRadius.lg,
+      marginBottom: spacing.md,
+    },
+    locationIcon: { fontSize: 24, marginRight: spacing.md },
+    locationText: { ...typography['body-lg'], color: colors['on-secondary-container'], fontWeight: '600', flex: 1 },
+    locationArrow: { fontSize: 20, color: colors['on-secondary-container'] },
+    dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
+    dividerLine: { flex: 1, height: 1, backgroundColor: colors['outline-variant'] },
+    dividerText: { ...typography['body-md'], color: colors['on-surface-variant'], paddingHorizontal: spacing.md },
+    areaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xl },
+    areaChip: {
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.full,
+      backgroundColor: colors['surface-container'], borderWidth: 1, borderColor: colors['outline-variant'],
+    },
+    areaChipText: { ...typography['label-sm'], color: colors['on-surface'] },
+    btnRow: { flexDirection: 'row', gap: spacing.md },
+    halfBtn: { flex: 1 },
+  });
   const nav = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(1);
@@ -149,59 +206,4 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-  },
-  skipBtn: { ...typography['body-lg'], color: colors['on-surface-variant'] },
-  stepText: { ...typography['body-md'], color: colors['on-surface-variant'] },
-  progressBar: {
-    height: 4, backgroundColor: colors['outline-variant'],
-    marginHorizontal: spacing.md, borderRadius: 2, marginBottom: spacing.xl,
-  },
-  progressFill: { height: '100%', backgroundColor: colors['primary-container'], borderRadius: 2 },
-  scrollContent: { padding: spacing.md, paddingBottom: 100 },
-  title: { ...typography['display-lg'], color: colors['on-background'], marginBottom: spacing.sm },
-  subtitle: { ...typography['body-lg'], color: colors['on-surface-variant'], marginBottom: spacing.xl, lineHeight: 26 },
-  avatarSection: { alignItems: 'center', marginBottom: spacing.xl },
-  avatarWrapper: { position: 'relative', marginBottom: spacing.sm },
-  avatarPlaceholder: {
-    width: 100, height: 100, borderRadius: 50,
-    backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center',
-  },
-  avatarEmoji: { fontSize: 40 },
-  cameraBtn: {
-    position: 'absolute', bottom: 0, right: 0, width: 36, height: 36, borderRadius: 18,
-    backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: colors.white,
-  },
-  cameraIcon: { fontSize: 16 },
-  avatarHint: { ...typography['body-md'], color: colors['on-surface-variant'] },
-  input: { marginBottom: spacing.md },
-  sectionLabel: {
-    ...typography['label-sm'], color: colors['on-surface-variant'],
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm,
-  },
-  locationSelector: { marginBottom: spacing.lg },
-  locationOption: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors['secondary-container'], padding: spacing.md, borderRadius: borderRadius.lg,
-    marginBottom: spacing.md,
-  },
-  locationIcon: { fontSize: 24, marginRight: spacing.md },
-  locationText: { ...typography['body-lg'], color: colors['on-secondary-container'], fontWeight: '600', flex: 1 },
-  locationArrow: { fontSize: 20, color: colors['on-secondary-container'] },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors['outline-variant'] },
-  dividerText: { ...typography['body-md'], color: colors['on-surface-variant'], paddingHorizontal: spacing.md },
-  areaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xl },
-  areaChip: {
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.full,
-    backgroundColor: colors['surface-container'], borderWidth: 1, borderColor: colors['outline-variant'],
-  },
-  areaChipText: { ...typography['label-sm'], color: colors['on-surface'] },
-  btnRow: { flexDirection: 'row', gap: spacing.md },
-  halfBtn: { flex: 1 },
-});
+

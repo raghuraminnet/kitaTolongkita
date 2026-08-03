@@ -71,6 +71,9 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
       fontWeight: '300',
       marginTop: -2,
     },
+    icon: {
+      fontSize: 20,
+    },
   });
 
   return (

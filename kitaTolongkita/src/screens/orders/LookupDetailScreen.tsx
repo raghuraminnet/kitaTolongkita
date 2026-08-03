@@ -90,7 +90,7 @@ export const LookupDetailScreen: React.FC = () => {
       borderWidth: 1, borderColor: colors.error,
       alignItems: 'center',
     },
-    cancelBtnText: { ...typography['label-lg'], color: colors.error, fontWeight: '700' },
+    cancelBtnText: { ...typography['label-sm'], color: colors.error, fontWeight: '700' },
   });
   const navigation = useNavigation<any>();
   const route = useRoute();

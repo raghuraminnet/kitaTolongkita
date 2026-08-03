@@ -76,22 +76,29 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
     // Watch position when permission granted
     if (state.permissionStatus === 'granted') {
-      locationSubscription.current = Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, timeInterval: 30000, distanceInterval: 50 },
-        (loc) => {
-          setState(s => ({
-            ...s,
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-            accuracy: loc.coords.accuracy,
-          }));
-          setGlobalLocation(loc.coords.latitude, loc.coords.longitude);
-        }
-      );
+      (async () => {
+        try {
+          const sub = await Location.watchPositionAsync(
+            { accuracy: Location.Accuracy.High, timeInterval: 30000, distanceInterval: 50 },
+            (loc) => {
+              setState(s => ({
+                ...s,
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude,
+                accuracy: loc.coords.accuracy,
+              }));
+              setGlobalLocation(loc.coords.latitude, loc.coords.longitude);
+            }
+          );
+          locationSubscription.current = sub;
+        } catch { /* ignore watch errors */ }
+      })();
     }
 
     return () => {
-      locationSubscription.current?.remove?.();
+      if (locationSubscription.current && 'remove' in locationSubscription.current) {
+        (locationSubscription.current as any).remove();
+      }
     };
   }, []);
 

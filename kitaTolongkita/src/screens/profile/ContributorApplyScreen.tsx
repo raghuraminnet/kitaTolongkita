@@ -34,7 +34,7 @@ export const ContributorApplyScreen: React.FC = () => {
     introTitle: { ...typography['title-md'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.sm },
     introBody: { ...typography['body-md'], color: colors['on-surface-variant'], lineHeight: 22 },
     fieldGroup: { marginBottom: spacing.lg },
-    fieldLabel: { ...typography['label-md'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.sm },
+    fieldLabel: { ...typography['label-sm'], color: colors['on-surface'], fontWeight: '700', marginBottom: spacing.sm },
     input: {
       backgroundColor: colors['surface-container-lowest'],
       borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors['outline-variant'],
@@ -63,7 +63,7 @@ export const ContributorApplyScreen: React.FC = () => {
     submitBtnText: { ...typography['body-lg'], color: colors.white, fontWeight: '700' },
     successState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
     successEmoji: { fontSize: 80, marginBottom: spacing.lg },
-    successTitle: { ...typography['headline-sm'], color: colors['on-surface'], fontWeight: '800', marginBottom: spacing.md, textAlign: 'center' },
+    successTitle: { ...typography['headline-lg'], color: colors['on-surface'], fontWeight: '800', marginBottom: spacing.md, textAlign: 'center' },
     successBody: { ...typography['body-md'], color: colors['on-surface-variant'], textAlign: 'center', lineHeight: 24, marginBottom: spacing.xl },
     doneBtn: {
       backgroundColor: colors.primary, borderRadius: borderRadius.lg,

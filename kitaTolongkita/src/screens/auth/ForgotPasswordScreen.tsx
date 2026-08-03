@@ -14,13 +14,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
 import { colors, typography, spacing, borderRadius } from '../../theme';
-import { useTheme } from '../../contexts/ThemeContext';
 import { authApi } from '../../api/client';
 
 type Step = 'email' | 'otp' | 'newPassword';
 
 export const ForgotPasswordScreen: React.FC = () => {
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();

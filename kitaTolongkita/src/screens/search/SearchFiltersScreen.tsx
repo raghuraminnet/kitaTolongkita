@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   radiusBtnText: { fontSize: 20, color: colors.white, fontWeight: '700' },
   radiusValue: { alignItems: 'center', minWidth: 60 },
-  radiusNumber: { ...typography['headline-md'], color: colors['on-surface'], fontWeight: '800' },
+  radiusNumber: { ...typography['headline-lg'], color: colors['on-surface'], fontWeight: '800' },
   radiusUnit: { ...typography['label-sm'], color: colors['on-surface-variant'] },
   radiusBar: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors['outline-variant'],
   },
   radiusMarkActive: { backgroundColor: colors['primary-container'] },
-  radiusHint: { ...typography['body-sm'], color: colors['on-surface-variant'], marginTop: spacing.sm },
+  radiusHint: { ...typography['body-md'], color: colors['on-surface-variant'], marginTop: spacing.sm },
   // Categories
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {

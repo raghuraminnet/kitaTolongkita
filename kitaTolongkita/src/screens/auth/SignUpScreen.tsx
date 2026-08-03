@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   avatarCameraIcon: { fontSize: 12 },
   avatarHint: {
-    ...typography['body-sm'], color: colors['on-surface-variant'],
+    ...typography['body-md'], color: colors['on-surface-variant'],
     marginTop: spacing.xs,
   },
   form: { marginBottom: spacing.xl },

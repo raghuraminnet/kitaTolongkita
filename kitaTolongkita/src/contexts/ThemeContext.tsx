@@ -9,7 +9,7 @@ type ThemeMode = 'light' | 'dark';
 
 interface ThemeContextValue {
   isDark: boolean;
-  colors: typeof lightColors;
+  colors: Record<string, string>;
   toggleTheme: () => void;
   setTheme: (mode: ThemeMode) => void;
 }

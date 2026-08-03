@@ -52,7 +52,7 @@ export const FollowingScreen: React.FC = () => {
     avatarInitial: { fontSize: 18, fontWeight: '700', color: colors['on-surface-variant'] },
     userInfo: { flex: 1 },
     userName: { ...typography['body-md'], color: colors['on-surface'], fontWeight: '600' },
-    userMeta: { ...typography['label-xs'], color: colors['on-surface-variant'], marginTop: 2 },
+    userMeta: { ...typography['label-sm'], color: colors['on-surface-variant'], marginTop: 2 },
     arrow: { fontSize: 20, color: colors['on-surface-variant'] },
     separator: { height: 1, backgroundColor: colors['outline-variant'] },
     emptyState: { alignItems: 'center', paddingVertical: spacing.xl * 2 },

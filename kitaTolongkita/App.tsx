@@ -11,7 +11,7 @@ function AppContent() {
 
   return (
     <>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LocationProvider>
         <AppNavigator />
       </LocationProvider>

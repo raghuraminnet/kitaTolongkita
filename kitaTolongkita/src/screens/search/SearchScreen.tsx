@@ -453,9 +453,9 @@ const styles = StyleSheet.create({
   dealTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
   dealCategoryChip: {
     backgroundColor: colors['secondary-container'], paddingHorizontal: 6, paddingVertical: 1,
-    borderRadius: borderRadius.sm, ...typography['label-xs'], color: colors['on-secondary-container'],
+    borderRadius: borderRadius.sm, ...typography['label-sm'], color: colors['on-secondary-container'],
   },
-  dealDistance: { ...typography['label-xs'], color: colors['on-surface-variant'] },
+  dealDistance: { ...typography['label-sm'], color: colors['on-surface-variant'] },
   dealTitle: {
     fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors['on-surface'],
     marginBottom: 4, lineHeight: 18,
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   progressFill: { height: '100%', backgroundColor: colors['primary-container'], borderRadius: 2 },
-  membersText: { ...typography['label-xs'], color: colors['on-surface-variant'] },
+  membersText: { ...typography['label-sm'], color: colors['on-surface-variant'] },
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   empty: { alignItems: 'center', paddingTop: 80 },
   emptyEmoji: { fontSize: 56, marginBottom: spacing.md },

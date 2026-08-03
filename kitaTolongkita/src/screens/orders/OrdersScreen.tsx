@@ -55,7 +55,7 @@ export const OrdersScreen: React.FC = () => {
       alignItems: 'center',
     },
     tabActive: { backgroundColor: colors.primary },
-    tabText: { ...typography['label-lg'], color: colors['on-surface-variant'], fontWeight: '700' },
+    tabText: { ...typography['label-sm'], color: colors['on-surface-variant'], fontWeight: '700' },
     tabTextActive: { color: colors.white },
     orderCard: {
       backgroundColor: colors['surface-container-lowest'],

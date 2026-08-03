@@ -68,7 +68,7 @@ export const ProfileScreen: React.FC = () => {
       marginTop: spacing.md, backgroundColor: '#e65100',
       borderRadius: borderRadius.full, paddingVertical: spacing.sm, alignItems: 'center',
     },
-    becomeContributorBtnText: { ...typography['label-lg'], color: colors.white, fontWeight: '700' },
+    becomeContributorBtnText: { ...typography['label-sm'], color: colors.white, fontWeight: '700' },
     demoBadge: {
       backgroundColor: colors['primary-container'], borderRadius: borderRadius.full,
       paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
@@ -129,8 +129,8 @@ export const ProfileScreen: React.FC = () => {
       borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.sm,
     },
     lookupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
-    lookupStatusBadge: (s: string) => ({ backgroundColor: lookupStatusBadge(s).backgroundColor, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }),
-    lookupStatusText: (s: string) => lookupStatusText(s),
+    lookupStatusBadge: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+    lookupStatusText: {},
     bookingId: { fontFamily: 'monospace', fontSize: 12, color: colors['on-surface-variant'], fontWeight: '700' },
     lookupMeta: { fontSize: 12, color: colors['on-surface-variant'], marginTop: 4 },
     ratingCard: {
@@ -296,8 +296,8 @@ export const ProfileScreen: React.FC = () => {
 
   const renderDealItem = ({ item }: { item: Deal }) => (
     <TouchableOpacity style={styles.dealCard} onPress={() => handleDealPress(item.id)}>
-      {item.imageUrl ? (
-        <Image source={{ uri: item.imageUrl }} style={styles.dealImage} />
+      {item.imageUrls && item.imageUrls[0] ? (
+        <Image source={{ uri: item.imageUrls[0] }} style={styles.dealImage} />
       ) : (
         <View style={[styles.dealImage, { backgroundColor: colors['surface-container-highest'] }]}>
           <Text style={{ color: colors['on-surface-variant'] }}>📷</Text>
@@ -334,8 +334,8 @@ export const ProfileScreen: React.FC = () => {
   const renderLookupItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.lookupCard}>
       <View style={styles.lookupHeader}>
-        <View style={styles.lookupStatusBadge(item.status)}>
-          <Text style={styles.lookupStatusText(item.status)}>{item.status}</Text>
+        <View style={lookupStatusBadge(item.status)}>
+          <Text style={lookupStatusText(item.status)}>{item.status}</Text>
         </View>
         <Text style={styles.bookingId}>{item.bookingId}</Text>
       </View>
