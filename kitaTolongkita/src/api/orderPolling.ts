@@ -45,11 +45,11 @@ export function subscribeToOrders(listener: OrderStatusListener): () => void {
 
 async function pollOrders() {
   try {
-    const orders = await dealsApi.getOrders();
-    cachedOrders = orders;
+    const result = await dealsApi.getOrders(1, 100); // first page, large pageSize for polling
+    cachedOrders = result.items;
     // Notify all listeners
     for (const listener of listeners) {
-      try { listener([...orders]); } catch { /* ignore listener errors */ }
+      try { listener([...result.items]); } catch { /* ignore listener errors */ }
     }
   } catch {
     // Silent fail — keep using cached orders

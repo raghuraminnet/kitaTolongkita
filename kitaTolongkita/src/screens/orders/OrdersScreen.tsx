@@ -7,6 +7,7 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -111,8 +112,18 @@ export const OrdersScreen: React.FC = () => {
   const [lookups, setLookups] = useState<any[]>([]);
   const [lookupsLoading, setLookupsLoading] = useState(false);
 
+  // Pagination — orders
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [hasMoreOrders, setHasMoreOrders] = useState(true);
+  const [loadingMoreOrders, setLoadingMoreOrders] = useState(false);
+
+  // Pagination — lookups
+  const [lookupsPage, setLookupsPage] = useState(1);
+  const [hasMoreLookups, setHasMoreLookups] = useState(true);
+  const [loadingMoreLookups, setLoadingMoreLookups] = useState(false);
+
   useEffect(() => {
-    loadOrders();
+    loadOrders(true);
     startOrderPolling();
 
     const unsubscribe = subscribeToOrders((orders) => setOrders(orders));
@@ -124,36 +135,71 @@ export const OrdersScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'lookups' && lookups.length === 0) loadLookups();
+    if (activeTab === 'lookups' && lookups.length === 0) loadLookups(true);
   }, [activeTab]);
 
-  const loadOrders = async () => {
+  const loadOrders = async (reset = false) => {
+    const page = reset ? 1 : ordersPage;
     try {
       const token = await getAccessToken();
-      if (!token) { setOrders(MOCK_ORDERS); setLoading(false); return; }
-      const data = await dealsApi.getOrders();
-      setOrders(data);
+      if (!token) { setOrders(MOCK_ORDERS); setLoading(false); setHasMoreOrders(false); return; }
+      const result = await dealsApi.getOrders(page);
+      if (reset) {
+        setOrders(result.items);
+        setOrdersPage(2);
+      } else {
+        setOrders(prev => [...prev, ...result.items]);
+        setOrdersPage(p => p + 1);
+      }
+      setHasMoreOrders(result.items.length === result.pageSize);
     } catch {
-      setOrders(MOCK_ORDERS);
+      if (reset) setOrders(MOCK_ORDERS);
+      setHasMoreOrders(false);
     } finally {
       setLoading(false);
+      setRefreshing(false);
+      setLoadingMoreOrders(false);
     }
   };
 
-  const loadLookups = async () => {
-    setLookupsLoading(true);
+  const loadLookups = async (reset = false) => {
+    const page = reset ? 1 : lookupsPage;
+    setLookupsLoading(reset);
     try {
-      const res: any = await lookupsApi.getMyLookups();
-      setLookups(res?.lookups ?? []);
-    } catch { setLookups([]); }
-    finally { setLookupsLoading(false); }
+      const res: any = await lookupsApi.getMyLookups(undefined, page);
+      if (reset) {
+        setLookups(res?.lookups ?? []);
+        setLookupsPage(2);
+      } else {
+        setLookups(prev => [...prev, ...(res?.lookups ?? [])]);
+        setLookupsPage(p => p + 1);
+      }
+      setHasMoreLookups((res?.lookups ?? []).length === 20);
+    } catch { setLookups([]); setHasMoreLookups(false); }
+    finally { setLookupsLoading(false); setLoadingMoreLookups(false); setRefreshing(false); }
+  };
+
+  const handleLoadMoreOrders = () => {
+    if (!hasMoreOrders || loadingMoreOrders) return;
+    setLoadingMoreOrders(true);
+    loadOrders(false);
+  };
+
+  const handleLoadMoreLookups = () => {
+    if (!hasMoreLookups || loadingMoreLookups) return;
+    setLoadingMoreLookups(true);
+    loadLookups(false);
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    if (activeTab === 'orders') await loadOrders();
-    else await loadLookups();
-    setRefreshing(false);
+    if (activeTab === 'orders') {
+      setOrdersPage(1);
+      await loadOrders(true);
+    } else {
+      setLookupsPage(1);
+      await loadLookups(true);
+    }
   };
 
   const renderOrder = ({ item }: { item: Order }) => (
@@ -200,6 +246,16 @@ export const OrdersScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
+  const FooterIndicator = () => {
+    if (activeTab === 'orders' && loadingMoreOrders) {
+      return <ActivityIndicator size="small" color={colors['primary-container']} style={{ paddingVertical: spacing.md }} />;
+    }
+    if (activeTab === 'lookups' && loadingMoreLookups) {
+      return <ActivityIndicator size="small" color={colors['primary-container']} style={{ paddingVertical: spacing.md }} />;
+    }
+    return null;
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -231,6 +287,9 @@ export const OrdersScreen: React.FC = () => {
         keyExtractor={(item: any) => item.id}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        onEndReached={activeTab === 'orders' ? handleLoadMoreOrders : handleLoadMoreLookups}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={<FooterIndicator />}
         ListEmptyComponent={
           !(loading || lookupsLoading) ? (
             <View style={styles.empty}>

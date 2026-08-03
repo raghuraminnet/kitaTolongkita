@@ -156,6 +156,21 @@ export const authApi = {
 
 // ── Saved Deals API ─────────────────────────────────────────────────────────────
 
+// ── Shared pagination types ───────────────────────────────────────────────────
+
+export interface PagingMeta {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+export interface PagedResult<T> extends PagingMeta {
+  items: T[];
+}
+
+// ── Saved Deals API ─────────────────────────────────────────────────────────────
+
 export interface SavedList {
   id: string;
   name: string;
@@ -271,14 +286,21 @@ export const dealsApi = {
     return request<Order>('POST', `/deals/${dealId}/join`, { quantity, notes }, true);
   },
 
-  getOrders: () => {
+  getOrders: (page = 1, pageSize = 20) => {
     if (DemoMode.isDemoMode()) {
-      return DemoMode.demoGetOrders() as Promise<Order[]>;
+      return DemoMode.demoGetOrders() as Promise<PagedResult<Order>>;
     }
-    return request<Order[]>('GET', '/deals/orders', undefined, true);
+    return request<PagedResult<Order>>(
+      'GET', `/deals/orders?page=${page}&pageSize=${pageSize}`, undefined, true
+    );
   },
 
-  getMyDeals: () => request<Deal[]>('GET', '/deals/mine', undefined, true),
+  getMyDeals: (page = 1, pageSize = 20) => {
+    if (DemoMode.isDemoMode()) {
+      return Promise.resolve({ items: [], page, pageSize, totalCount: 0, totalPages: 0 }) as any;
+    }
+    return request<PagedResult<Deal>>('GET', `/deals/mine?page=${page}&pageSize=${pageSize}`, undefined, true);
+  },
 };
 
 // ── Notifications API (non-standard, handled locally in demo) ────────────────
@@ -399,9 +421,10 @@ export interface NotificationSettingsDto {
 
 // ── Lookups API ───────────────────────────────────────────────────────────────
 export const lookupsApi = {
-  getMyLookups: (status?: string) => {
-    const url = status ? `/lookups?status=${status}` : '/lookups';
-    return request<{ lookups: LookupItem[] }>('GET', url);
+  getMyLookups: (status?: string, page = 1, pageSize = 20) => {
+    let url = `/lookups?page=${page}&pageSize=${pageSize}`;
+    if (status) url += `&status=${status}`;
+    return request<{ lookups: LookupItem[] } & PagingMeta>('GET', url);
   },
 
   getLookupDetail: (lookupId: string) =>

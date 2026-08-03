@@ -9,6 +9,7 @@ import {
   Alert,
   FlatList,
   RefreshControl,
+  ActivityIndicator,
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -194,7 +195,7 @@ export const ProfileScreen: React.FC = () => {
   );
 
   useEffect(() => {
-    if (!loading) loadTabData(activeTab);
+    if (!loading) loadTabData(activeTab, true);
   }, [activeTab, loading]);
 
   const loadProfile = async () => {
@@ -203,10 +204,12 @@ export const ProfileScreen: React.FC = () => {
       if (!token) { setLoading(false); return; }
       const me = await authApi.getMe();
       setUser(me);
-      const orders = await dealsApi.getOrders();
-      const myDealsData = await dealsApi.getMyDeals();
-      setDealsCount(myDealsData.length);
-      setLookupCount(orders.length);
+      const [ordersResult, myDealsResult] = await Promise.all([
+        dealsApi.getOrders(1, 1),
+        dealsApi.getMyDeals(1, 1),
+      ]);
+      setLookupCount(ordersResult.totalCount);
+      setDealsCount(myDealsResult.totalCount);
 
       // Get follow counts
       try {
@@ -221,25 +224,57 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
-  const loadTabData = async (tab: string) => {
-    setTabLoading(true);
+  // Pagination state per tab
+  const [dealsPage, setDealsPage] = useState(1);
+  const [hasMoreDeals, setHasMoreDeals] = useState(true);
+  const [loadingMoreDeals, setLoadingMoreDeals] = useState(false);
+  const [repostsPage, setRepostsPage] = useState(1);
+  const [hasMoreReposts, setHasMoreReposts] = useState(true);
+  const [loadingMoreReposts, setLoadingMoreReposts] = useState(false);
+  const [lookupsPage, setLookupsPage] = useState(1);
+  const [hasMoreLookups, setHasMoreLookups] = useState(true);
+  const [loadingMoreLookups, setLoadingMoreLookups] = useState(false);
+
+  const loadTabData = async (tab: string, reset = false) => {
+    setTabLoading(reset);
     try {
       if (tab === 'Deals') {
-        const deals = await dealsApi.getMyDeals();
-        setMyDeals(deals ?? []);
+        const page = reset ? 1 : dealsPage;
+        const res = await dealsApi.getMyDeals(page);
+        if (reset) { setMyDeals(res.items); setDealsPage(2); }
+        else { setMyDeals(prev => [...prev, ...res.items]); setDealsPage(p => p + 1); }
+        setHasMoreDeals(res.items.length === res.pageSize);
       } else if (tab === 'Reposts') {
-        const res: any = await repostsApi.getMyReposts();
-        setMyReposts(res?.reposts ?? []);
+        const page = reset ? 1 : repostsPage;
+        const res: any = await repostsApi.getMyReposts(page);
+        if (reset) { setMyReposts(res?.reposts ?? []); setRepostsPage(2); }
+        else { setMyReposts(prev => [...prev, ...(res?.reposts ?? [])]); setRepostsPage(p => p + 1); }
+        setHasMoreReposts((res?.reposts ?? []).length === 20);
       } else if (tab === 'LookUps') {
-        const res: any = await lookupsApi.getMyLookups();
-        setMyLookups(res?.lookups ?? []);
+        const page = reset ? 1 : lookupsPage;
+        const res: any = await lookupsApi.getMyLookups(undefined, page);
+        if (reset) { setMyLookups(res?.lookups ?? []); setLookupsPage(2); }
+        else { setMyLookups(prev => [...prev, ...(res?.lookups ?? [])]); setLookupsPage(p => p + 1); }
+        setHasMoreLookups((res?.lookups ?? []).length === 20);
       } else if (tab === 'Ratings') {
-        // For own profile, show lookups that have been delivered (for rating)
-        const res: any = await lookupsApi.getMyLookups('Delivered');
-        setMyRatings(res?.lookups ?? []);
+        const page = reset ? 1 : lookupsPage;
+        const res: any = await lookupsApi.getMyLookups('Delivered', page);
+        if (reset) { setMyRatings(res?.lookups ?? []); setLookupsPage(2); }
+        else { setMyRatings(prev => [...prev, ...(res?.lookups ?? [])]); setLookupsPage(p => p + 1); }
+        setHasMoreLookups((res?.lookups ?? []).length === 20);
       }
     } catch { /* silent */ }
-    finally { setTabLoading(false); }
+    finally { setTabLoading(false); setLoadingMoreDeals(false); setLoadingMoreReposts(false); setLoadingMoreLookups(false); }
+  };
+
+  const handleLoadMore = (tab: string) => {
+    if (tab === 'Deals' && !hasMoreDeals && !loadingMoreDeals) return;
+    if (tab === 'Reposts' && !hasMoreReposts && !loadingMoreReposts) return;
+    if ((tab === 'LookUps' || tab === 'Ratings') && !hasMoreLookups && !loadingMoreLookups) return;
+    if (tab === 'Deals') setLoadingMoreDeals(true);
+    if (tab === 'Reposts') setLoadingMoreReposts(true);
+    if (tab === 'LookUps' || tab === 'Ratings') setLoadingMoreLookups(true);
+    loadTabData(tab, false);
   };
 
   const onRefresh = async () => {
@@ -372,21 +407,28 @@ export const ProfileScreen: React.FC = () => {
       );
     }
 
+    const TabFooter = () => {
+      if (activeTab === 'Deals' && loadingMoreDeals) return <ActivityIndicator size="small" color={colors['primary-container']} style={{ paddingVertical: spacing.md }} />;
+      if (activeTab === 'Reposts' && loadingMoreReposts) return <ActivityIndicator size="small" color={colors['primary-container']} style={{ paddingVertical: spacing.md }} />;
+      if ((activeTab === 'LookUps' || activeTab === 'Ratings') && loadingMoreLookups) return <ActivityIndicator size="small" color={colors['primary-container']} style={{ paddingVertical: spacing.md }} />;
+      return null;
+    };
+
     if (activeTab === 'Deals') {
-      if (myDeals.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>You haven't posted any deals yet.</Text></View>;
-      return <FlatList data={myDeals} renderItem={renderDealItem} keyExtractor={d => d.id} scrollEnabled={false} />;
+      if (!tabLoading && myDeals.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>You haven't posted any deals yet.</Text></View>;
+      return <FlatList data={myDeals} renderItem={renderDealItem} keyExtractor={d => d.id} scrollEnabled onEndReached={() => handleLoadMore('Deals')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
     }
     if (activeTab === 'Reposts') {
-      if (myReposts.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>No reposts yet.</Text></View>;
-      return <FlatList data={myReposts} renderItem={renderRepostItem} keyExtractor={r => r.repostId} scrollEnabled={false} />;
+      if (!tabLoading && myReposts.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>No reposts yet.</Text></View>;
+      return <FlatList data={myReposts} renderItem={renderRepostItem} keyExtractor={r => r.repostId} scrollEnabled onEndReached={() => handleLoadMore('Reposts')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
     }
     if (activeTab === 'LookUps') {
-      if (myLookups.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>No group buy lookups yet.</Text></View>;
-      return <FlatList data={myLookups} renderItem={renderLookupItem} keyExtractor={l => l.id} scrollEnabled={false} />;
+      if (!tabLoading && myLookups.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>No group buy lookups yet.</Text></View>;
+      return <FlatList data={myLookups} renderItem={renderLookupItem} keyExtractor={l => l.id} scrollEnabled onEndReached={() => handleLoadMore('LookUps')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
     }
     if (activeTab === 'Ratings') {
-      if (myRatings.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>No delivered orders to rate.</Text></View>;
-      return <FlatList data={myRatings} renderItem={renderRatingItem} keyExtractor={r => r.id} scrollEnabled={false} />;
+      if (!tabLoading && myRatings.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>No delivered orders to rate.</Text></View>;
+      return <FlatList data={myRatings} renderItem={renderRatingItem} keyExtractor={r => r.id} scrollEnabled onEndReached={() => handleLoadMore('Ratings')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
     }
   };
 

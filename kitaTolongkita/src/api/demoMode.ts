@@ -311,8 +311,15 @@ export async function demoJoinDeal(dealId: string, quantity: number): Promise<an
 }
 
 // ── Demo orders ───────────────────────────────────────────────────────────────
-export async function demoGetOrders(): Promise<typeof MOCK_ORDERS> {
-  return getStored(STORAGE_KEYS.DEMO_ORDERS, MOCK_ORDERS);
+export async function demoGetOrders(): Promise<{
+  items: typeof MOCK_ORDERS;
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}> {
+  const orders = await getStored(STORAGE_KEYS.DEMO_ORDERS, MOCK_ORDERS);
+  return { items: orders as any, page: 1, pageSize: 20, totalCount: (orders as any[]).length, totalPages: 1 };
 }
 
 // ── Demo profile ──────────────────────────────────────────────────────────────

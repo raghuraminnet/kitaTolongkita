@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   FlatList,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { Bell } from 'lucide-react-native';
 import { DealCard, CategoryChip, SkeletonCard, EmptyState } from '../../components';
 import { typography, spacing, borderRadius } from '../../theme';
@@ -18,18 +18,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi } from '../../api/client';
 import type { Deal } from '../../api/client';
 
-const CATEGORIES = [
-  'All',
-  'Food',
-  'Electronics',
-  'Fashion',
-  'Home',
-  'Beauty',
-  'Sports',
-  'Drinks',
-];
+const CATEGORIES = ['All', 'Food', 'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Drinks'];
 
-const SKELETON_COUNT = Array(4).fill(null);
+const PAGE_SIZE = 20;
 
 export const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -42,31 +33,56 @@ export const HomeScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const loadDeals = useCallback(async () => {
+  const loadDeals = useCallback(async (reset = false) => {
+    const currentPage = reset ? 1 : page;
+    if (reset) setLoading(true); else setLoadingMore(true);
+    setError(null);
+
     try {
-      setError(null);
-      const params: Record<string, string | number> = {};
+      const params: Record<string, string | number> = {
+        page: currentPage,
+        pageSize: PAGE_SIZE,
+      };
       if (selectedCategory !== 'All') params.category = selectedCategory;
       const res = await dealsApi.search(params);
-      setDeals(res.items ?? []);
+      const newItems = res.items ?? [];
+
+      if (reset) {
+        setDeals(newItems);
+        setPage(2);
+      } else {
+        setDeals(prev => [...prev, ...newItems]);
+        setPage(p => p + 1);
+      }
+      setHasMore(newItems.length === PAGE_SIZE);
     } catch (err) {
       setError('Could not load deals. Pull to retry.');
       console.warn('Failed to load deals', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, page]);
 
   useEffect(() => {
-    setLoading(true);
-    loadDeals();
-  }, [loadDeals]);
+    setPage(1);
+    loadDeals(true);
+  }, [selectedCategory]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadDeals();
+    setPage(1);
+    loadDeals(true);
+  };
+
+  const handleLoadMore = () => {
+    if (!hasMore || loadingMore || loading) return;
+    loadDeals(false);
   };
 
   const renderDeal = ({ item }: { item: Deal }) => (
@@ -88,16 +104,59 @@ export const HomeScreen: React.FC = () => {
     </View>
   );
 
-  const renderSkeletons = () =>
-    SKELETON_COUNT.map((_, i) => (
-      <View key={i} style={localStyles.dealItem}>
-        <SkeletonCard />
+  const ListFooter = () => {
+    if (!loadingMore) return null;
+    return <ActivityIndicator size="small" color={colors['primary-container']} style={{ paddingVertical: spacing.md }} />;
+  };
+
+  const ListHeader = () => (
+    <View>
+      {/* Hero Banner */}
+      <TouchableOpacity
+        style={[styles.heroBanner, { backgroundColor: colors['primary-container'] }]}
+        activeOpacity={0.9}
+      >
+        <View style={styles.heroContent}>
+          <Text style={[styles.heroTitle, { color: colors.white }]}>
+            Gotong Royong{'\n'}Lebih Jimat! ✨
+          </Text>
+          <Text style={[styles.heroSubtitle, { color: colors.white, opacity: 0.9 }]}>
+            Join group buys & save up to 50%
+          </Text>
+        </View>
+        <Text style={styles.heroEmoji}>🛒</Text>
+      </TouchableOpacity>
+
+      {/* Category Chips */}
+      <View style={styles.categoriesScrollWrap}>
+        {CATEGORIES.map((cat) => (
+          <CategoryChip
+            key={cat}
+            label={cat}
+            selected={selectedCategory === cat}
+            onPress={() => setSelectedCategory(cat)}
+            style={styles.categoryChip}
+          />
+        ))}
       </View>
-    ));
+
+      {/* Section Header */}
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: colors['on-background'] }]}>
+          🔥 Hot Deals
+        </Text>
+        <TouchableOpacity>
+          <Text style={[styles.seeAll, { color: colors['primary-container'] }]}>
+            See All →
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Header */}
+      {/* Sticky Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Selamat Datang 👋</Text>
@@ -114,75 +173,22 @@ export const HomeScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors['primary-container']}
-          />
-        }
-      >
-        {/* Hero Banner */}
-        <TouchableOpacity
-          style={[styles.heroBanner, { backgroundColor: colors['primary-container'] }]}
-          activeOpacity={0.9}
-        >
-          <View style={styles.heroContent}>
-            <Text style={[styles.heroTitle, { color: colors.white }]}>
-              Gotong Royong{'\n'}Lebih Jimat! ✨
-            </Text>
-            <Text style={[styles.heroSubtitle, { color: colors.white, opacity: 0.9 }]}>
-              Join group buys & save up to 50%
-            </Text>
-          </View>
-          <Text style={styles.heroEmoji}>🛒</Text>
-        </TouchableOpacity>
-
-        {/* Category Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContainer}
-        >
-          {CATEGORIES.map((cat) => (
-            <CategoryChip
-              key={cat}
-              label={cat}
-              selected={selectedCategory === cat}
-              onPress={() => setSelectedCategory(cat)}
-              style={styles.categoryChip}
-            />
-          ))}
-        </ScrollView>
-
-        {/* Section Header */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors['on-background'] }]}>
-            🔥 Hot Deals
-          </Text>
-          <TouchableOpacity>
-            <Text style={[styles.seeAll, { color: colors['primary-container'] }]}>
-              See All →
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Deal List */}
-        <View style={styles.dealList}>
-          {loading ? (
-            renderSkeletons()
-          ) : error && deals.length === 0 ? (
+      <FlatList
+        data={deals}
+        renderItem={renderDeal}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={<ListHeader />}
+        ListFooterComponent={<ListFooter />}
+        ListEmptyComponent={
+          loading ? null : error && deals.length === 0 ? (
             <EmptyState
               icon="⚠️"
               title="Couldn't load deals"
-              message={error}
+              message={error ?? ''}
               actionLabel="Try Again"
               onAction={handleRefresh}
             />
-          ) : deals.length === 0 ? (
+          ) : (
             <EmptyState
               icon="🛒"
               title="No deals yet"
@@ -190,16 +196,19 @@ export const HomeScreen: React.FC = () => {
               actionLabel="Post a Deal"
               onAction={() => navigation.navigate('Post')}
             />
-          ) : (
-            <FlatList
-              data={deals}
-              renderItem={renderDeal}
-              keyExtractor={(item) => item.id}
-              scrollEnabled={false}
-            />
-          )}
-        </View>
-      </ScrollView>
+          )
+        }
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors['primary-container']}
+          />
+        }
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+      />
     </View>
   );
 };
@@ -239,7 +248,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  scrollContent: { paddingBottom: 100 },
+  listContent: { paddingBottom: 100 },
   heroBanner: {
     marginHorizontal: spacing.md,
     marginBottom: spacing.lg,
@@ -262,12 +271,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   heroEmoji: { fontSize: 48, marginLeft: spacing.sm },
-  categoriesContainer: {
+  categoriesScrollWrap: {
+    flexDirection: 'row',
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
     marginBottom: spacing.lg,
+    flexWrap: 'wrap',
   },
-  categoryChip: { marginRight: spacing.sm },
+  categoryChip: {},
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -285,13 +296,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  dealList: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.md,
-  },
-  dealItem: { marginBottom: spacing.sm },
 });
 
 const localStyles = StyleSheet.create({
-  dealItem: { marginBottom: spacing.sm },
+  dealItem: { marginBottom: spacing.sm, paddingHorizontal: spacing.md },
 });
