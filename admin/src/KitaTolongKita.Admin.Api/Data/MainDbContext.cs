@@ -29,9 +29,9 @@ public class MainDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder m)
     {
         // ── Core tables ───────────────────────────────────────────────────────
-        m.Entity<MainUser>(e => e.ToTable("users", "public"));
-        m.Entity<MainDeal>(e => e.ToTable("deals", "public"));
-        m.Entity<MainDealOrder>(e => e.ToTable("deal_orders", "public"));
+        m.Entity<MainUser>(e => e.ToTable("Users", "public"));
+        m.Entity<MainDeal>(e => e.ToTable("Deals", "public"));
+        m.Entity<MainDealOrder>(e => e.ToTable("DealOrders", "public"));
 
         // ── Navigation: deal → organizer ──────────────────────────────────────
         m.Entity<MainDeal>()
