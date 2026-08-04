@@ -1,35 +1,64 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Share, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Button } from '../../components';
 import { typography, spacing, borderRadius, shadows } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
+interface DealResult {
+  id: string;
+  title: string;
+  groupPrice: number;
+  originalPrice: number;
+  minMembers: number;
+  maxMembers: number;
+  imageUrls?: string[];
+}
+
 interface PostReviewScreenProps {
   navigation?: any;
+  route?: any;
 }
 
 export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
   navigation,
+  route,
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+
+  // Deal data passed from PostDealScreen after successful creation
+  const deal: DealResult | null = route?.params?.deal ?? null;
+
+  const discountPct =
+    deal && deal.originalPrice > 0
+      ? Math.round((1 - deal.groupPrice / deal.originalPrice) * 100)
+      : 0;
+
+  const handleShare = async () => {
+    if (!deal) return;
+    const message = `Check out this deal: ${deal.title} for RM${deal.groupPrice}!\nkitatolong://deal/${deal.id}`;
+    try {
+      await Share.share({ message });
+    } catch { /* ignore */ }
+  };
+
+  const handleBackToHome = () => {
+    navigation?.popToTop();
+  };
 
   const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
+    container: { flex: 1, backgroundColor: colors.background },
     content: {
       flex: 1,
       padding: spacing.md,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    iconContainer: {
-      marginBottom: spacing.xl,
-    },
+    iconContainer: { marginBottom: spacing.xl },
     statusChip: {
       backgroundColor: colors['secondary-container'],
       paddingHorizontal: spacing.lg,
@@ -50,9 +79,7 @@ export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
     },
-    pendingIcon: {
-      fontSize: 48,
-    },
+    pendingIcon: { fontSize: 48 },
     title: {
       ...typography['headline-lg'],
       color: colors['on-background'],
@@ -76,17 +103,9 @@ export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
       ...shadows.card,
       marginBottom: spacing.lg,
     },
-    infoRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-    },
-    infoIcon: {
-      fontSize: 24,
-      marginRight: spacing.md,
-    },
-    infoContent: {
-      flex: 1,
-    },
+    infoRow: { flexDirection: 'row', alignItems: 'flex-start' },
+    infoIcon: { fontSize: 24, marginRight: spacing.md },
+    infoContent: { flex: 1 },
     infoTitle: {
       ...typography['body-lg'],
       color: colors['on-surface'],
@@ -119,6 +138,7 @@ export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
       flexDirection: 'row',
       justifyContent: 'space-between',
       marginBottom: spacing.sm,
+      alignItems: 'flex-start',
     },
     summaryLabel: {
       ...typography['body-md'],
@@ -137,9 +157,17 @@ export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
       paddingTop: spacing.md,
       gap: spacing.sm,
     },
+    emptyState: {
+      alignItems: 'center',
+      padding: spacing.lg,
+    },
+    emptyIcon: { fontSize: 48, marginBottom: spacing.md },
+    emptyText: {
+      ...typography['body-md'],
+      color: colors['on-surface-variant'],
+      textAlign: 'center',
+    },
   });
-  const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -153,7 +181,9 @@ export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
 
         {/* Status chip */}
         <View style={styles.statusChip}>
-          <Text style={styles.statusChipText}>⏳ {t('deals.underReview')}</Text>
+          <Text style={styles.statusChipText}>
+            ⏳ {t('deals.underReview', 'Under Review')}
+          </Text>
         </View>
 
         <Text style={styles.title}>Under Review</Text>
@@ -186,38 +216,57 @@ export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
           </View>
         </View>
 
-        {/* Deal Summary Card */}
+        {/* Deal Summary Card — real data from API */}
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Deal Summary</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Deal</Text>
-            <Text style={styles.summaryValue}>Premium Kuih Muih Set</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Price</Text>
-            <Text style={styles.summaryValue}>RM25.00</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Target</Text>
-            <Text style={styles.summaryValue}>50 members</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Discount</Text>
-            <Text style={[styles.summaryValue, { color: colors.secondary }]}>34% OFF</Text>
-          </View>
+
+          {deal ? (
+            <>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Deal</Text>
+                <Text style={styles.summaryValue} numberOfLines={2}>{deal.title}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Price</Text>
+                <Text style={styles.summaryValue}>RM {deal.groupPrice.toFixed(2)}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Target</Text>
+                <Text style={styles.summaryValue}>
+                  {deal.minMembers} – {deal.maxMembers} members
+                </Text>
+              </View>
+              {discountPct > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Discount</Text>
+                  <Text style={[styles.summaryValue, { color: colors.secondary }]}>
+                    {discountPct}% OFF
+                  </Text>
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>📦</Text>
+              <Text style={styles.emptyText}>
+                Your deal was submitted successfully.{"\n"}Check "My Deals" for status updates.
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
       <View style={[styles.bottomButtons, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <Button
           title="Share to Get Members"
-          onPress={() => {}}
+          onPress={handleShare}
           variant="secondary"
           fullWidth
+          disabled={!deal}
         />
         <Button
           title="Back to Home"
-          onPress={() => navigation?.popToTop()}
+          onPress={handleBackToHome}
           variant="primary"
           fullWidth
         />
@@ -225,5 +274,3 @@ export const PostReviewScreen: React.FC<PostReviewScreenProps> = ({
     </View>
   );
 };
-
-

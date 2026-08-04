@@ -460,10 +460,18 @@ export const PostDealScreen: React.FC = () => {
         imageUrls: uploadedUrls,
       };
 
-      await dealsApi.create(payload);
-      navigation?.replace('PostReview');
+      const createdDeal = await dealsApi.create(payload);
+      navigation?.replace('PostReview', { deal: createdDeal });
     } catch (err: any) {
-      Alert.alert('Post Failed', err.message || 'Something went wrong. Please try again.');
+      const message = err?.message ?? '';
+      if (message.includes('401') || message.includes('unauthorized') || message.includes('Unauthorized')) {
+        Alert.alert('Sign In Required', 'You need to sign in to post a deal.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign In', onPress: () => navigation?.navigate('Login') },
+        ]);
+      } else {
+        Alert.alert('Post Failed', message || 'Something went wrong. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
