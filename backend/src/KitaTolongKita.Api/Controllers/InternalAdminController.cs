@@ -80,6 +80,14 @@ public class InternalAdminController : ControllerBase
         var u = await _db.Users.FindAsync(id);
         if (u == null) return NotFound();
 
+        var totalDeals    = await _db.Deals.CountAsync(d => d.OrganizerId == id);
+        var totalLookups = await _db.DealLookups.CountAsync(l => l.UserId == id);
+        var totalSaved   = await _db.SavedDeals.CountAsync(s => s.UserId == id);
+        var totalReposts = await _db.DealReposts.CountAsync(r => r.UserId == id);
+        var followers     = await _db.UserFollows.CountAsync(f => f.FollowingId == id);
+        var following    = await _db.UserFollows.CountAsync(f => f.FollowerId == id);
+        var totalOrders  = await _db.DealOrders.CountAsync(o => o.BuyerId == id);
+
         return Ok(new
         {
             u.Id,
@@ -92,8 +100,18 @@ public class InternalAdminController : ControllerBase
             u.Bio,
             u.City,
             u.Website,
+            u.AvatarUrl,
             u.CreatedAt,
-            u.LastLoginAt
+            u.LastLoginAt,
+            stats = new {
+                totalDeals,
+                totalLookups,
+                totalSaved,
+                totalReposts,
+                totalOrders,
+                followers,
+                following,
+            }
         });
     }
 
@@ -115,6 +133,86 @@ public class InternalAdminController : ControllerBase
         u.EmailVerified = body.Verify;
         await _db.SaveChangesAsync();
         return Ok(new { message = "User verification updated." });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // FOLLOWERS / FOLLOWING
+    // ═══════════════════════════════════════════════════════════
+
+    [HttpGet("users/{userId:guid}/follow-stats")]
+    public async Task<IActionResult> GetFollowStats(Guid userId)
+    {
+        var followers = await _db.UserFollows.CountAsync(f => f.FollowingId == userId);
+        var following = await _db.UserFollows.CountAsync(f => f.FollowerId == userId);
+        return Ok(new { followers, following });
+    }
+
+    [HttpGet("users/{userId:guid}/followers")]
+    public async Task<IActionResult> GetFollowers(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        var q = _db.UserFollows.Include(f => f.Follower).Where(f => f.FollowingId == userId);
+        var total = await q.CountAsync();
+        var items = await q
+            .OrderByDescending(f => f.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(f => new
+            {
+                f.FollowerId,
+                FullName = f.Follower.FullName,
+                AvatarUrl = f.Follower.AvatarUrl,
+                f.CreatedAt
+            })
+            .ToListAsync();
+        return Ok(Page(items, total, page, pageSize));
+    }
+
+    [HttpGet("users/{userId:guid}/following")]
+    public async Task<IActionResult> GetFollowing(Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        var q = _db.UserFollows.Include(f => f.Following).Where(f => f.FollowerId == userId);
+        var total = await q.CountAsync();
+        var items = await q
+            .OrderByDescending(f => f.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(f => new
+            {
+                f.FollowingId,
+                FullName = f.Following.FullName,
+                AvatarUrl = f.Following.AvatarUrl,
+                f.CreatedAt
+            })
+            .ToListAsync();
+        return Ok(Page(items, total, page, pageSize));
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // USER RECENT ACTIVITY (from ActivityLog)
+    // ═══════════════════════════════════════════════════════════
+
+    [HttpGet("users/{userId:guid}/recent-activity")]
+    public async Task<IActionResult> GetRecentActivity(Guid userId, [FromQuery] int limit = 50)
+    {
+        var logs = await _db.ActivityLogs
+            .Where(l => l.UserId == userId)
+            .OrderByDescending(l => l.CreatedAt)
+            .Take(limit)
+            .Select(l => new
+            {
+                l.Id,
+                Category = l.Category.ToString(),
+                Level = l.Level.ToString(),
+                l.Action,
+                l.Message,
+                l.EntityType,
+                l.EntityId,
+                l.IpAddress,
+                l.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(new { items = logs, count = logs.Count });
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -431,9 +529,6 @@ public class InternalAdminController : ControllerBase
     {
         var q = _db.PushTokens.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(search))
-            q = q.Where(t => t.UserId != Guid.Empty);
-
         var total = await q.CountAsync();
         var tokens = await q
             .OrderByDescending(t => t.CreatedAt)
@@ -446,7 +541,7 @@ public class InternalAdminController : ControllerBase
                 t.Platform,
                 t.IsActive,
                 t.CreatedAt,
-                UserEmail = (string?)null
+                t.UserId
             })
             .ToListAsync();
 
@@ -501,7 +596,7 @@ public class InternalAdminController : ControllerBase
         if (!string.IsNullOrWhiteSpace(type) && Enum.TryParse<ReportType>(type, true, out var rt))
             q = q.Where(r => r.Type == rt);
         if (!string.IsNullOrWhiteSpace(reason))
-            q = q.Where(r => r.Description.Contains(reason));
+            q = q.Where(r => r.Description != null && r.Description.Contains(reason));
 
         var total = await q.CountAsync();
         var reports = await q
@@ -574,38 +669,4 @@ public class InternalAdminController : ControllerBase
         var byStatus = await _db.DealComments.GroupBy(c => c.ModerationStatus).Select(g => new { status = g.Key, count = g.Count() }).ToListAsync();
         return Ok(new { total, byStatus });
     }
-
-    // ═══════════════════════════════════════════════════════════
-    // USER ACTIVITY TIMELINE
-    // ═══════════════════════════════════════════════════════════
-
-    [HttpGet("users/{userId:guid}/activity")]
-    public async Task<IActionResult> GetUserActivity(Guid userId)
-    {
-        var user = await _db.Users.FindAsync(userId);
-        if (user == null) return NotFound();
-
-        var totalDealsPosted = await _db.Deals.CountAsync(d => d.OrganizerId == userId);
-        var totalOrdersPlaced = await _db.DealOrders.CountAsync(o => o.BuyerId == userId);
-        var totalSavedDeals = await _db.SavedDeals.CountAsync(s => s.UserId == userId);
-        var totalNotificationsReceived = await _db.UserNotifications.CountAsync(n => n.UserId == userId);
-
-        var dealActivities = await _db.Deals
-            .Where(d => d.OrganizerId == userId)
-            .OrderByDescending(d => d.CreatedAt)
-            .Take(10)
-            .Select(d => new { type = "deal_posted", summary = $"Posted deal: {d.Title}", at = d.CreatedAt })
-            .ToListAsync();
-
-        return Ok(new
-        {
-            totalDealsPosted,
-            totalOrdersPlaced,
-            totalSavedDeals,
-            totalNotificationsReceived,
-            createdAt = user.CreatedAt,
-            activities = dealActivities
-        });
-    }
 }
-
