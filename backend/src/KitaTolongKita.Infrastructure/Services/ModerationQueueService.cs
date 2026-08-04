@@ -7,6 +7,8 @@ using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
 
+// LogLevel, LogCategory used via Core.Entities namespace
+
 namespace KitaTolongKita.Infrastructure.Services;
 
 /// <summary>
@@ -63,6 +65,7 @@ public class ModerationQueueService : BackgroundService
         var moderation = scope.ServiceProvider.GetRequiredService<IModerationService>();
         var es = scope.ServiceProvider.GetRequiredService<IElasticsearchService>();
         var push = scope.ServiceProvider.GetService<IPushNotificationService>();
+        var activityLog = scope.ServiceProvider.GetService<IActivityLogService>();
 
         var deal = await db.Deals.FindAsync(new object[] { dealId }, ct);
         if (deal == null)
@@ -139,5 +142,26 @@ public class ModerationQueueService : BackgroundService
         _logger.LogInformation(
             "Deal {DealId} moderation complete: Score={Score}, Decision={Decision}",
             dealId, result.Score, deal.ModerationStatus);
+
+        var logLevel = deal.ModerationStatus == ModerationStatus.Rejected
+            ? LogLevel.Warning
+            : LogLevel.Info;
+
+        await activityLog?.LogAsync(
+            level: logLevel,
+            category: LogCategory.System,
+            action: "DealAutoModerated",
+            message: $"Deal '{deal.Title}' auto-moderated: score={result.Score}, decision={deal.ModerationStatus}, flags=[{string.Join(",", result.Flags)}]",
+            entityType: "Deal",
+            entityId: dealId,
+            userId: deal.OrganizerId,
+            metadata: System.Text.Json.JsonSerializer.Serialize(new
+            {
+                score = result.Score,
+                flags = result.Flags,
+                decision = deal.ModerationStatus.ToString(),
+                rejectReason = deal.ModerationRejectReason,
+                duplicateOf = deal.DuplicateOfDealId
+            })) ?? Task.CompletedTask;
     }
 }

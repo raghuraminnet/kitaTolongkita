@@ -16,6 +16,7 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokenService;
     private readonly IOtpService _otpService;
     private readonly ILogger<AuthService> _logger;
+    private readonly IActivityLogService _activityLog;
     private readonly bool _pilotModeEnabled;
     private readonly bool _skipEmailVerification;
 
@@ -24,12 +25,14 @@ public class AuthService : IAuthService
         ITokenService tokenService,
         IOtpService otpService,
         ILogger<AuthService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IActivityLogService activityLog)
     {
         _db = db;
         _tokenService = tokenService;
         _otpService = otpService;
         _logger = logger;
+        _activityLog = activityLog;
         _pilotModeEnabled = configuration.GetValue<bool>("PilotMode:Enabled", false);
         _skipEmailVerification = configuration.GetValue<bool>("PilotMode:SkipEmailVerification", false);
     }
@@ -57,6 +60,16 @@ public class AuthService : IAuthService
             await _otpService.GenerateOtpAsync(user.Email, user.Phone ?? "", OtpPurpose.EmailVerification);
         }
 
+        await _activityLog.LogAsync(
+            level: LogLevel.Info,
+            category: LogCategory.Auth,
+            action: "UserRegistered",
+            message: $"New user registered: {user.Email}",
+            entityType: "User",
+            entityId: user.Id,
+            userId: user.Id,
+            userEmail: user.Email);
+
         return CreateAuthResponse(user);
     }
 
@@ -66,7 +79,15 @@ public class AuthService : IAuthService
             ?? throw new UnauthorizedAccessException("Invalid email or password.");
 
         if (!VerifyPassword(request.Password, user.PasswordHash ?? ""))
+        {
+            await _activityLog.LogAsync(
+                level: LogLevel.Warning,
+                category: LogCategory.Auth,
+                action: "LoginFailed",
+                message: $"Failed login attempt for: {request.Email} — incorrect password",
+                userEmail: request.Email);
             throw new UnauthorizedAccessException("Invalid email or password.");
+        }
 
         if (!user.EmailVerified)
         {
@@ -85,6 +106,16 @@ public class AuthService : IAuthService
 
         user.LastLoginAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+
+        await _activityLog.LogAsync(
+            level: LogLevel.Info,
+            category: LogCategory.Auth,
+            action: "UserLogin",
+            message: $"User logged in: {user.Email}",
+            entityType: "User",
+            entityId: user.Id,
+            userId: user.Id,
+            userEmail: user.Email);
 
         return CreateAuthResponse(user);
     }
@@ -128,6 +159,16 @@ public class AuthService : IAuthService
 
         user.LastLoginAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+
+        await _activityLog.LogAsync(
+            level: LogLevel.Info,
+            category: LogCategory.Auth,
+            action: "UserLogin",
+            message: $"User logged in via Google: {user.Email}",
+            entityType: "User",
+            entityId: user.Id,
+            userId: user.Id,
+            userEmail: user.Email);
 
         return CreateAuthResponse(user);
     }

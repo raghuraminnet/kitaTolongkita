@@ -13,6 +13,7 @@ public class DealService : IDealService
     private readonly IElasticsearchService _es;
     private readonly ModerationQueueService _moderationQueue;
     private readonly ILogger<DealService> _logger;
+    private readonly IActivityLogService _activityLog;
     private readonly bool _pilotModeEnabled;
     private readonly bool _autoApproveDeals;
 
@@ -21,12 +22,14 @@ public class DealService : IDealService
         IElasticsearchService es,
         ModerationQueueService moderationQueue,
         ILogger<DealService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IActivityLogService activityLog)
     {
         _db = db;
         _es = es;
         _moderationQueue = moderationQueue;
         _logger = logger;
+        _activityLog = activityLog;
         _pilotModeEnabled = configuration.GetValue<bool>("PilotMode:Enabled", false);
         _autoApproveDeals = configuration.GetValue<bool>("PilotMode:AutoApproveDeals", false);
     }
@@ -151,6 +154,15 @@ public class DealService : IDealService
 
         _db.Deals.Add(deal);
         await _db.SaveChangesAsync();
+
+        await _activityLog.LogAsync(
+            level: LogLevel.Info,
+            category: LogCategory.Deal,
+            action: "DealCreated",
+            message: $"Deal created: {deal.Title} (RM{deal.GroupPrice}) — moderation: {deal.ModerationStatus}",
+            entityType: "Deal",
+            entityId: deal.Id,
+            userId: organizerId);
 
         // Index in ElasticSearch (async, don't block)
         // Use RefreshDealIndexAsync to ensure Organizer is loaded for correct OrganizerName in ES

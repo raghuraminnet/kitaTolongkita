@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using KitaTolongKita.Core.Entities;
+using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
 
 namespace KitaTolongKita.Infrastructure.Services;
@@ -45,12 +46,14 @@ public class LookupService : ILookupService
     private readonly AppDbContext _db;
     private readonly IPushNotificationService _push;
     private readonly ILogger<LookupService> _logger;
+    private readonly IActivityLogService _activityLog;
 
-    public LookupService(AppDbContext db, IPushNotificationService push, ILogger<LookupService> logger)
+    public LookupService(AppDbContext db, IPushNotificationService push, ILogger<LookupService> logger, IActivityLogService activityLog)
     {
         _db = db;
         _push = push;
         _logger = logger;
+        _activityLog = activityLog;
     }
 
     public async Task<LookupResultDto?> JoinDealAsync(Guid dealId, Guid userId, int quantity = 1)
@@ -96,6 +99,15 @@ public class LookupService : ILookupService
         }
 
         await _db.SaveChangesAsync();
+
+        await _activityLog.LogAsync(
+            level: LogLevel.Info,
+            category: LogCategory.Order,
+            action: "LookupCreated",
+            message: $"Lookup created: {bookingId} for deal {dealId} — quantity {quantity}",
+            entityType: "DealLookup",
+            entityId: lookup.Id,
+            userId: userId);
 
         // Notify contributor
         var contributor = await _db.Users.FindAsync(deal.OrganizerId);

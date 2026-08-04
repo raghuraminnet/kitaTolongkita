@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<Deal> Deals => Set<Deal>();
     public DbSet<DealOrder> DealOrders => Set<DealOrder>();
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
+    public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ConversationParticipant> ConversationParticipants => Set<ConversationParticipant>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();

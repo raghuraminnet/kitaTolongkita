@@ -1,6 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { api } from '@/lib/api'
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -23,6 +25,15 @@ const NAV = [
 export function Sidebar({ pendingCount = 0 }: { pendingCount?: number }) {
   const pathname = usePathname()
   const router = useRouter()
+  const [errorCount, setErrorCount] = useState(0)
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token')
+    if (!token) return
+    api.auditLogsStats()
+      .then((res: any) => { if (res?.error != null) setErrorCount(res.error) })
+      .catch(() => {})
+  }, [])
 
   const user = typeof window !== 'undefined'
     ? JSON.parse(localStorage.getItem('admin_user') || '{}')
@@ -49,6 +60,14 @@ export function Sidebar({ pendingCount = 0 }: { pendingCount?: number }) {
             {item.label}
             {item.badge && pendingCount > 0 && (
               <span className="badge">{pendingCount}</span>
+            )}
+            {item.href === '/audit-logs' && errorCount > 0 && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                minWidth: 18, height: 18, borderRadius: 9,
+                backgroundColor: '#FEE2E2', color: '#DC2626',
+                fontSize: 10, fontWeight: 700, padding: '0 4px', marginLeft: 4,
+              }}>{errorCount > 99 ? '99+' : errorCount}</span>
             )}
           </Link>
         ))}

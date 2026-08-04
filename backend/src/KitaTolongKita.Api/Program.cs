@@ -10,6 +10,7 @@ using Hellang.Middleware.ProblemDetails;
 using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
 using KitaTolongKita.Infrastructure.Services;
+using KitaTolongKita.Api.Middleware;
 
 // ── PostgreSQL DateTime fix: allow UTC DateTime without Kind=Utc ───────────────────────
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -42,6 +43,9 @@ builder.Services.AddSingleton<IElasticClient>(sp =>
         .EnableDebugMode();
     return new ElasticClient(settings);
 });
+
+// ── Activity Log Service ───────────────────────────────────────────────────
+builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 
 // ── HTTP Client for AI providers ───────────────────────────────────────────────
 builder.Services.AddHttpClient();
@@ -172,6 +176,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseExceptionHandling();
+app.UseRequestLogging();
 app.UseProblemDetails();
 app.UseCors("AllowMobile");
 

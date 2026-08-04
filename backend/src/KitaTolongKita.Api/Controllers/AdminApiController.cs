@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Entities;
+using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
 
 namespace KitaTolongKita.Api.Controllers;
@@ -19,11 +20,13 @@ public class AdminApiController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly ILogger<AdminApiController> _logger;
+    private readonly IActivityLogService _activityLog;
 
-    public AdminApiController(AppDbContext db, ILogger<AdminApiController> logger)
+    public AdminApiController(AppDbContext db, ILogger<AdminApiController> logger, IActivityLogService activityLog)
     {
         _db = db;
         _logger = logger;
+        _activityLog = activityLog;
     }
 
     private int AdminId
@@ -220,6 +223,14 @@ public class AdminApiController : ControllerBase
 
         await _db.SaveChangesAsync();
         _logger.LogInformation("Admin {AdminId} bulk moderation: {Action} on {Count} deals", AdminId, req.Action, succeeded);
+
+        await _activityLog.LogAsync(
+            level: LogLevel.Info,
+            category: LogCategory.Deal,
+            action: $"Deal{req.Action}",
+            message: $"Admin {AdminId} bulk-moderated deals: {req.Action} on {succeeded} deals",
+            metadata: System.Text.Json.JsonSerializer.Serialize(new { action = req.Action, dealIds = req.Ids, succeeded, failed = errors.Count }));
+
         return Ok(new { succeeded, failed = errors.Count, errors });
     }
 

@@ -15,17 +15,32 @@ interface Kpis {
   recentActivity: Array<{ action: string; entityType: string; entityId: number; summary: string; at: string }>
 }
 
+interface LogStats {
+  total: number
+  info: number
+  warning: number
+  error: number
+  critical: number
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [kpis, setKpis] = useState<Kpis | null>(null)
+  const [logStats, setLogStats] = useState<LogStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
     if (!token) { router.push('/'); return }
 
-    api.dashboard()
-      .then((res: any) => { if (res.success) setKpis(res.data); })
+    Promise.all([
+      api.dashboard(),
+      api.auditLogsStats(),
+    ])
+      .then(([dashRes, logRes]: [any, any]) => {
+        if (dashRes?.success) setKpis(dashRes.data)
+        if (logRes) setLogStats(logRes)
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -87,6 +102,24 @@ export default function DashboardPage() {
               <div className="kpi-icon">📈</div>
               <div className="kpi-value">{k.growthPercent > 0 ? `+${k.growthPercent}%` : k.growthPercent + '%'}</div>
               <div className="kpi-label">User Growth (7d)</div>
+            </div>
+            {/* System Health — from audit logs */}
+            <div
+              className="kpi-card"
+              style={{
+                borderLeft: (logStats?.error ?? 0) > 0 ? '3px solid #DC2626' : (logStats?.warning ?? 0) > 0 ? '3px solid #D97706' : '3px solid #10B981',
+                cursor: 'pointer',
+              }}
+              onClick={() => router.push('/audit-logs')}
+            >
+              <div className="kpi-icon">🛡️</div>
+              <div className="kpi-value" style={{ color: (logStats?.error ?? 0) > 0 ? '#DC2626' : '#374151' }}>
+                {logStats?.error ?? 0}
+              </div>
+              <div className="kpi-label">Errors (today)</div>
+              <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>
+                {logStats?.warning ?? 0} warnings · {logStats?.info ?? 0} info
+              </div>
             </div>
           </div>
 

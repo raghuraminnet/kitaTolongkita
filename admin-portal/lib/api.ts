@@ -119,9 +119,13 @@ export const api = {
     request('/settings', { method: 'PUT', body: JSON.stringify({ key, value }) }),
 
   // Audit logs
-  auditLogs: (params?: { action?: string; entityType?: string; page?: number; pageSize?: number }) => {
+  auditLogs: (params?: { category?: string; level?: string; action?: string; userId?: string; from?: string; to?: string; page?: number; pageSize?: number }) => {
     const q = new URLSearchParams(params as any).toString();
     return request(`/audit-logs${q ? '?' + q : ''}`);
+  },
+  auditLogsStats: (since?: string) => {
+    const q = since ? `?since=${since}` : '';
+    return request(`/audit-logs/stats${q}`);
   },
 
   // Reports
