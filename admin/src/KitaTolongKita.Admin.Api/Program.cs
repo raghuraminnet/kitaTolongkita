@@ -78,7 +78,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddControllers();
 builder.Services.AddCors(opts => opts.AddPolicy("AllowPortal", p =>
-    p.WithOrigins("http://76.13.219.191:3005", "http://76.13.219.191:3000")
+    p.SetIsOriginAllowed(_ => true)
         .AllowAnyMethod().AllowAnyHeader().AllowCredentials()));
 
 var app = builder.Build();
