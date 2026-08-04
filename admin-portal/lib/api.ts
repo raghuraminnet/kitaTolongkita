@@ -233,6 +233,10 @@ export const api = {
   approveComment: (id: string) => request(`/comments/${id}/approve`, { method: 'PATCH' }),
   deleteComment: (id: string) => request(`/comments/${id}`, { method: 'DELETE' }),
 
+  // ── User Recent Activity (from ActivityLog) ───────────────────────────────
+  recentActivity: (userId: string, limit = 50) =>
+    request(`/users/${userId}/recent-activity?limit=${limit}`),
+
   // ── User Follows (read-only) ────────────────────────────────────────────────
   userFollowStats: (userId: string) => request(`/users/${userId}/follow-stats`),
   userFollowers: (userId: string, page = 1, pageSize = 20) =>
