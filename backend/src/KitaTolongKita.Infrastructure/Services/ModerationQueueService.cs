@@ -6,8 +6,7 @@ using Microsoft.Extensions.Logging;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
-
-// LogLevel, LogCategory used via Core.Entities namespace
+using LogLevel = KitaTolongKita.Core.Entities.LogLevel;
 
 namespace KitaTolongKita.Infrastructure.Services;
 
@@ -147,7 +146,8 @@ public class ModerationQueueService : BackgroundService
             ? LogLevel.Warning
             : LogLevel.Info;
 
-        await activityLog?.LogAsync(
+        if (activityLog != null)
+            await activityLog.LogAsync(
             level: logLevel,
             category: LogCategory.System,
             action: "DealAutoModerated",
@@ -162,6 +162,6 @@ public class ModerationQueueService : BackgroundService
                 decision = deal.ModerationStatus.ToString(),
                 rejectReason = deal.ModerationRejectReason,
                 duplicateOf = deal.DuplicateOfDealId
-            })) ?? Task.CompletedTask;
+            }));
     }
 }

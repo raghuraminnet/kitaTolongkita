@@ -1,3 +1,4 @@
+using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Entities;
 
 namespace KitaTolongKita.Core.Interfaces;
@@ -70,23 +71,4 @@ public class LogStatsDto
     public int Warning { get; set; }
     public int Error { get; set; }
     public int Critical { get; set; }
-}
-
-/// <summary>Generic paginated result wrapper.</summary>
-public class PagedResult<T>
-{
-    public IEnumerable<T> Items { get; set; } = Enumerable.Empty<T>();
-    public int TotalCount { get; set; }
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
-
-    public PagedResult() { }
-    public PagedResult(IEnumerable<T> items, int total, int page, int pageSize)
-    {
-        Items = items;
-        TotalCount = total;
-        Page = page;
-        PageSize = pageSize;
-    }
 }

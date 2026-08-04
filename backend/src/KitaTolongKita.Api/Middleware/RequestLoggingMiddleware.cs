@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Claims;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Core.Interfaces;
+using LogLevel = KitaTolongKita.Core.Entities.LogLevel;
 
 namespace KitaTolongKita.Api.Middleware;
 
@@ -81,7 +82,7 @@ public class RequestLoggingMiddleware
                 );
 
                 _logger.Log(
-                    level == LogLevel.Error ? LogLevel.Warning : LogLevel.Information,
+                    level == LogLevel.Error ? Microsoft.Extensions.Logging.LogLevel.Warning : Microsoft.Extensions.Logging.LogLevel.Information,
                     "{Method} {Path} → {StatusCode} in {ElapsedMs}ms",
                     context.Request.Method, path, statusCode, stopwatch.ElapsedMilliseconds);
             }

@@ -10,7 +10,6 @@ using Hellang.Middleware.ProblemDetails;
 using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
 using KitaTolongKita.Infrastructure.Services;
-using KitaTolongKita.Api.Middleware;
 
 // ── PostgreSQL DateTime fix: allow UTC DateTime without Kind=Utc ───────────────────────
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);

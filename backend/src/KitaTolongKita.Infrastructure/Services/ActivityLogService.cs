@@ -1,9 +1,11 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
+using LogLevel = KitaTolongKita.Core.Entities.LogLevel;
 
 namespace KitaTolongKita.Infrastructure.Services;
 
@@ -122,7 +124,8 @@ public class ActivityLogService : IActivityLogService
             })
             .ToListAsync();
 
-        return new PagedResult<ActivityLogDto>(items, total, page, pageSize);
+        return new PagedResult<ActivityLogDto>(items, total, page, pageSize,
+            (int)Math.Ceiling(total / (double)pageSize));
     }
 
     public async Task<LogStatsDto> GetStatsAsync(DateTime? since = null)

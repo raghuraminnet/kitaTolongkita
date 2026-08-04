@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Core.Interfaces;
+using LogLevel = KitaTolongKita.Core.Entities.LogLevel;
 
 namespace KitaTolongKita.Api.Middleware;
 

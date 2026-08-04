@@ -6,6 +6,7 @@ using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
+using LogLevel = KitaTolongKita.Core.Entities.LogLevel;
 
 namespace KitaTolongKita.Api.Controllers;
 
