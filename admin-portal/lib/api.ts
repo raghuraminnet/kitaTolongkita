@@ -34,6 +34,16 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return json;
 }
 
+
+/** Strip undefined/null/empty before building query strings — prevents ?search=undefined */
+function cleanParams(params: Record<string, any>): string {
+  const cleaned: Record<string, string> = {};
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== '') cleaned[k] = String(v);
+  }
+  return new URLSearchParams(cleaned).toString();
+}
+
 export const api = {
   // Auth
   login: (email: string, password: string) =>
@@ -49,7 +59,7 @@ export const api = {
 
   // Users
   users: (params?: { search?: string; filter?: string; page?: number; pageSize?: number }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/users${q ? '?' + q : ''}`);
   },
   userDetail: (id: string) => request(`/users/${id}`),
@@ -60,7 +70,7 @@ export const api = {
   pendingDeals: (page = 1, pageSize = 20) =>
     request(`/deals/moderation/pending?page=${page}&pageSize=${pageSize}`),
   allDeals: (params?: { status?: string; search?: string; page?: number; pageSize?: number }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/deals${q ? '?' + q : ''}`);
   },
   approveDeal: (id: string) =>
@@ -72,7 +82,7 @@ export const api = {
 
   // App Deals (from main DB — read-only view for all deals in the app)
   appDeals: (params?: { status?: string; search?: string }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/app-deals${q ? '?' + q : ''}`);
   },
   appDealById: (id: string) =>
@@ -80,7 +90,7 @@ export const api = {
 
   // App Users (from main DB — read-only view for all app users)
   appUsers: (params?: { search?: string }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/app-users${q ? '?' + q : ''}`);
   },
   appUserById: (id: string) =>
@@ -88,7 +98,7 @@ export const api = {
 
   // Orders
   orders: (params?: { status?: string; search?: string; page?: number; pageSize?: number }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/orders${q ? '?' + q : ''}`);
   },
   orderDetail: (id: string) => request(`/orders/${id}`),
@@ -120,7 +130,7 @@ export const api = {
 
   // Audit logs
   auditLogs: (params?: { category?: string; level?: string; action?: string; userId?: string; from?: string; to?: string; page?: number; pageSize?: number }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/audit-logs${q ? '?' + q : ''}`);
   },
   auditLogsStats: (since?: string) => {
@@ -130,7 +140,7 @@ export const api = {
 
   // Reports
   reports: (params?: { status?: string; type?: string; reason?: string; from?: string; to?: string; page?: number; pageSize?: number }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/reports${q ? '?' + q : ''}`);
   },
   reportById: (id: string) => request(`/reports/${id}`),
@@ -165,21 +175,21 @@ export const api = {
 
   // ── Saved Lists ───────────────────────────────────────────────────────────────
   savedLists: (params?: { search?: string; page?: number; pageSize?: number }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/saved-lists${q ? '?' + q : ''}`);
   },
   savedListDetail: (id: string) => request(`/saved-lists/${id}`),
 
   // ── Notifications ────────────────────────────────────────────────────────────
   notifications: (params?: { type?: string; isRead?: boolean; page?: number; pageSize?: number }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/notifications${q ? '?' + q : ''}`);
   },
   notificationStats: () => request('/notifications/stats'),
 
   // ── Conversations / Chat ──────────────────────────────────────────────────────
   conversations: (params?: { search?: string; page?: number; pageSize?: number }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/conversations${q ? '?' + q : ''}`);
   },
   chatMessages: (conversationId: string, page = 1, pageSize = 50) =>
@@ -187,7 +197,7 @@ export const api = {
 
   // ── Push Tokens ─────────────────────────────────────────────────────────────
   pushTokens: (params?: { search?: string; page?: number; pageSize?: number }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/push-tokens${q ? '?' + q : ''}`);
   },
 
@@ -215,7 +225,7 @@ export const api = {
 
   // ── Comments Moderation ──────────────────────────────────────────────────────
   comments: (params?: { dealId?: string; userId?: string; status?: string; page?: number; pageSize?: number }) => {
-    const q = new URLSearchParams(params as any).toString();
+    const q = params ? cleanParams(params as Record<string, any>) : "";
     return request(`/comments${q ? '?' + q : ''}`);
   },
   commentStats: () => request('/comments/stats'),
