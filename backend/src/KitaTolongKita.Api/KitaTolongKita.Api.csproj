@@ -5,6 +5,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- Exclude backup/intermediate files from compilation -->
+  <ItemGroup>
+    <Compile Remove="**/*.bak" />
+    <Compile Remove="**/*.v2" />
+    <Compile Remove="**/*.tmp" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
