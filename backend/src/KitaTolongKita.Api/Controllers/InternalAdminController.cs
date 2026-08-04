@@ -609,6 +609,3 @@ public class InternalAdminController : ControllerBase
     }
 }
 
-public record ToggleStatusRequest(bool IsActive);
-public record VerifyUserRequest(bool Verify);
-public record UpdateOrderStatusRequest(string Status);
