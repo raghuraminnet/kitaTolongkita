@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using KitaTolongKita.Core.DTOs;
 using KitaTolongKita.Core.Entities;
@@ -18,11 +19,16 @@ public class ActivityLogService : IActivityLogService
 {
     private readonly AppDbContext _db;
     private readonly ILogger<ActivityLogService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public ActivityLogService(AppDbContext db, ILogger<ActivityLogService> logger)
+    public ActivityLogService(
+        AppDbContext db,
+        ILogger<ActivityLogService> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _db = db;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task LogAsync(
@@ -40,6 +46,11 @@ public class ActivityLogService : IActivityLogService
     {
         try
         {
+            // Create a fresh scope so we get our own DbContext — the
+            // caller's scope may be disposed by the time we reach SaveChanges.
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
             var entry = new ActivityLog
             {
                 Level = level,
@@ -56,8 +67,8 @@ public class ActivityLogService : IActivityLogService
                 CreatedAt = DateTime.UtcNow
             };
 
-            _db.ActivityLogs.Add(entry);
-            await _db.SaveChangesAsync();
+            db.ActivityLogs.Add(entry);
+            await db.SaveChangesAsync();
         }
         catch (Exception ex)
         {
