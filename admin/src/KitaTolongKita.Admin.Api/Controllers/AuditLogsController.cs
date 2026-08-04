@@ -51,6 +51,27 @@ public class AuditLogsController : ControllerBase
             total, page, pageSize, totalPages
         ));
     }
+
+    [HttpGet("stats")]
+    public async Task<IActionResult> GetStats([FromQuery] DateTime? since = null)
+    {
+        var q = _db.AuditLogs.AsQueryable();
+        if (since.HasValue)
+            q = q.Where(x => x.CreatedAt >= since.Value);
+
+        var total = await q.CountAsync();
+        var today = DateTime.UtcNow.Date;
+        var todayCount = await q.CountAsync(x => x.CreatedAt >= today);
+
+        return Ok(new
+        {
+            total,
+            today,
+            byAction = await q.GroupBy(x => x.Action)
+                .Select(g => new { action = g.Key, count = g.Count() })
+                .ToListAsync()
+        });
+    }
 }
 
 public record AuditLogItem(string Action, string EntityType, string EntityId, string AdminEmail, string? Details, DateTime At);
