@@ -102,7 +102,7 @@ public class InternalAdminController : ControllerBase
     {
         var u = await _db.Users.FindAsync(id);
         if (u == null) return NotFound();
-        u.Status = body.IsActive ? UserStatus.Active : UserStatus.Inactive;
+        u.Status = body.IsActive ? UserStatus.Active : UserStatus.Deleted;
         await _db.SaveChangesAsync();
         return Ok(new { message = "User status updated." });
     }
@@ -349,10 +349,10 @@ public class InternalAdminController : ControllerBase
                 n.Id,
                 n.Type,
                 n.Title,
-                n.Message,
+                n.Body,
                 n.IsRead,
                 n.CreatedAt,
-                n.RelatedEntityId
+                n.DataJson
             })
             .ToListAsync();
 
@@ -404,7 +404,7 @@ public class InternalAdminController : ControllerBase
         var q = _db.ChatMessages.Where(m => m.ConversationId == id);
         var total = await q.CountAsync();
         var msgs = await q
-            .OrderByDescending(m => m.SentAt)
+            .OrderByDescending(m => m.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(m => new
@@ -412,7 +412,7 @@ public class InternalAdminController : ControllerBase
                 m.Id,
                 m.SenderId,
                 m.Content,
-                m.SentAt
+                m.CreatedAt
             })
             .ToListAsync();
 
@@ -429,10 +429,10 @@ public class InternalAdminController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
-        var q = _db.PushTokens.Include(t => t.User).AsQueryable();
+        var q = _db.PushTokens.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
-            q = q.Where(t => t.User != null && t.User.Email.Contains(search));
+            q = q.Where(t => t.UserId != Guid.Empty);
 
         var total = await q.CountAsync();
         var tokens = await q
@@ -446,7 +446,7 @@ public class InternalAdminController : ControllerBase
                 t.Platform,
                 t.IsActive,
                 t.CreatedAt,
-                UserEmail = t.User != null ? t.User.Email : null
+                UserEmail = (string?)null
             })
             .ToListAsync();
 
@@ -501,7 +501,7 @@ public class InternalAdminController : ControllerBase
         if (!string.IsNullOrWhiteSpace(type) && Enum.TryParse<ReportType>(type, true, out var rt))
             q = q.Where(r => r.Type == rt);
         if (!string.IsNullOrWhiteSpace(reason))
-            q = q.Where(r => r.Reason.Contains(reason));
+            q = q.Where(r => r.Description.Contains(reason));
 
         var total = await q.CountAsync();
         var reports = await q
@@ -512,7 +512,7 @@ public class InternalAdminController : ControllerBase
             {
                 r.Id,
                 Type = r.Type.ToString(),
-                r.Reason,
+                r.Description,
                 Status = r.Status.ToString(),
                 r.CreatedAt
             })
