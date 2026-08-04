@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -119,6 +121,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// ── Internal API Key authentication (for admin-to-api calls) ────────────────
+var internalKey = builder.Configuration["InternalApiKey"] ?? "kita-internal-service-key-2024";
+builder.Services.AddAuthentication()
+    .AddScheme<AuthenticationSchemeOptions, InternalApiKeyAuthHandler>(
+        "InternalApiKey", opts => { });
 
 // ── API ─────────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();

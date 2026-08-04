@@ -16,7 +16,7 @@ namespace KitaTolongKita.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/admin")]
-[Authorize]
+[Authorize(AuthenticationSchemes = "InternalApiKey")]
 public class AdminApiController : ControllerBase
 {
     private readonly AppDbContext _db;
