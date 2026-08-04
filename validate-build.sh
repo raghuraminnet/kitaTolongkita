@@ -33,7 +33,7 @@ if [ -f "$ROOT/admin-portal/package.json" ]; then
     if [ ! -d "$ROOT/admin-portal/node_modules" ]; then
         echo "  ⚠️  node_modules missing — run npm install first"
     else
-        npx next build --no-lint 2>&1 | tee /tmp/frontend-build.log | tail -20
+        npx next build  2>&1 | tee /tmp/frontend-build.log | tail -20
         if grep -q "error" /tmp/frontend-build.log | grep -v "warning"; then
             echo "❌ Frontend build FAILED — fix errors before pushing"
             exit 1
