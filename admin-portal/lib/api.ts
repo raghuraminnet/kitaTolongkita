@@ -45,14 +45,14 @@ function cleanParams(params: Record<string, any>): string {
 }
 
 export const api = {
-  // Auth
+  // Auth (admin area — moved to /api/admin/auth/* after merge)
   login: (email: string, password: string) =>
     request<ApiResponse<{ accessToken: string; fullName: string; role: string; expiresIn: number }>>(
-      '/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }
+      '/admin/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }
     ),
-  me: () => request<any>('/auth/me'),
+  me: () => request<any>('/admin/auth/me'),
   changePassword: (oldPassword: string, newPassword: string) =>
-    request('/auth/change-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) }),
+    request('/admin/auth/change-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) }),
 
   // Dashboard
   dashboard: () => request('/dashboard'),

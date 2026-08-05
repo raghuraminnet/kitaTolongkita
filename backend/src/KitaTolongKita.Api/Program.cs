@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -105,7 +106,14 @@ var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "KitaTolongKita_SuperSecr
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "KitaTolongKita";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "KitaTolongKitaApp";
 
+var adminJwtSecret = builder.Configuration["Jwt:AdminSecret"]
+    ?? "KitaTolongKita-Admin-Secret-Key-2024-LongerThan32Chars!";
+var adminJwtIssuer = builder.Configuration["Jwt:AdminIssuer"] ?? "KitaTolongKitaAdmin";
+var adminJwtAudience = builder.Configuration["Jwt:AdminAudience"] ?? "KitaTolongKitaAdminPortal";
+
+// Mobile app JWT (default scheme)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    // Mobile app JWT — registered as default "Bearer" so existing [Authorize] attrs work unchanged
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -118,9 +126,34 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
         };
+    })
+    // Admin portal JWT — named "AdminJwt" so admin controllers must explicitly opt-in
+    .AddJwtBearer("AdminJwt", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = adminJwtIssuer,
+            ValidAudience = adminJwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(adminJwtSecret))
+        };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(opts =>
+{
+    opts.AddPolicy("SuperAdmin", p => p.RequireRole("SuperAdmin"));
+    opts.AddPolicy("Moderator", p => p.RequireRole("SuperAdmin", "Moderator"));
+    opts.AddPolicy("Viewer", p => p.RequireRole("SuperAdmin", "Moderator", "Viewer"));
+    // Allows either AdminJwt (admin portal) OR InternalApiKey (internal microservices)
+    opts.AddPolicy("AdminOrInternal", p =>
+        p.RequireAuthenticatedUser()); // AuthN handled by scheme selection below
+});
+
+// Custom policy that allows either AdminJwt OR InternalApiKey authentication
+builder.Services.AddSingleton<IAuthorizationHandler, AdminOrInternalAuthHandler>();
 
 // ── Internal API Key authentication (for admin-to-api calls) ────────────────
 var internalKey = builder.Configuration["InternalApiKey"] ?? "kita-internal-service-key-2024";

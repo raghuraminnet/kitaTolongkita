@@ -76,6 +76,9 @@ services:
       Jwt__Issuer: KitaTolongKita
       Jwt__Audience: KitaTolongKitaApp
       Jwt__AccessTokenExpiryMinutes: "60"
+      Jwt__AdminSecret: ${JWT_ADMIN_SECRET:-KitaTolongKita-Admin-Secret-Key-2024-LongerThan32Chars!}
+      Jwt__AdminIssuer: ${JWT_ADMIN_ISSUER:-KitaTolongKitaAdmin}
+      Jwt__AdminAudience: ${JWT_ADMIN_AUDIENCE:-KitaTolongKitaAdminPortal}
       InternalApiKey: "${INTERNAL_API_KEY:-kita-internal-service-key-2024}"
       AI__BaseUrl: "" # Override for OpenAI-compatible APIs (e.g. https://api.groq.com, https://openrouter.ai)
       App__Port: "5000"
@@ -87,42 +90,22 @@ services:
       elasticsearch:
         condition: service_healthy
 
-  # ── Admin API (port 5001 — public) ─────────────────────────────────────────
-  admin-api:
-    build:
-      context: ./admin
-      dockerfile: Dockerfile
-    container_name: kita-admin-api
-    restart: unless-stopped
-    environment:
-      ConnectionStrings__Default: Host=postgres;Database=kitatolongkita_admin;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
-      Redis__Url: redis://redis:6379
-      Jwt__Secret: ${JWT_SECRET:-KitaTolongKita_SuperSecretKey_MinLength32Chars!}
-      Jwt__Issuer: KitaTolongKitaAdmin
-      Jwt__Audience: KitaTolongKitaAdminPortal
-      Jwt__AccessTokenExpiryMinutes: "480"
-      InternalApiKey: "${INTERNAL_API_KEY:-kita-internal-service-key-2024}"
-      MainApi__BaseUrl: "http://kita-api:5000/api"
-      App__Port: "5001"
-    ports:
-      - "5001:5001"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   # ── Admin Portal Web (port 3005 — public) ────────────────────────────────
+  # After merge: admin API is now part of the main Kita API (port 5000).
+  # Admin auth moved to /api/admin/auth/* — frontend updated accordingly.
   admin-portal:
     build:
       context: ./admin-portal
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://76.13.219.191:5001/api
+        # Updated to merged Kita API (port 5000) — admin routes moved to /api/admin/auth/*
+        NEXT_PUBLIC_API_URL: http://76.13.219.191:5000/api
     container_name: kita-admin-portal
     restart: unless-stopped
     ports:
       - "3005:3005"
     depends_on:
-      - admin-api
+      - api
 
 volumes:
   postgres_data:
