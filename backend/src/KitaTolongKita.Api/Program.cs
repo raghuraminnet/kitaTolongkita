@@ -201,7 +201,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowMobile", policy =>
     {
-        policy.WithOrigins("exp://*", "http://localhost:*", "https://*.serveousercontent.com")
+        policy.SetIsOriginAllowed(_ => true)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
