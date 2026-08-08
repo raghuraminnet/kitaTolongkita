@@ -16,8 +16,9 @@ namespace KitaTolongKita.Api.Controllers.AdminArea;
 /// All endpoints here do direct DB access — zero HTTP overhead.
 /// </summary>
 [ApiController]
-[Route("api")]
+[Route("api/admin-portal")]
 [Authorize(Policy = "AdminOrInternal")]
+#pragma warning disable IDE0055 // Disabling formatter for this file
 public class AdminPortalController : ControllerBase
 {
     private readonly AppDbContext _db;
