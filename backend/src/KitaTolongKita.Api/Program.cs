@@ -233,62 +233,64 @@ app.MapControllers();
 //  1. If DB is completely empty  → EnsureCreated() lays down all tables from current model
 //  2. If DB exists but stale      → Migrate() applies any pending EF migrations
 // This survives volume wipes without needing `dotnet ef` CLI in the container.
-using (var scope = app.Services.CreateScope())
+await using var scope = app.Services.CreateScope();
+var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+bool dbExisted = false;
+try
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    dbExisted = db.Database.CanConnect();
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "Cannot connect to PostgreSQL — ensure the postgres container is running.");
+    throw; // Fail fast — nothing works without the DB
+}
 
-    bool dbExisted = false;
+if (dbExisted)
+{
     try
     {
-        // Check if we can connect at all
-        dbExisted = db.Database.CanConnect();
+        // Use ADO.NET directly — SqlQuery<int> wraps in SELECT t."Value" which breaks
+        var tableCount = 0;
+        await using (var cmd = db.Database.GetDbConnection().CreateCommand())
+        {
+            cmd.CommandText = "SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'";
+            await db.Database.GetDbConnection().OpenAsync();
+            var result = await cmd.ExecuteScalarAsync();
+            tableCount = Convert.ToInt32(result);
+        }
+
+        if (tableCount == 0)
+        {
+            logger.LogWarning("Database is empty — running EnsureCreated() to create all tables...");
+            db.Database.EnsureCreated();
+            logger.LogInformation("EnsureCreated() succeeded — all tables created.");
+        }
+        else
+        {
+            logger.LogInformation("Database has {TableCount} tables — running pending migrations...", tableCount);
+            db.Database.Migrate();
+            logger.LogInformation("Migrate() succeeded — all migrations applied.");
+        }
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Cannot connect to PostgreSQL — ensure the postgres container is running.");
-        throw; // Fail fast — nothing works without the DB
+        logger.LogError(ex, "Database migration failed. Tables may be out of sync with the current model.");
+        throw; // Fail fast so the container restarts and retries
     }
+}
 
-    if (dbExisted)
-    {
-        try
-        {
-            // Check if any tables exist by trying to count them
-            var tableCount = db.Database.SqlQuery<int>(
-                $"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'")
-                .FirstOrDefault();
-
-            if (tableCount == 0)
-            {
-                logger.LogWarning("Database is empty — running EnsureCreated() to create all tables...");
-                db.Database.EnsureCreated();
-                logger.LogInformation("EnsureCreated() succeeded — all tables created.");
-            }
-            else
-            {
-                logger.LogInformation("Database has {TableCount} tables — running pending migrations...", tableCount);
-                db.Database.Migrate();
-                logger.LogInformation("Migrate() succeeded — all migrations applied.");
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Database migration failed. Tables may be out of sync with the current model.");
-            throw; // Fail fast so the container restarts and retries
-        }
-    }
-
-    // Ensure Elasticsearch index exists
-    try
-    {
-        var es = scope.ServiceProvider.GetRequiredService<IElasticsearchService>();
-        await es.EnsureIndexExistsAsync();
-    }
-    catch (Exception ex)
-    {
-        logger.LogWarning(ex, "Elasticsearch not available — search may be limited.");
-    }
+// Ensure Elasticsearch index exists
+try
+{
+    var es = scope.ServiceProvider.GetRequiredService<IElasticsearchService>();
+    await es.EnsureIndexExistsAsync();
+}
+catch (Exception ex)
+{
+    logger.LogWarning(ex, "Elasticsearch not available — search may be limited.");
 }
 
 app.Run($"http://0.0.0.0:{builder.Configuration["App:Port"] ?? "5000"}");
