@@ -229,14 +229,55 @@ app.UseAuthorization();
 app.MapControllers();
 
 // ── Auto-migrate on startup ───────────────────────────────────────────────────
+// Safe migration strategy:
+//  1. If DB is completely empty  → EnsureCreated() lays down all tables from current model
+//  2. If DB exists but stale      → Migrate() applies any pending EF migrations
+// This survives volume wipes without needing `dotnet ef` CLI in the container.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    try { db.Database.Migrate(); }
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    bool dbExisted = false;
+    try
+    {
+        // Check if we can connect at all
+        dbExisted = db.Database.CanConnect();
+    }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogWarning(ex, "Database connection failed — ensure PostgreSQL is running.");
+        logger.LogError(ex, "Cannot connect to PostgreSQL — ensure the postgres container is running.");
+        throw; // Fail fast — nothing works without the DB
+    }
+
+    if (dbExisted)
+    {
+        try
+        {
+            // Check if any tables exist by trying to count them
+            var tableCount = db.Database.SqlQuery<int>(@"
+                SELECT COUNT(*) FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_type = 'BASE TABLE'")
+                .FirstOrDefault();
+
+            if (tableCount == 0)
+            {
+                logger.LogWarning("Database is empty — running EnsureCreated() to create all tables...");
+                db.Database.EnsureCreated();
+                logger.LogInformation("EnsureCreated() succeeded — all tables created.");
+            }
+            else
+            {
+                logger.LogInformation("Database has {TableCount} tables — running pending migrations...", tableCount);
+                db.Database.Migrate();
+                logger.LogInformation("Migrate() succeeded — all migrations applied.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Database migration failed. Tables may be out of sync with the current model.");
+            throw; // Fail fast so the container restarts and retries
+        }
     }
 
     // Ensure Elasticsearch index exists
@@ -247,7 +288,6 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogWarning(ex, "Elasticsearch not available — search may be limited.");
     }
 }
