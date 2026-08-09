@@ -255,9 +255,8 @@ using (var scope = app.Services.CreateScope())
         try
         {
             // Check if any tables exist by trying to count them
-            var tableCount = db.Database.SqlQuery<int>(@"
-                SELECT COUNT(*) FROM information_schema.tables
-                WHERE table_schema = 'public' AND table_type = 'BASE TABLE'")
+            var tableCount = db.Database.SqlQuery<int>(
+                $"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'")
                 .FirstOrDefault();
 
             if (tableCount == 0)
