@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Avatar } from '../../components';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { chatApi } from '../../api/chat';
 import type { ConversationDto, ChatMessageDto } from '../../api/chat';
@@ -38,7 +38,7 @@ export const ChatInboxScreen: React.FC = () => {
     },
     backBtn: { fontSize: 24, color: colors['on-surface'] },
     headerTitle: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700',
+      fontFamily: DISPLAY_FONT, fontSize: 18, fontWeight: '800',
       color: colors['on-background'],
     },
     newChatBtn: { fontSize: 22 },
@@ -52,15 +52,15 @@ export const ChatInboxScreen: React.FC = () => {
     convContent: { flex: 1, marginLeft: spacing.md },
     convHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
     convName: {
-      fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600',
+      fontFamily: DISPLAY_FONT, fontSize: 16, fontWeight: '700',
       color: colors['on-surface'],
     },
     convTime: {
-      fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'],
+      fontFamily: BODY_FONT, fontSize: 12, color: colors['on-surface-variant'],
     },
     convFooter: { flexDirection: 'row', alignItems: 'center' },
     convLastMessage: {
-      flex: 1, fontFamily: 'Inter_400Regular', fontSize: 14,
+      flex: 1, fontFamily: BODY_FONT, fontSize: 14,
       color: colors['on-surface-variant'],
     },
     unreadBadge: {
@@ -69,17 +69,17 @@ export const ChatInboxScreen: React.FC = () => {
       marginLeft: spacing.sm,
     },
     unreadText: {
-      fontFamily: 'Inter_600SemiBold', fontSize: 11, fontWeight: '600',
+      fontFamily: BODY_FONT, fontSize: 11, fontWeight: '700',
       color: colors.white,
     },
     empty: { alignItems: 'center', paddingTop: 80 },
     emptyEmoji: { fontSize: 56, marginBottom: spacing.md },
     emptyTitle: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
+      fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: '800',
       color: colors['on-background'], marginBottom: spacing.xs,
     },
     emptySubtitle: {
-      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
+      fontFamily: BODY_FONT, fontSize: 14, color: colors['on-surface-variant'],
     },
     // Thread view
     threadHeader: {
@@ -89,7 +89,7 @@ export const ChatInboxScreen: React.FC = () => {
       backgroundColor: colors['surface-container-lowest'],
     },
     threadTitle: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700',
+      fontFamily: DISPLAY_FONT, fontSize: 18, fontWeight: '800',
       color: colors['on-background'],
     },
     messageList: { padding: spacing.md, paddingBottom: spacing.xl },

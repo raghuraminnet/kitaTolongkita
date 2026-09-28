@@ -15,7 +15,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { useTheme } from '../../contexts/ThemeContext';
+import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { authApi, setAccessToken, getAccessToken, API_BASE } from '../../api/client';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -24,6 +25,7 @@ export const SignUpScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -143,89 +145,242 @@ export const SignUpScreen: React.FC = () => {
       }
       navigation.replace('ProfileSetup');
     } catch (err: any) {
+      console.error('Sign up error:', err);
       Alert.alert('Sign up failed', err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const s = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    scrollContent: {
+      padding: spacing.md,
+      paddingTop: Math.max(insets.top, spacing.md),
+      paddingBottom: Math.max(insets.bottom, spacing.xl),
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: isDark ? colors['surface-container'] : colors.white,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      ...shadows.card,
+    },
+    backBtnText: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors['on-surface'],
+      marginLeft: -2,
+    },
+    headerTitle: {
+      fontFamily: DISPLAY_FONT,
+      fontSize: 17,
+      fontWeight: '700',
+      color: colors['on-background'],
+    },
+    branding: {
+      alignItems: 'center',
+      marginBottom: spacing.lg,
+      paddingTop: spacing.xs,
+    },
+    brandTitle: {
+      fontFamily: DISPLAY_FONT,
+      fontSize: 26,
+      fontWeight: '800',
+      color: colors['on-background'],
+      marginBottom: 6,
+      textAlign: 'center',
+    },
+    brandSubtitle: {
+      fontFamily: BODY_FONT,
+      fontSize: 14,
+      color: colors['on-surface-variant'],
+      textAlign: 'center',
+      lineHeight: 20,
+      paddingHorizontal: spacing.sm,
+    },
+    avatarSection: {
+      alignItems: 'center',
+      marginBottom: spacing.lg,
+    },
+    avatarWrapper: {
+      width: 92,
+      height: 92,
+      borderRadius: 46,
+      position: 'relative',
+    },
+    avatarImage: {
+      width: 92,
+      height: 92,
+      borderRadius: 46,
+    },
+    avatarPlaceholder: {
+      width: 92,
+      height: 92,
+      borderRadius: 46,
+      backgroundColor: isDark ? colors['surface-container'] : colors['primary-subtle'],
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      borderColor: colors['primary-container'],
+    },
+    avatarPlaceholderIcon: { fontSize: 32 },
+    avatarCameraBadge: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: colors['primary-container'],
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: colors.background,
+      ...shadows.card,
+    },
+    avatarCameraIcon: { fontSize: 13 },
+    avatarHint: {
+      fontFamily: BODY_FONT,
+      fontSize: 12.5,
+      fontWeight: '700',
+      color: colors.primary,
+      marginTop: spacing.xs,
+    },
+    card: {
+      backgroundColor: isDark ? colors['surface-container'] : colors.white,
+      borderRadius: borderRadius.xl,
+      padding: 22,
+      marginBottom: spacing.lg,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      ...shadows.card,
+    },
+    input: { marginBottom: spacing.md },
+    terms: {
+      fontFamily: BODY_FONT,
+      fontSize: 12,
+      color: colors['on-surface-variant'],
+      textAlign: 'center',
+      lineHeight: 18,
+      paddingHorizontal: spacing.sm,
+    },
+    termsLink: { color: colors.primary, fontWeight: '600' },
+    loginRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    loginText: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 13.5,
+      color: colors['on-surface-variant'],
+    },
+    loginLink: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 13.5,
+      color: colors['primary-container'],
+      fontWeight: '600',
+    },
+  });
+
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top }]}
+      style={s.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>←</Text>
+        <View style={s.header}>
+          <TouchableOpacity
+            style={s.backBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Text style={s.backBtnText}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Account</Text>
+          <Text style={s.headerTitle}>Create Account</Text>
           <View style={{ width: 40 }} />
         </View>
 
         {/* Branding */}
-        <View style={styles.branding}>
-          <Text style={styles.brandTitle}>Join KitaTolongKita 🤝</Text>
-          <Text style={styles.brandSubtitle}>
-            Create your account to start group buying with your community
+        <View style={s.branding}>
+          <Text style={s.brandTitle}>Join KitaTolongKita 🤝</Text>
+          <Text style={s.brandSubtitle}>
+            Unlock huge community savings on groceries, makan & everyday essentials
           </Text>
         </View>
 
         {/* Avatar Upload */}
-        <View style={styles.avatarSection}>
-          <TouchableOpacity style={styles.avatarWrapper} onPress={pickAvatar} activeOpacity={0.8}>
+        <View style={s.avatarSection}>
+          <TouchableOpacity style={s.avatarWrapper} onPress={pickAvatar} activeOpacity={0.8}>
             {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+              <Image source={{ uri: avatarUri }} style={s.avatarImage} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarPlaceholderIcon}>📷</Text>
+              <View style={s.avatarPlaceholder}>
+                <Text style={s.avatarPlaceholderIcon}>📷</Text>
               </View>
             )}
-            <View style={styles.avatarCameraBadge}>
-              <Text style={styles.avatarCameraIcon}>📸</Text>
+            <View style={s.avatarCameraBadge}>
+              <Text style={s.avatarCameraIcon}>📸</Text>
             </View>
           </TouchableOpacity>
-          <Text style={styles.avatarHint}>Tap to add profile photo</Text>
+          <Text style={s.avatarHint}>Add a profile photo</Text>
         </View>
 
-        {/* Form */}
-        <View style={styles.form}>
+        {/* Form Card */}
+        <View style={s.card}>
           <Input
             label="Full Name"
+            placeholder="e.g. Aiman Harith"
             value={name}
             onChangeText={setName}
             prefix="👤"
-            containerStyle={styles.input}
+            containerStyle={s.input}
           />
           <Input
             label="Email"
+            placeholder="name@email.com"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             prefix="📧"
-            containerStyle={styles.input}
+            containerStyle={s.input}
           />
           <Input
             label="Password"
+            placeholder="At least 8 characters"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             prefix="🔒"
-            containerStyle={styles.input}
+            containerStyle={s.input}
           />
           <Input
             label="Confirm Password"
+            placeholder="Re-enter password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
             prefix="🔒"
-            containerStyle={styles.input}
+            containerStyle={s.input}
           />
           <Button
             title="Create Account"
@@ -235,68 +390,22 @@ export const SignUpScreen: React.FC = () => {
           />
         </View>
 
+        {/* Switch to Login */}
+        <View style={s.loginRow}>
+          <Text style={s.loginText}>Already have an account? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+            <Text style={s.loginLink}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Terms */}
-        <Text style={styles.terms}>
+        <Text style={s.terms}>
           By creating an account, you agree to our{' '}
-          <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-          <Text style={styles.termsLink}>Privacy Policy</Text>
+          <Text style={s.termsLink}>Terms of Service</Text> and{' '}
+          <Text style={s.termsLink}>Privacy Policy</Text>
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { padding: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xl },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: spacing.xl,
-  },
-  backBtn: { fontSize: 24, color: colors['on-surface'] },
-  headerTitle: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700',
-    color: colors['on-background'],
-  },
-  branding: { marginBottom: spacing.lg },
-  brandTitle: {
-    fontFamily: 'NunitoSans_800ExtraBold', fontSize: 28, fontWeight: '800',
-    color: colors['on-background'], marginBottom: spacing.sm, lineHeight: 36,
-  },
-  brandSubtitle: {
-    fontFamily: 'Inter_400Regular', fontSize: 15, color: colors['on-surface-variant'],
-    lineHeight: 22,
-  },
-  avatarSection: { alignItems: 'center', marginBottom: spacing.xl },
-  avatarWrapper: {
-    width: 88, height: 88, borderRadius: 44,
-    position: 'relative',
-  },
-  avatarImage: { width: 88, height: 88, borderRadius: 44 },
-  avatarPlaceholder: {
-    width: 88, height: 88, borderRadius: 44,
-    backgroundColor: colors['surface-container'],
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderStyle: 'dashed', borderColor: colors['outline-variant'],
-  },
-  avatarPlaceholderIcon: { fontSize: 28 },
-  avatarCameraBadge: {
-    position: 'absolute', bottom: 0, right: 0,
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: colors['primary-container'],
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: colors.background,
-  },
-  avatarCameraIcon: { fontSize: 12 },
-  avatarHint: {
-    ...typography['body-md'], color: colors['on-surface-variant'],
-    marginTop: spacing.xs,
-  },
-  form: { marginBottom: spacing.xl },
-  input: { marginBottom: spacing.md },
-  terms: {
-    fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'],
-    textAlign: 'center', lineHeight: 18,
-  },
-  termsLink: { color: colors['primary-container'], fontWeight: '600' },
-});

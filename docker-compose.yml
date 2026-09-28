@@ -70,7 +70,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Default: Host=postgres;Database=kitatolongkita;Username=postgres;Password=${POSTGRES_PASSWORD:-KitaTolongKita123}
-      Redis__Url: redis://redis:6379
+      Redis__Url: redis:6379
       ElasticSearch__Url: http://elasticsearch:9200
       Jwt__Secret: ${JWT_SECRET:-KitaTolongKita_SuperSecretKey_MinLength32Chars!}
       Jwt__Issuer: KitaTolongKita
@@ -83,7 +83,9 @@ services:
       AI__BaseUrl: "" # Override for OpenAI-compatible APIs (e.g. https://api.groq.com, https://openrouter.ai)
       App__Port: "5000"
     ports:
-      - "5000:5000"
+      - "5050:5000"
+    volumes:
+      - api_uploads:/app/wwwroot
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,15 +93,15 @@ services:
         condition: service_healthy
 
   # ── Admin Portal Web (port 3005 — public) ────────────────────────────────
-  # After merge: admin API is now part of the main Kita API (port 5000).
+  # After merge: admin API is now part of the main Kita API (port 5000 container / 5050 host).
   # Admin auth moved to /api/admin/auth/* — frontend updated accordingly.
   admin-portal:
     build:
       context: ./admin-portal
       dockerfile: Dockerfile
       args:
-        # Updated to merged Kita API (port 5000) — admin routes moved to /api/admin/auth/*
-        NEXT_PUBLIC_API_URL: http://76.13.219.191:5000/api
+        # Default to local API for development, override via NEXT_PUBLIC_API_URL for VPS deployment
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5050/api}
     container_name: kita-admin-portal
     restart: unless-stopped
     ports:
@@ -111,3 +113,4 @@ volumes:
   postgres_data:
   elasticsearch_data:
   redis_data:
+  api_uploads:

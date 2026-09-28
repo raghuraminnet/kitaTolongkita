@@ -18,7 +18,7 @@ public class ConfigReloadService : BackgroundService
     {
         _logger = logger;
         _cache = cache;
-        var redisUrl = config["Redis:Url"] ?? "redis://redis:6379";
+        var redisUrl = (config["Redis:Url"] ?? "redis:6379").Replace("redis://", "");
         try
         {
             var opts = ConfigurationOptions.Parse(redisUrl);

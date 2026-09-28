@@ -307,6 +307,39 @@ public class AdminPortalController : ControllerBase
         return Ok(Paged(deals, total, page, pageSize));
     }
 
+    [HttpPost("deals/moderation/{id:guid}/approve")]
+    public async Task<IActionResult> ApproveDeal(Guid id)
+    {
+        var deal = await _db.Deals.FindAsync(id);
+        if (deal == null) return NotFound();
+        deal.ModerationStatus = ModerationStatus.Approved;
+        deal.ModerationRejectReason = null;
+        deal.Status = DealStatus.Active;
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true, message = "Deal approved and published." });
+    }
+
+    [HttpPost("deals/moderation/{id:guid}/reject")]
+    public async Task<IActionResult> RejectDeal(Guid id, [FromBody] AdminPortalRejectRequest? body)
+    {
+        var deal = await _db.Deals.FindAsync(id);
+        if (deal == null) return NotFound();
+        deal.ModerationStatus = ModerationStatus.Rejected;
+        deal.ModerationRejectReason = body?.Reason ?? "Rejected by administrator.";
+        deal.Status = DealStatus.Cancelled;
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true, message = "Deal rejected." });
+    }
+
+    [HttpPatch("deals/{id:guid}/feature")]
+    public async Task<IActionResult> FeatureDeal(Guid id, [FromBody] AdminPortalFeatureRequest? body)
+    {
+        var deal = await _db.Deals.FindAsync(id);
+        if (deal == null) return NotFound();
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true, message = "Deal updated." });
+    }
+
     // ── ORDERS ───────────────────────────────────────────────────────────────
 
     [HttpGet("orders")]
@@ -553,3 +586,5 @@ public record ToggleStatusRequest(bool IsActive);
 public record VerifyUserRequest(bool Verify);
 public record UpdateOrderStatusRequest(string Status);
 public record BulkModerateRequest(List<string> Ids, string Action, string? Reason);
+public record AdminPortalRejectRequest(string? Reason = null);
+public record AdminPortalFeatureRequest(bool Featured = false);

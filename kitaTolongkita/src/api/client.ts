@@ -1,7 +1,8 @@
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import * as DemoMode from './demoMode';
 
-export const API_BASE = 'http://76.13.219.191:5000/api';
+export const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5050/api';
 
 // Global location ref — set by LocationContext
 export let _globalLat: number | null = null;
@@ -44,16 +45,53 @@ export async function getAccessToken(): Promise<string | null> {
     const loggedIn = await DemoMode.isDemoLoggedIn();
     return loggedIn ? 'demo-token' : null;
   }
-  return SecureStore.getItemAsync('accessToken');
+  if (Platform.OS === 'web') {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem('accessToken');
+      }
+    } catch {}
+    return null;
+  }
+  try {
+    return await SecureStore.getItemAsync('accessToken');
+  } catch {
+    return null;
+  }
 }
 
 export async function setAccessToken(token: string): Promise<void> {
-  await SecureStore.setItemAsync('accessToken', token);
+  if (Platform.OS === 'web') {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('accessToken', token);
+      }
+    } catch (e) {
+      console.warn('Failed to store accessToken in localStorage:', e);
+    }
+    return;
+  }
+  try {
+    await SecureStore.setItemAsync('accessToken', token);
+  } catch (e) {
+    console.warn('Failed to store accessToken in SecureStore:', e);
+  }
 }
 
 export async function clearTokens(): Promise<void> {
-  await SecureStore.deleteItemAsync('accessToken');
-  await SecureStore.deleteItemAsync('refreshToken');
+  if (Platform.OS === 'web') {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem('accessToken');
+        window.localStorage.removeItem('refreshToken');
+      }
+    } catch {}
+    return;
+  }
+  try {
+    await SecureStore.deleteItemAsync('accessToken');
+    await SecureStore.deleteItemAsync('refreshToken');
+  } catch {}
 }
 
 // ── Request wrapper ────────────────────────────────────────────────────────────

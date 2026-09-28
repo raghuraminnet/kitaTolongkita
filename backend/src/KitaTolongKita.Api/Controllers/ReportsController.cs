@@ -61,7 +61,7 @@ public class ReportsController : ControllerBase
 
     /// <summary>List all reports (admin only).</summary>
     [HttpGet]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer,AdminJwt")]
     public async Task<IActionResult> ListReports([FromQuery] ReportFilter filter)
     {
         var (items, total) = await _reports.ListAsync(filter);
@@ -70,7 +70,7 @@ public class ReportsController : ControllerBase
 
     /// <summary>Get a single report's full details (admin only).</summary>
     [HttpGet("{id:guid}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer,AdminJwt")]
     public async Task<IActionResult> GetReport(Guid id)
     {
         var dto = await _reports.GetByIdAsync(id);
@@ -79,7 +79,7 @@ public class ReportsController : ControllerBase
 
     /// <summary>Admin takes a corrective action on a report.</summary>
     [HttpPost("{id:guid}/action")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer,AdminJwt")]
     public async Task<IActionResult> TakeAction(Guid id, [FromBody] TakeReportActionRequest request)
     {
         var adminId = GetUserId();
@@ -98,7 +98,7 @@ public class ReportsController : ControllerBase
 
     /// <summary>Admin updates the status of a report (e.g. dismiss).</summary>
     [HttpPatch("{id:guid}/status")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer,AdminJwt")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateReportStatusRequest request)
     {
         var adminId = GetUserId();
@@ -122,7 +122,7 @@ public class ReportsController : ControllerBase
 
     /// <summary>Get report counts by status (for admin dashboard).</summary>
     [HttpGet("stats")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer,AdminJwt")]
     public async Task<IActionResult> GetStats()
     {
         var stats = await _db.Reports
@@ -149,7 +149,9 @@ public class ReportsController : ControllerBase
     private Guid? GetUserId()
     {
         var idStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(idStr, out var id) ? id : null;
+        if (Guid.TryParse(idStr, out var id)) return id;
+        if (int.TryParse(idStr, out var intId)) return new Guid(intId, 0, 0, new byte[8]);
+        return null;
     }
 }
 

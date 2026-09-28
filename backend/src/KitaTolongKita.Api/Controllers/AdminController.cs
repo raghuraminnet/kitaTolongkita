@@ -15,7 +15,7 @@ namespace KitaTolongKita.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/admin/moderation")]
-[Authorize] // TODO: add policy: require Role=Admin
+[Authorize(AuthenticationSchemes = "Bearer,AdminJwt")]
 public class AdminController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -182,7 +182,9 @@ public class AdminController : ControllerBase
     private Guid? GetAdminId()
     {
         var idStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(idStr, out var id) ? id : null;
+        if (Guid.TryParse(idStr, out var id)) return id;
+        if (int.TryParse(idStr, out var intId)) return new Guid(intId, 0, 0, new byte[8]);
+        return null;
     }
 }
 

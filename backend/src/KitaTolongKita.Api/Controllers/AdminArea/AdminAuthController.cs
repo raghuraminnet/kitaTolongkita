@@ -43,7 +43,16 @@ public class AdminAuthController : ControllerBase
         await _db.SaveChangesAsync();
 
         var token = GenerateJwt(user);
-        return Ok(new AdminLoginResponse(token, user.FullName, user.Role, 86400));
+        var loginData = new AdminLoginResponse(token, user.FullName, user.Role, 86400);
+        return Ok(new {
+            success = true,
+            message = "Login successful",
+            accessToken = token,
+            fullName = user.FullName,
+            role = user.Role,
+            expiresIn = 86400,
+            data = loginData
+        });
     }
 
     /// <summary>Get current admin user profile.</summary>

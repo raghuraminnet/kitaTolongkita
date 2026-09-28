@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -31,6 +31,26 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error(json.message || 'Request failed');
   }
 
+  if (json && typeof json === 'object' && !Array.isArray(json)) {
+    if (json.items && Array.isArray(json.items)) {
+      const dataArr: any = [...json.items];
+      dataArr.items = json.items;
+      dataArr.totalCount = json.totalCount ?? json.total ?? 0;
+      dataArr.total = json.totalCount ?? json.total ?? 0;
+      if (json.data === undefined) {
+        json.data = dataArr;
+      }
+      if (json.total === undefined && json.totalCount !== undefined) {
+        json.total = json.totalCount;
+      }
+    } else if (json.data === undefined) {
+      json.data = json;
+    }
+    if (json.success === undefined) {
+      json.success = true;
+    }
+  }
+
   return json;
 }
 
@@ -60,50 +80,50 @@ export const api = {
   // Users
   users: (params?: { search?: string; filter?: string; page?: number; pageSize?: number }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";
-    return request(`/users${q ? '?' + q : ''}`);
+    return request(`/admin-portal/users${q ? '?' + q : ''}`);
   },
-  userDetail: (id: string) => request(`/users/${id}`),
+  userDetail: (id: string) => request(`/admin-portal/users/${id}`),
   toggleUserStatus: (id: string, isActive: boolean) =>
-    request(`/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ isActive }) }),
+    request(`/admin-portal/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ isActive }) }),
 
   // Deals
   pendingDeals: (page = 1, pageSize = 20) =>
-    request(`/deals/moderation/pending?page=${page}&pageSize=${pageSize}`),
+    request(`/admin-portal/deals/moderation/pending?page=${page}&pageSize=${pageSize}`),
   allDeals: (params?: { status?: string; search?: string; page?: number; pageSize?: number }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";
-    return request(`/deals${q ? '?' + q : ''}`);
+    return request(`/admin-portal/deals${q ? '?' + q : ''}`);
   },
   approveDeal: (id: string) =>
-    request(`/deals/moderation/${id}/approve`, { method: 'POST' }),
+    request(`/admin-portal/deals/moderation/${id}/approve`, { method: 'POST' }),
   rejectDeal: (id: string, reason: string) =>
-    request(`/deals/moderation/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
+    request(`/admin-portal/deals/moderation/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
   featureDeal: (id: string, featured: boolean) =>
-    request(`/deals/${id}/feature`, { method: 'PATCH', body: JSON.stringify({ featured }) }),
+    request(`/admin-portal/deals/${id}/feature`, { method: 'PATCH', body: JSON.stringify({ featured }) }),
 
   // App Deals (from main DB — read-only view for all deals in the app)
   appDeals: (params?: { status?: string; search?: string }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";
-    return request(`/app-deals${q ? '?' + q : ''}`);
+    return request(`/admin-portal/app-deals${q ? '?' + q : ''}`);
   },
   appDealById: (id: string) =>
-    request(`/app-deals/${id}`),
+    request(`/admin-portal/app-deals/${id}`),
 
   // App Users (from main DB — read-only view for all app users)
   appUsers: (params?: { search?: string }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";
-    return request(`/app-users${q ? '?' + q : ''}`);
+    return request(`/admin-portal/app-users${q ? '?' + q : ''}`);
   },
   appUserById: (id: string) =>
-    request(`/app-users/${id}`),
+    request(`/admin-portal/app-users/${id}`),
 
   // Orders
   orders: (params?: { status?: string; search?: string; page?: number; pageSize?: number }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";
-    return request(`/orders${q ? '?' + q : ''}`);
+    return request(`/admin-portal/orders${q ? '?' + q : ''}`);
   },
-  orderDetail: (id: string) => request(`/orders/${id}`),
+  orderDetail: (id: string) => request(`/admin-portal/orders/${id}`),
   updateOrderStatus: (id: string, status: string) =>
-    request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    request(`/admin-portal/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   // AI Configs
   aiConfigs: () => request<ApiResponse<AiConfig[]>>('/ai-configs'),
@@ -173,40 +193,48 @@ export const api = {
   deleteAdminUser: (id: number) =>
     request(`/admin-users/${id}`, { method: 'DELETE' }),
 
+  // ── Contributors ────────────────────────────────────────────────────────────
+  contributors: (params?: { page?: number; size?: number }) => {
+    const q = params ? cleanParams(params as Record<string, any>) : "";
+    return request(`/admin/contributors${q ? '?' + q : ''}`);
+  },
+  revokeContributor: (userId: string) =>
+    request(`/admin/contributors/${userId}/revoke`, { method: 'PATCH' }),
+
   // ── Saved Lists ───────────────────────────────────────────────────────────────
   savedLists: (params?: { search?: string; page?: number; pageSize?: number }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";
-    return request(`/saved-lists${q ? '?' + q : ''}`);
+    return request(`/admin-portal/saved-lists${q ? '?' + q : ''}`);
   },
-  savedListDetail: (id: string) => request(`/saved-lists/${id}`),
+  savedListDetail: (id: string) => request(`/admin-portal/saved-lists/${id}`),
 
   // ── Notifications ────────────────────────────────────────────────────────────
   notifications: (params?: { type?: string; isRead?: boolean; page?: number; pageSize?: number }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";
-    return request(`/notifications${q ? '?' + q : ''}`);
+    return request(`/admin-portal/notifications${q ? '?' + q : ''}`);
   },
-  notificationStats: () => request('/notifications/stats'),
+  notificationStats: () => request('/admin-portal/notifications/stats'),
 
   // ── Conversations / Chat ──────────────────────────────────────────────────────
   conversations: (params?: { search?: string; page?: number; pageSize?: number }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";
-    return request(`/conversations${q ? '?' + q : ''}`);
+    return request(`/admin-portal/conversations${q ? '?' + q : ''}`);
   },
   chatMessages: (conversationId: string, page = 1, pageSize = 50) =>
-    request(`/conversations/${conversationId}/messages?page=${page}&pageSize=${pageSize}`),
+    request(`/admin-portal/conversations/${conversationId}/messages?page=${page}&pageSize=${pageSize}`),
 
   // ── Push Tokens ─────────────────────────────────────────────────────────────
   pushTokens: (params?: { search?: string; page?: number; pageSize?: number }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";
-    return request(`/push-tokens${q ? '?' + q : ''}`);
+    return request(`/admin-portal/push-tokens${q ? '?' + q : ''}`);
   },
 
   // ── Deal Statistics ──────────────────────────────────────────────────────────
-  dealStats: (days = 30) => request(`/stats/deals?days=${days}`),
+  dealStats: (days = 30) => request(`/admin-portal/stats/deals?days=${days}`),
 
   // ── Bulk Actions ─────────────────────────────────────────────────────────────
   bulkModerateDeals: (ids: string[], action: string, reason?: string) =>
-    request('/bulk/moderate-deals', {
+    request('/admin-portal/bulk/moderate-deals', {
       method: 'POST',
       body: JSON.stringify({ ids, action, reason }),
     }),
@@ -221,32 +249,32 @@ export const api = {
     request(`/categories/${id}`, { method: 'DELETE' }),
 
   // ── User Activity Timeline ────────────────────────────────────────────────────
-  userActivity: (userId: string) => request(`/users/${userId}/activity`),
+  userActivity: (userId: string) => request(`/admin-portal/users/${userId}/activity`),
 
   // ── Comments Moderation ──────────────────────────────────────────────────────
   comments: (params?: { dealId?: string; userId?: string; status?: string; page?: number; pageSize?: number }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";
-    return request(`/comments${q ? '?' + q : ''}`);
+    return request(`/admin-portal/comments${q ? '?' + q : ''}`);
   },
-  commentStats: () => request('/comments/stats'),
-  hideComment: (id: string) => request(`/comments/${id}/hide`, { method: 'PATCH' }),
-  approveComment: (id: string) => request(`/comments/${id}/approve`, { method: 'PATCH' }),
-  deleteComment: (id: string) => request(`/comments/${id}`, { method: 'DELETE' }),
+  commentStats: () => request('/admin-portal/comments/stats'),
+  hideComment: (id: string) => request(`/admin-portal/comments/${id}/hide`, { method: 'PATCH' }),
+  approveComment: (id: string) => request(`/admin-portal/comments/${id}/approve`, { method: 'PATCH' }),
+  deleteComment: (id: string) => request(`/admin-portal/comments/${id}`, { method: 'DELETE' }),
 
   // ── User Recent Activity (from ActivityLog) ───────────────────────────────
   recentActivity: (userId: string, limit = 50) =>
-    request(`/users/${userId}/recent-activity?limit=${limit}`),
+    request(`/admin-portal/users/${userId}/recent-activity?limit=${limit}`),
 
   // ── User Follows (read-only) ────────────────────────────────────────────────
-  userFollowStats: (userId: string) => request(`/users/${userId}/follow-stats`),
+  userFollowStats: (userId: string) => request(`/admin-portal/users/${userId}/follow-stats`),
   userFollowers: (userId: string, page = 1, pageSize = 20) =>
-    request(`/users/${userId}/followers?page=${page}&pageSize=${pageSize}`),
+    request(`/admin-portal/users/${userId}/followers?page=${page}&pageSize=${pageSize}`),
   userFollowing: (userId: string, page = 1, pageSize = 20) =>
-    request(`/users/${userId}/following?page=${page}&pageSize=${pageSize}`),
+    request(`/admin-portal/users/${userId}/following?page=${page}&pageSize=${pageSize}`),
 
   // ── User Verification ───────────────────────────────────────────────────────
   verifyUser: (userId: string, verify: boolean) =>
-    request(`/users/${userId}/verify`, { method: 'PATCH', body: JSON.stringify({ verify }) }),
+    request(`/admin-portal/users/${userId}/verify`, { method: 'PATCH', body: JSON.stringify({ verify }) }),
 };
 
 export interface AiConfig {

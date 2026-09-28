@@ -7,9 +7,10 @@ import {
   TextStyle,
   ActivityIndicator,
 } from 'react-native';
-import { colors, borderRadius, typography } from '../theme';
+import { typography, borderRadius } from '../theme';
+import { useTheme } from '../contexts/ThemeContext';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'emerald';
 
 interface ButtonProps {
   title: string;
@@ -19,6 +20,7 @@ interface ButtonProps {
   loading?: boolean;
   style?: ViewStyle;
   fullWidth?: boolean;
+  icon?: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -29,25 +31,46 @@ export const Button: React.FC<ButtonProps> = ({
   loading = false,
   style,
   fullWidth = false,
+  icon,
 }) => {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
 
   const getContainerStyle = (): ViewStyle => {
     const base: ViewStyle = {
       ...styles.base,
       ...(fullWidth ? { width: '100%' } : {}),
-      ...(isDisabled ? { opacity: 0.5 } : {}),
+      ...(isDisabled ? { opacity: 0.55 } : {}),
     };
 
     if (variant === 'primary') {
-      return { ...base, backgroundColor: colors['primary-container'] };
+      return {
+        ...base,
+        backgroundColor: colors['primary-container'],
+        shadowColor: colors['primary-container'],
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 4,
+      };
+    }
+    if (variant === 'emerald') {
+      return {
+        ...base,
+        backgroundColor: colors.secondary,
+        shadowColor: colors.secondary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 4,
+      };
     }
     if (variant === 'secondary') {
       return {
         ...base,
         backgroundColor: 'transparent',
         borderWidth: 1.5,
-        borderColor: colors.secondary,
+        borderColor: colors['outline'],
       };
     }
     return { ...base, backgroundColor: 'transparent' };
@@ -55,13 +78,12 @@ export const Button: React.FC<ButtonProps> = ({
 
   const getTextStyle = (): TextStyle => {
     const base: TextStyle = { ...styles.text };
-    if (isDisabled) return { ...base, opacity: 0.7 };
 
-    if (variant === 'primary') {
-      return { ...base, color: colors.white, fontWeight: '700' };
+    if (variant === 'primary' || variant === 'emerald') {
+      return { ...base, color: '#ffffff', fontWeight: '700' };
     }
     if (variant === 'secondary') {
-      return { ...base, color: colors.secondary, fontWeight: '600' };
+      return { ...base, color: colors['on-surface'], fontWeight: '600' };
     }
     return { ...base, color: colors['primary-container'], fontWeight: '600' };
   };
@@ -71,15 +93,18 @@ export const Button: React.FC<ButtonProps> = ({
       style={[getContainerStyle(), style]}
       onPress={onPress}
       disabled={isDisabled}
-      activeOpacity={0.8}
+      activeOpacity={0.82}
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'primary' ? colors.white : colors.secondary}
+          color={variant === 'primary' || variant === 'emerald' ? '#ffffff' : colors['primary-container']}
           size="small"
         />
       ) : (
-        <Text style={getTextStyle()}>{title}</Text>
+        <>
+          {icon}
+          <Text style={getTextStyle()}>{title}</Text>
+        </>
       )}
     </TouchableOpacity>
   );
@@ -87,16 +112,18 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   base: {
+    flexDirection: 'row',
     paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: borderRadius.lg,
+    paddingHorizontal: 20,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 48,
   },
   text: {
     ...typography['label-sm'],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 });

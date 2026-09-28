@@ -15,18 +15,16 @@ public class AdminOrInternalAuthHandler : AuthorizationHandler<AdminOrInternalRe
         AuthorizationHandlerContext context,
         AdminOrInternalRequirement requirement)
     {
-        // Succeed if authenticated via AdminJwt (admin portal browser session)
-        if (context.User.Identity?.AuthenticationType == "AdminJwt" && context.User.Identity.IsAuthenticated)
+        // Succeed if authenticated via AdminJwt or has Admin role
+        if (context.User.Identity?.IsAuthenticated == true)
         {
-            context.Succeed(requirement);
-            return Task.CompletedTask;
-        }
-
-        // Succeed if authenticated via InternalApiKey (internal microservices)
-        if (context.User.Identity?.AuthenticationType == "InternalApiKey" && context.User.Identity.IsAuthenticated)
-        {
-            context.Succeed(requirement);
-            return Task.CompletedTask;
+            if (context.User.Identity.AuthenticationType == "AdminJwt" ||
+                context.User.Identity.AuthenticationType == "InternalApiKey" ||
+                context.User.HasClaim(c => c.Type == ClaimTypes.Role && (c.Value == "SuperAdmin" || c.Value == "Moderator" || c.Value == "Viewer")))
+            {
+                context.Succeed(requirement);
+                return Task.CompletedTask;
+            }
         }
 
         // Also succeed if the user has the internal_service claim (set by InternalServiceAuthMiddleware)

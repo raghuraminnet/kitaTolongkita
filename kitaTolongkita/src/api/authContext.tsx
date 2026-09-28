@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import { authApi } from '../api/client';
+import { authApi, getAccessToken, setAccessToken, clearTokens } from '../api/client';
 import * as DemoMode from '../api/demoMode';
 import type { User } from '../api/client';
 
@@ -54,13 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Normal token restore
-      const stored = await SecureStore.getItemAsync('accessToken');
+      const stored = await getAccessToken();
       if (!stored) { setLoading(false); return; }
       setToken(stored);
       const me = await authApi.getMe();
       setUser(me);
     } catch {
-      await SecureStore.deleteItemAsync('accessToken');
+      await clearTokens();
       setToken(null);
       setUser(null);
     } finally {
@@ -76,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (demoUser) setUser(demoUser);
       return;
     }
-    await SecureStore.setItemAsync('accessToken', newToken);
+    await setAccessToken(newToken);
     setToken(newToken);
     setIsDemo(false);
     try {
@@ -95,8 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsDemo(false);
       return;
     }
-    await SecureStore.deleteItemAsync('accessToken');
-    await SecureStore.deleteItemAsync('refreshToken');
+    await clearTokens();
     setToken(null);
     setUser(null);
     setIsDemo(false);

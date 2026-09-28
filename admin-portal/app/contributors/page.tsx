@@ -23,25 +23,20 @@ export default function ContributorsPage() {
 
   const loadContributors = () => {
     setLoading(true)
-    const token = localStorage.getItem('admin_token')
-    if (!token) { router.push('/'); return }
-    // The backend has GET /api/admin/contributors
-    fetch(`${process.env.NEXT_PUBLIC_ADMIN_API_URL || 'http://localhost:5001'}/api/admin/contributors?page=${page}&size=${pageSize}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(r => r.json()).then((res: any) => {
-      setContributors(res.items || [])
-      setTotal(res.totalCount || 0)
-    }).catch(() => {}).finally(() => setLoading(false))
+    api.contributors({ page, size: pageSize })
+      .then((res: any) => {
+        setContributors(res.items || res.data || [])
+        setTotal(res.totalCount || res.total || 0)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }
 
   const handleRevoke = async (userId: string) => {
     if (!confirm('Revoke contributor status? This user will no longer be able to post group buy deals.')) return
     setRevoking(userId)
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_ADMIN_API_URL || 'http://localhost:5001'}/api/admin/contributors/${userId}/revoke`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` }
-      })
+      await api.revokeContributor(userId)
       loadContributors()
     } catch {}
     finally { setRevoking(null) }

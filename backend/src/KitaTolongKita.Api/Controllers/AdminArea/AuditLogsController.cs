@@ -7,7 +7,7 @@ using KitaTolongKita.Infrastructure.Data;
 namespace KitaTolongKita.Api.Controllers.AdminArea;
 
 [ApiController]
-[Route("api/audit-logs")]
+[Route("api/admin-audit-logs")]
 [Authorize(AuthenticationSchemes = "AdminJwt", Policy = "Moderator")]
 public class AuditLogsController : ControllerBase
 {

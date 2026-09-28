@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi, getAccessToken, lookupsApi } from '../../api/client';
 import { startOrderPolling, stopOrderPolling, subscribeToOrders } from '../../api/orderPolling';
@@ -45,7 +45,7 @@ function getStatusColors(status: string, c: Record<string, string>) {
 }
 
 export const OrdersScreen: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t } = useTranslation();
 
   const styles = StyleSheet.create({
@@ -55,40 +55,61 @@ export const OrdersScreen: React.FC = () => {
       paddingHorizontal: spacing.md, paddingVertical: spacing.md,
     },
     headerTitle: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 24, fontWeight: '700',
-      color: colors['on-background'],
+      fontFamily: DISPLAY_FONT, fontSize: 24, fontWeight: '800',
+      color: colors['on-background'], letterSpacing: -0.4,
     },
     bell: { fontSize: 24 },
-    list: { paddingHorizontal: spacing.md, paddingBottom: 120 },
-    tabsRow: { flexDirection: 'row', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.sm },
-    tab: {
-      flex: 1, paddingVertical: spacing.sm,
-      borderRadius: borderRadius.lg,
-      backgroundColor: colors['surface-container-lowest'],
-      alignItems: 'center',
+    list: { paddingHorizontal: spacing.md, paddingBottom: 130 },
+    tabsRow: {
+      flexDirection: 'row',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
     },
-    tabActive: { backgroundColor: colors.primary },
+    tab: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: borderRadius.full,
+      backgroundColor: isDark ? colors['surface-container'] : colors.white,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+      ...shadows.card,
+    },
+    tabActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      elevation: 4,
+    },
     tabText: { ...typography['label-sm'], color: colors['on-surface-variant'], fontWeight: '700' },
     tabTextActive: { color: colors.white },
     orderCard: {
-      backgroundColor: colors['surface-container-lowest'],
-      borderRadius: borderRadius.xl, padding: spacing.md,
+      backgroundColor: isDark ? colors['surface-container'] : colors.white,
+      borderRadius: borderRadius.xl,
+      padding: spacing.md,
       marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+      ...shadows.card,
     },
     orderHeader: {
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
       marginBottom: spacing.sm,
     },
     orderTitle: {
-      flex: 1, fontFamily: 'NunitoSans_700Bold', fontSize: 16, fontWeight: '700',
+      flex: 1, fontFamily: DISPLAY_FONT, fontSize: 16, fontWeight: '700',
       color: colors['on-background'], marginRight: spacing.sm,
     },
     statusBadge: {
-      borderRadius: borderRadius.full, paddingHorizontal: spacing.sm,
-      paddingVertical: 2,
+      borderRadius: borderRadius.full, paddingHorizontal: spacing.sm + 2,
+      paddingVertical: 3,
     },
     statusText: {
-      fontFamily: 'Inter_600SemiBold', fontSize: 11, fontWeight: '600',
+      fontFamily: BODY_FONT, fontSize: 11, fontWeight: '700',
       color: colors.white,
     },
     orderMeta: {
@@ -96,23 +117,23 @@ export const OrdersScreen: React.FC = () => {
       marginBottom: spacing.xs,
     },
     orderQty: {
-      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
+      fontFamily: BODY_FONT, fontSize: 14, color: colors['on-surface-variant'],
     },
     orderPrice: {
-      fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '600',
-      color: colors['primary-container'],
+      fontFamily: DISPLAY_FONT, fontSize: 16, fontWeight: '800',
+      color: colors.primary,
     },
     orderDate: {
-      fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'],
+      fontFamily: BODY_FONT, fontSize: 12, color: colors['on-surface-variant'],
     },
     empty: { alignItems: 'center', paddingTop: 80 },
     emptyEmoji: { fontSize: 64, marginBottom: spacing.md },
     emptyTitle: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
+      fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: '800',
       color: colors['on-background'], marginBottom: spacing.xs,
     },
     emptySubtitle: {
-      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
+      fontFamily: BODY_FONT, fontSize: 14, color: colors['on-surface-variant'],
     },
   });
   const navigation = useNavigation<any>();

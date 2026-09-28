@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { colors, typography, spacing, borderRadius, shadows } from '../theme';
+import { typography, spacing, borderRadius, shadows } from '../theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { timeUntil } from '../utils/time';
+import { MapPin, Clock, Bookmark, Heart, ThumbsUp } from 'lucide-react-native';
 
 interface DealCardProps {
   title: string;
@@ -23,6 +25,7 @@ interface DealCardProps {
   organizerAvatar?: string;
   isSaved?: boolean;
   onPress?: () => void;
+  onBookmarkPress?: () => void;
 }
 
 export const DealCard: React.FC<DealCardProps> = ({
@@ -40,105 +43,160 @@ export const DealCard: React.FC<DealCardProps> = ({
   organizerAvatar,
   isSaved,
   onPress,
+  onBookmarkPress,
 }) => {
-  const progress = Math.min((membersJoined / membersTarget) * 100, 100);
+  const { colors, isDark } = useTheme();
+
+  const safeTarget = membersTarget > 0 ? membersTarget : 1;
+  const progress = Math.min((membersJoined / safeTarget) * 100, 100);
   const countdown = deadline ? timeUntil(deadline) : null;
+  const isGoalReached = membersJoined >= safeTarget;
+  const slotsRemaining = Math.max(safeTarget - membersJoined, 0);
+
+  // Compute discount percentage if original price is available
+  let discountPct = 0;
+  if (originalPrice) {
+    const numPrice = parseFloat(price.replace(/[^0-9.]/g, ''));
+    const numOrig = parseFloat(originalPrice.replace(/[^0-9.]/g, ''));
+    if (numOrig > numPrice && numOrig > 0) {
+      discountPct = Math.round(((numOrig - numPrice) / numOrig) * 100);
+    }
+  }
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity
+      style={[
+        styles.card,
+        {
+          backgroundColor: isDark ? colors['surface-container'] : colors.white,
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
+        },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.88}
+    >
       {/* ── Image Header ─────────────────────────────── */}
       <View style={styles.imageContainer}>
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.image} />
         ) : (
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.placeholderEmoji}>🛒</Text>
+          <View
+            style={[
+              styles.imagePlaceholder,
+              { backgroundColor: isDark ? colors['surface-container-high'] : '#F1F5F9' },
+            ]}
+          >
+            <Text style={styles.placeholderEmoji}>📦</Text>
           </View>
         )}
 
-        {/* Countdown badge */}
+        {/* Discount Badge */}
+        {discountPct > 0 && (
+          <View style={[styles.discountBadge, { backgroundColor: colors['primary-container'] }]}>
+            <Text style={styles.discountText}>-{discountPct}%</Text>
+          </View>
+        )}
+
+        {/* Countdown Badge */}
         {countdown && (
           <View style={styles.countdownBadge}>
+            <Clock size={11} color="#ffffff" strokeWidth={2.5} style={{ marginRight: 4 }} />
             <Text style={styles.countdownText}>{countdown}</Text>
           </View>
         )}
 
-        {/* Saved bookmark */}
-        {isSaved && (
-          <View style={styles.savedBadge}>
-            <Text style={{ fontSize: 13 }}>🔖</Text>
-          </View>
-        )}
+        {/* Bookmark Action */}
+        <TouchableOpacity
+          style={[
+            styles.bookmarkBtn,
+            { backgroundColor: isSaved ? colors['primary-container'] : 'rgba(15, 23, 42, 0.5)' },
+          ]}
+          onPress={onBookmarkPress || onPress}
+          activeOpacity={0.8}
+        >
+          <Bookmark
+            size={14}
+            color="#ffffff"
+            fill={isSaved ? '#ffffff' : 'none'}
+            strokeWidth={2.2}
+          />
+        </TouchableOpacity>
       </View>
 
-      {/* ── Body ─────────────────────────────────────── */}
+      {/* ── Card Body ───────────────────────────────── */}
       <View style={styles.body}>
         {/* Title */}
-        <Text style={styles.title} numberOfLines={2}>
+        <Text
+          style={[styles.title, { color: colors['on-surface'] }]}
+          numberOfLines={2}
+        >
           {title}
         </Text>
 
-        {/* Price row */}
+        {/* Price Row */}
         <View style={styles.priceRow}>
-          <Text style={styles.price}>{price}</Text>
+          <Text style={[styles.price, { color: colors['primary-container'] }]}>
+            {price}
+          </Text>
           {originalPrice && (
-            <Text style={styles.originalPrice}>{originalPrice}</Text>
+            <Text style={[styles.originalPrice, { color: colors['on-surface-variant'] }]}>
+              {originalPrice}
+            </Text>
           )}
         </View>
 
-        {/* Social proof row */}
-        {(likes > 0 || upvotes > 0) && (
-          <View style={styles.socialRow}>
-            {upvotes > 0 && (
-              <View style={styles.socialItem}>
-                <Text style={styles.socialIcon}>👍</Text>
-                <Text style={styles.socialCount}>{upvotes}</Text>
-              </View>
-            )}
-            {likes > 0 && (
-              <View style={styles.socialItem}>
-                <Text style={styles.socialIcon}>❤️</Text>
-                <Text style={styles.socialCount}>{likes}</Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Location + Organizer row */}
+        {/* Location & Host */}
         <View style={styles.metaRow}>
-          <Text style={styles.locationIcon}>📍</Text>
-          <Text style={styles.location} numberOfLines={1}>
+          <MapPin size={13} color={colors['on-surface-variant']} strokeWidth={2} style={{ marginRight: 4 }} />
+          <Text style={[styles.location, { color: colors['on-surface-variant'] }]} numberOfLines={1}>
             {location}
           </Text>
         </View>
 
-        {/* Organizer */}
-        {organizerName && (
-          <View style={styles.organizerRow}>
-            {organizerAvatar ? (
-              <Image source={{ uri: organizerAvatar }} style={styles.organizerAvatar} />
-            ) : (
-              <View style={styles.organizerAvatarPlaceholder}>
-                <Text style={styles.organizerInitial}>
-                  {organizerName.charAt(0).toUpperCase()}
-                </Text>
+        {/* ── Community Group-Buy Meter ────────────── */}
+        <View style={styles.meterSection}>
+          <View style={styles.meterHeader}>
+            {/* Social Avatars + Count */}
+            <View style={styles.avatarStack}>
+              <View style={[styles.miniAvatar, { backgroundColor: '#FF6B35' }]}>
+                <Text style={styles.avatarEmoji}>👤</Text>
               </View>
-            )}
-            <Text style={styles.organizerName} numberOfLines={1}>
-              {organizerName}
+              <View style={[styles.miniAvatar, { backgroundColor: '#00897B', marginLeft: -6 }]}>
+                <Text style={styles.avatarEmoji}>🧑</Text>
+              </View>
+              <Text style={[styles.meterJoinedText, { color: colors['on-surface'] }]}>
+                {membersJoined}/{membersTarget} joined
+              </Text>
+            </View>
+
+            {/* Slots status */}
+            <Text
+              style={[
+                styles.slotsText,
+                { color: isGoalReached ? colors.secondary : colors['primary-container'] },
+              ]}
+            >
+              {isGoalReached ? 'Unlocked! ✓' : `${slotsRemaining} slots left`}
             </Text>
           </View>
-        )}
-      </View>
 
-      {/* ── Footer — Progress Bar ────────────────────── */}
-      <View style={styles.footer}>
-        <View style={styles.progressHeader}>
-          <Text style={styles.progressLabel}>{membersJoined} joined</Text>
-          <Text style={styles.progressTarget}>{membersTarget} needed</Text>
-        </View>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${progress}%` }]} />
+          {/* Progress Bar */}
+          <View
+            style={[
+              styles.progressTrack,
+              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0' },
+            ]}
+          >
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${progress}%`,
+                  backgroundColor: isGoalReached ? colors.secondary : colors['primary-container'],
+                },
+              ]}
+            />
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -147,17 +205,18 @@ export const DealCard: React.FC<DealCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors['surface-container-lowest'],
     borderRadius: borderRadius.lg,
+    borderWidth: 1,
     overflow: 'hidden',
     ...shadows.card,
+    marginBottom: spacing.md,
   },
 
   /* ── Image ─────────────────────────────────────── */
   imageContainer: {
     position: 'relative',
-    height: 140,
-    backgroundColor: colors['surface-container'],
+    height: 155,
+    backgroundColor: '#F1F5F9',
   },
   image: {
     width: '100%',
@@ -169,31 +228,49 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors['surface-container-high'],
   },
   placeholderEmoji: {
-    fontSize: 40,
+    fontSize: 42,
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  discountText: {
+    color: '#ffffff',
+    fontSize: 11.5,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   countdownBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: colors.secondary,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    bottom: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
     borderRadius: borderRadius.full,
   },
   countdownText: {
-    ...typography['label-sm'],
-    color: colors.white,
-    fontWeight: '700',
+    color: '#ffffff',
     fontSize: 11,
+    fontWeight: '700',
   },
-  savedBadge: {
+  bookmarkBtn: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    top: 10,
+    right: 10,
     width: 30,
     height: 30,
     borderRadius: 15,
@@ -204,130 +281,85 @@ const styles = StyleSheet.create({
   /* ── Body ──────────────────────────────────────── */
   body: {
     padding: spacing.md,
-    paddingBottom: spacing.sm,
-    gap: spacing.xs,
   },
   title: {
-    ...typography['body-lg'],
-    color: colors['on-surface'],
-    fontWeight: '600',
+    ...typography['title-md'],
+    fontSize: 16,
     lineHeight: 22,
-    marginBottom: 2,
+    fontWeight: '700',
+    marginBottom: 6,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: spacing.sm,
+    marginBottom: 6,
   },
   price: {
-    ...typography['title-md'],
-    color: colors.primary,          // darker amber — readable on warm bg
+    fontSize: 19,
     fontWeight: '800',
-    fontSize: 18,
+    marginRight: 8,
+    letterSpacing: -0.3,
   },
   originalPrice: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
-    textDecorationLine: 'line-through',
-  },
-
-  /* Social proof */
-  socialRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: 2,
-  },
-  socialItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  socialIcon: {
     fontSize: 13,
+    textDecorationLine: 'line-through',
+    fontWeight: '500',
   },
-  socialCount: {
-    ...typography['label-sm'],
-    color: colors['on-surface-variant'],
-  },
-
-  /* Location */
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
-  },
-  locationIcon: {
-    fontSize: 12,
+    marginBottom: 12,
   },
   location: {
-    ...typography['body-md'],
-    color: colors['on-surface-variant'],
+    fontSize: 12.5,
+    fontWeight: '500',
     flex: 1,
-    fontSize: 13,
   },
 
-  /* Organizer */
-  organizerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: 4,
+  /* ── Meter Section ─────────────────────────────── */
+  meterSection: {
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
   },
-  organizerAvatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors['surface-container-high'],
-  },
-  organizerAvatarPlaceholder: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors['secondary-container'],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  organizerInitial: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors['on-secondary-container'],
-  },
-  organizerName: {
-    ...typography['label-sm'],
-    color: colors['on-surface-variant'],
-    flex: 1,
-    fontSize: 12,
-  },
-
-  /* ── Footer ────────────────────────────────────── */
-  footer: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  progressHeader: {
+  meterHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    alignItems: 'center',
+    marginBottom: 7,
   },
-  progressLabel: {
-    ...typography['label-sm'],
-    color: colors.secondary,
-    fontWeight: '600',
+  avatarStack: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  progressTarget: {
-    ...typography['label-sm'],
-    color: colors['on-surface-variant'],
+  miniAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+  },
+  avatarEmoji: {
+    fontSize: 10,
+  },
+  meterJoinedText: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 6,
+  },
+  slotsText: {
+    fontSize: 11.5,
+    fontWeight: '700',
   },
   progressTrack: {
     height: 6,
-    backgroundColor: colors['surface-container-high'],
     borderRadius: borderRadius.full,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.secondary,
     borderRadius: borderRadius.full,
   },
 });

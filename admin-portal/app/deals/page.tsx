@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { api } from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import { ShieldCheck, Layers, Search, Check, X, Star, Tag, Sparkles } from 'lucide-react'
 
 export default function DealsPage() {
   const router = useRouter()
@@ -59,8 +60,8 @@ export default function DealsPage() {
     setAppLoading(true)
     api.appDeals({ status: appStatus === 'All' ? undefined : appStatus, search: appSearch || undefined })
       .then((res: any) => {
-        setAppDeals(res.data || [])
-        setAppTotal(res.total || 0)
+        setAppDeals(res.items || res.data || [])
+        setAppTotal(res.totalCount || res.total || 0)
       }).catch(() => {}).finally(() => setAppLoading(false))
   }
 
@@ -133,15 +134,18 @@ export default function DealsPage() {
       <Sidebar pendingCount={status === 'PendingReview' ? total : 0} />
       <main className="main">
         <div className="topbar">
-          <div className="page-title">Deal Management</div>
+          <div>
+            <div className="page-title">Deal Moderation & Catalog</div>
+            <div className="text-sm text-muted">Review, verify, and curate group buy opportunities</div>
+          </div>
           <div className="flex gap-2">
             <button className={`btn btn-sm ${tab === 'moderation' ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setTab('moderation')}>
-              🔍 Moderation Queue
+              onClick={() => setTab('moderation')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={15} /> Moderation Queue
             </button>
             <button className={`btn btn-sm ${tab === 'all' ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setTab('all')}>
-              📋 All App Deals
+              onClick={() => setTab('all')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Layers size={15} /> All App Deals
             </button>
           </div>
         </div>
@@ -154,14 +158,15 @@ export default function DealsPage() {
                 {['PendingReview', 'Approved', 'Rejected', 'All'].map(s => (
                   <button key={s} className={`btn btn-sm ${status === s ? 'btn-primary' : 'btn-outline'}`}
                     onClick={() => { setStatus(s); setPage(1); setSelected(new Set()) }}>
-                    {s === 'PendingReview' ? 'Pending' : s}
+                    {s === 'PendingReview' ? 'Pending Review' : s}
                   </button>
                 ))}
               </div>
 
               {status !== 'PendingReview' && (
-                <div className="search-bar mb-4">
-                  <input placeholder="Search deals..." value={search}
+                <div className="search-input-wrap mb-4" style={{ maxWidth: 420 }}>
+                  <Search size={16} />
+                  <input placeholder="Search deals by title..." value={search}
                     onChange={e => setSearch(e.target.value)} />
                 </div>
               )}
@@ -169,34 +174,40 @@ export default function DealsPage() {
               {loading ? (
                 <div className="loading"><div className="spinner" /></div>
               ) : deals.length === 0 ? (
-                <div className="empty-state"><div className="icon">🏷️</div><h3>No deals found</h3></div>
+                <div className="empty-state">
+                  <div className="icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                    <Tag size={42} color="var(--muted)" />
+                  </div>
+                  <h3>No deals found</h3>
+                  <p className="text-sm text-muted">There are currently no deals in this status filter.</p>
+                </div>
               ) : (
                 <>
                   {/* Bulk action bar */}
                   {status === 'PendingReview' && (
-                    <div className="flex gap-2 mb-4" style={{ alignItems: 'center', padding: '8px 12px', background: '#f5f5f5', borderRadius: 8 }}>
+                    <div className="flex gap-3 mb-4" style={{ alignItems: 'center', padding: '10px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: 'var(--shadow-sm)' }}>
                       <input type="checkbox"
                         checked={selected.size === deals.length && deals.length > 0}
                         onChange={toggleAll}
-                        style={{ width: 16, height: 16 }} />
-                      <span className="text-sm text-muted">{selected.size} selected</span>
+                        style={{ width: 16, height: 16, accentColor: 'var(--color-primary)' }} />
+                      <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>{selected.size} of {deals.length} selected</span>
                       {selected.size > 0 && (
                         <>
                           <select value={bulkAction} onChange={e => setBulkAction(e.target.value)}
-                            style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd' }}>
-                            <option value="">Choose action...</option>
-                            <option value="approve">✅ Approve Selected</option>
-                            <option value="reject">❌ Reject Selected</option>
-                            <option value="feature">⭐ Feature Selected</option>
+                            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--canvas)', fontSize: 13 }}>
+                            <option value="">Bulk Action...</option>
+                            <option value="approve">✓ Approve Selected</option>
+                            <option value="reject">✕ Reject Selected</option>
+                            <option value="feature">★ Feature Selected</option>
                             <option value="unfeature">☆ Unfeature Selected</option>
                           </select>
                           {bulkAction === 'reject' && (
                             <input placeholder="Rejection reason..."
                               value={bulkReason} onChange={e => setBulkReason(e.target.value)}
-                              style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd', flex: 1 }} />
+                              style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', flex: 1, fontSize: 13 }} />
                           )}
                           <button className="btn btn-sm btn-primary" onClick={handleBulk} disabled={!bulkAction || bulkLoading}>
-                            {bulkLoading ? 'Processing...' : 'Apply'}
+                            {bulkLoading ? 'Processing...' : 'Apply to Selected'}
                           </button>
                         </>
                       )}
@@ -208,10 +219,10 @@ export default function DealsPage() {
                       <table>
                         <thead>
                           <tr>
-                            {status === 'PendingReview' && <th style={{ width: 32 }}></th>}
+                            {status === 'PendingReview' && <th style={{ width: 36 }}></th>}
                             <th>Title</th><th>Category</th><th>Organizer</th>
-                            <th>Price</th><th>Group</th><th>Status</th>
-                            <th>AI Score</th><th>Actions</th>
+                            <th>Price</th><th>Group Target</th><th>Status</th>
+                            <th>AI Safety</th><th>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -222,41 +233,51 @@ export default function DealsPage() {
                                   <input type="checkbox"
                                     checked={selected.has(deal.id)}
                                     onChange={() => toggleSelect(deal.id)}
-                                    style={{ width: 16, height: 16 }} />
+                                    style={{ width: 16, height: 16, accentColor: 'var(--color-primary)' }} />
                                 </td>
                               )}
-                              <td className="font-bold" style={{ cursor: 'pointer', color: '#0e6a5b' }}
+                              <td className="font-bold" style={{ cursor: 'pointer', color: 'var(--color-primary)' }}
                                 onClick={() => setDetailDeal(deal)}>
                                 {deal.title}
                               </td>
-                              <td>{deal.category}</td>
-                              <td>{deal.organizerName}</td>
-                              <td>RM{Number(deal.groupPrice).toFixed(2)}</td>
-                              <td>{deal.currentGroup}/{deal.minGroup}</td>
+                              <td><span className="badge badge-inactive" style={{ fontSize: 11 }}>{deal.category}</span></td>
+                              <td>{deal.organizerName || '-'}</td>
+                              <td className="font-bold" style={{ color: 'var(--color-primary)' }}>RM{Number(deal.groupPrice).toFixed(2)}</td>
+                              <td>
+                                <span className="text-sm font-semibold">{deal.currentGroup || 0}</span>
+                                <span className="text-sm text-muted"> / {deal.minGroup || 1} min</span>
+                              </td>
                               <td><StatusBadge s={deal.status} /></td>
                               <td>
                                 {deal.moderationScore != null ? (
                                   <span
-                                    className={deal.moderationScore >= 80 ? 'text-success' : deal.moderationScore >= 50 ? 'text-warning' : 'text-error'}
-                                    style={{ cursor: 'pointer', fontWeight: 'bold' }}
+                                    className={`badge ${deal.moderationScore >= 80 ? 'badge-approved' : deal.moderationScore >= 50 ? 'badge-pending' : 'badge-rejected'}`}
+                                    style={{ cursor: 'pointer', fontWeight: 700 }}
                                     onClick={() => setDetailDeal(deal)}
-                                    title="View AI moderation detail"
+                                    title="View AI moderation score"
                                   >
-                                    {deal.moderationScore}
+                                    <Sparkles size={11} style={{ marginRight: 4 }} />
+                                    {deal.moderationScore}%
                                   </span>
-                                ) : '-'}
+                                ) : <span className="text-muted text-sm">-</span>}
                               </td>
                               <td>
                                 <div className="flex gap-2">
-                                  {status === 'PendingReview' && (
+                                  {status === 'PendingReview' ? (
                                     <>
                                       <button className="btn btn-sm btn-success" disabled={actionLoading === deal.id}
-                                        onClick={() => handleApprove(deal.id)}>
-                                        {actionLoading === deal.id ? '...' : '✓'}
+                                        onClick={() => handleApprove(deal.id)} title="Approve deal" style={{ padding: '6px 10px' }}>
+                                        {actionLoading === deal.id ? '...' : <Check size={14} />}
                                       </button>
                                       <button className="btn btn-sm btn-danger"
-                                        onClick={() => setRejectDealId(deal.id)}>✗</button>
+                                        onClick={() => setRejectDealId(deal.id)} title="Reject deal" style={{ padding: '6px 10px' }}>
+                                        <X size={14} />
+                                      </button>
                                     </>
+                                  ) : (
+                                    <button className="btn btn-sm btn-outline" onClick={() => setDetailDeal(deal)} style={{ padding: '4px 10px', fontSize: 12 }}>
+                                      Details
+                                    </button>
                                   )}
                                 </div>
                               </td>
@@ -292,17 +313,26 @@ export default function DealsPage() {
                   </button>
                 ))}
               </div>
-              <div className="search-bar mb-4">
-                <input placeholder="Search deals by title, description, or category..."
-                  value={appSearch} onChange={e => setAppSearch(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && loadAppDeals()} />
+              <div className="flex gap-2 mb-4" style={{ alignItems: 'center' }}>
+                <div className="search-input-wrap flex-1" style={{ maxWidth: 460 }}>
+                  <Search size={16} />
+                  <input placeholder="Search deals by title, description, or category..."
+                    value={appSearch} onChange={e => setAppSearch(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && loadAppDeals()} />
+                </div>
                 <button className="btn btn-primary btn-sm" onClick={loadAppDeals}>Search</button>
               </div>
-              <div className="text-sm text-muted mb-2">{appTotal} deals total</div>
+              <div className="text-sm text-muted mb-2 font-semibold">{appTotal} deals total</div>
               {appLoading ? (
                 <div className="loading"><div className="spinner" /></div>
               ) : appDeals.length === 0 ? (
-                <div className="empty-state"><div className="icon">📋</div><h3>No deals found</h3></div>
+                <div className="empty-state">
+                  <div className="icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                    <Layers size={42} color="var(--muted)" />
+                  </div>
+                  <h3>No deals found</h3>
+                  <p className="text-sm text-muted">Try adjusting your filters or search keywords.</p>
+                </div>
               ) : (
                 <div className="card">
                   <div className="table-wrap">

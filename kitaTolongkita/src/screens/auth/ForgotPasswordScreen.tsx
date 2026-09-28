@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing, borderRadius, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { authApi } from '../../api/client';
 
 type Step = 'email' | 'otp' | 'newPassword';
@@ -250,14 +250,14 @@ const styles = StyleSheet.create({
   },
   icon: { fontSize: 32 },
   title: {
-    fontFamily: 'NunitoSans_700Bold',
+    fontFamily: DISPLAY_FONT,
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors['on-background'],
     marginBottom: spacing.sm,
   },
   subtitle: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: BODY_FONT,
     fontSize: 15,
     color: colors['on-surface-variant'],
     lineHeight: 22,

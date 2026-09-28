@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Avatar, Button } from '../../components';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { authApi, dealsApi, clearTokens, getAccessToken, followApi, repostsApi, lookupsApi, ratingsApi } from '../../api/client';
 import { useAuth } from '../../api/authContext';
@@ -25,33 +25,36 @@ import type { Deal } from '../../api/client';
 const TABS = ['Deals', 'Reposts', 'LookUps', 'Ratings'];
 
 export const ProfileScreen: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t } = useTranslation();
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    scrollContent: { paddingBottom: 120 },
+    scrollContent: { paddingBottom: 130 },
     header: {
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
       paddingHorizontal: spacing.md, paddingVertical: spacing.md,
     },
     headerTitle: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 24, fontWeight: '700',
-      color: colors['on-background'],
+      fontFamily: DISPLAY_FONT, fontSize: 24, fontWeight: '800',
+      color: colors['on-background'], letterSpacing: -0.4,
     },
-    settingsIcon: { fontSize: 24 },
+    settingsIcon: { fontSize: 22 },
     profileCard: {
       alignItems: 'center', paddingVertical: spacing.xl,
-      backgroundColor: colors['surface-container-lowest'],
+      backgroundColor: isDark ? colors['surface-container'] : colors.white,
       marginHorizontal: spacing.md, borderRadius: borderRadius.xl,
       marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+      ...shadows.card,
     },
     userName: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
+      fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: '700',
       color: colors['on-background'], marginTop: spacing.md,
     },
     userEmail: {
-      fontFamily: 'Inter_400Regular', fontSize: 14,
+      fontFamily: BODY_FONT, fontSize: 14,
       color: colors['on-surface-variant'], marginTop: spacing.xs, textAlign: 'center',
       paddingHorizontal: spacing.lg,
     },
@@ -74,7 +77,7 @@ export const ProfileScreen: React.FC = () => {
       backgroundColor: colors['primary-container'], borderRadius: borderRadius.full,
       paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
     },
-    demoBadgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.white },
+    demoBadgeText: { fontFamily: BODY_FONT, fontSize: 12, fontWeight: '700', color: colors.white },
     profileMeta: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
     profileMetaText: { fontSize: 13, color: colors['on-surface-variant'] },
     followStatsRow: {
@@ -85,11 +88,11 @@ export const ProfileScreen: React.FC = () => {
     },
     followStatItem: { alignItems: 'center', minWidth: 60 },
     followStatValue: {
-      fontFamily: 'NunitoSans_800ExtraBold', fontSize: 18, fontWeight: '800',
-      color: colors['primary-container'],
+      fontFamily: DISPLAY_FONT, fontSize: 18, fontWeight: '800',
+      color: colors.primary,
     },
     followStatLabel: {
-      fontFamily: 'Inter_400Regular', fontSize: 11,
+      fontFamily: BODY_FONT, fontSize: 11, fontWeight: '500',
       color: colors['on-surface-variant'], marginTop: 2,
     },
     tabsContainer: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
@@ -100,7 +103,7 @@ export const ProfileScreen: React.FC = () => {
     },
     tabActive: { backgroundColor: colors['primary-container'] },
     tabText: {
-      fontFamily: 'Inter_600SemiBold', fontSize: 14,
+      fontFamily: BODY_FONT, fontSize: 14, fontWeight: '600',
       color: colors['on-surface-variant'],
     },
     tabTextActive: { color: colors.white },
@@ -143,8 +146,14 @@ export const ProfileScreen: React.FC = () => {
     ratingStars: { flexDirection: 'row', marginTop: spacing.xs },
     star: { fontSize: 16, color: colors.tertiary },
     menuSection: {
-      marginHorizontal: spacing.md, backgroundColor: colors['surface-container-lowest'],
-      borderRadius: borderRadius.xl, overflow: 'hidden', marginTop: spacing.lg,
+      marginHorizontal: spacing.md,
+      backgroundColor: isDark ? colors['surface-container'] : colors.white,
+      borderRadius: borderRadius.xl,
+      overflow: 'hidden',
+      marginTop: spacing.lg,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+      ...shadows.card,
     },
     menuItem: {
       flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md,
@@ -241,30 +250,45 @@ export const ProfileScreen: React.FC = () => {
       if (tab === 'Deals') {
         const page = reset ? 1 : dealsPage;
         const res = await dealsApi.getMyDeals(page);
-        if (reset) { setMyDeals(res.items); setDealsPage(2); }
-        else { setMyDeals(prev => [...prev, ...res.items]); setDealsPage(p => p + 1); }
-        setHasMoreDeals(res.items.length === res.pageSize);
+        const items = res?.items ?? [];
+        if (reset) { setMyDeals(items); setDealsPage(2); }
+        else { setMyDeals(prev => [...(prev ?? []), ...items]); setDealsPage(p => p + 1); }
+        setHasMoreDeals(items.length === (res?.pageSize ?? 20));
       } else if (tab === 'Reposts') {
         const page = reset ? 1 : repostsPage;
         const res: any = await repostsApi.getMyReposts(page);
-        if (reset) { setMyReposts(res?.reposts ?? []); setRepostsPage(2); }
-        else { setMyReposts(prev => [...prev, ...(res?.reposts ?? [])]); setRepostsPage(p => p + 1); }
-        setHasMoreReposts((res?.reposts ?? []).length === 20);
+        const items = res?.reposts ?? [];
+        if (reset) { setMyReposts(items); setRepostsPage(2); }
+        else { setMyReposts(prev => [...(prev ?? []), ...items]); setRepostsPage(p => p + 1); }
+        setHasMoreReposts(items.length === 20);
       } else if (tab === 'LookUps') {
         const page = reset ? 1 : lookupsPage;
         const res: any = await lookupsApi.getMyLookups(undefined, page);
-        if (reset) { setMyLookups(res?.lookups ?? []); setLookupsPage(2); }
-        else { setMyLookups(prev => [...prev, ...(res?.lookups ?? [])]); setLookupsPage(p => p + 1); }
-        setHasMoreLookups((res?.lookups ?? []).length === 20);
+        const items = res?.lookups ?? [];
+        if (reset) { setMyLookups(items); setLookupsPage(2); }
+        else { setMyLookups(prev => [...(prev ?? []), ...items]); setLookupsPage(p => p + 1); }
+        setHasMoreLookups(items.length === 20);
       } else if (tab === 'Ratings') {
         const page = reset ? 1 : lookupsPage;
         const res: any = await lookupsApi.getMyLookups('Delivered', page);
-        if (reset) { setMyRatings(res?.lookups ?? []); setLookupsPage(2); }
-        else { setMyRatings(prev => [...prev, ...(res?.lookups ?? [])]); setLookupsPage(p => p + 1); }
-        setHasMoreLookups((res?.lookups ?? []).length === 20);
+        const items = res?.lookups ?? [];
+        if (reset) { setMyRatings(items); setLookupsPage(2); }
+        else { setMyRatings(prev => [...(prev ?? []), ...items]); setLookupsPage(p => p + 1); }
+        setHasMoreLookups(items.length === 20);
       }
-    } catch { /* silent */ }
-    finally { setTabLoading(false); setLoadingMoreDeals(false); setLoadingMoreReposts(false); setLoadingMoreLookups(false); }
+    } catch {
+      if (reset) {
+        if (tab === 'Deals') setMyDeals([]);
+        if (tab === 'Reposts') setMyReposts([]);
+        if (tab === 'LookUps') setMyLookups([]);
+        if (tab === 'Ratings') setMyRatings([]);
+      }
+    } finally {
+      setTabLoading(false);
+      setLoadingMoreDeals(false);
+      setLoadingMoreReposts(false);
+      setLoadingMoreLookups(false);
+    }
   };
 
   const handleLoadMore = (tab: string) => {
@@ -415,20 +439,20 @@ export const ProfileScreen: React.FC = () => {
     };
 
     if (activeTab === 'Deals') {
-      if (!tabLoading && myDeals.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>You haven't posted any deals yet.</Text></View>;
-      return <FlatList data={myDeals} renderItem={renderDealItem} keyExtractor={d => d.id} scrollEnabled onEndReached={() => handleLoadMore('Deals')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
+      if (!tabLoading && (!myDeals || myDeals.length === 0)) return <View style={styles.emptyState}><Text style={styles.emptyText}>You haven't posted any deals yet.</Text></View>;
+      return <FlatList data={myDeals ?? []} renderItem={renderDealItem} keyExtractor={d => d.id} scrollEnabled onEndReached={() => handleLoadMore('Deals')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
     }
     if (activeTab === 'Reposts') {
-      if (!tabLoading && myReposts.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>No reposts yet.</Text></View>;
-      return <FlatList data={myReposts} renderItem={renderRepostItem} keyExtractor={r => r.repostId} scrollEnabled onEndReached={() => handleLoadMore('Reposts')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
+      if (!tabLoading && (!myReposts || myReposts.length === 0)) return <View style={styles.emptyState}><Text style={styles.emptyText}>No reposts yet.</Text></View>;
+      return <FlatList data={myReposts ?? []} renderItem={renderRepostItem} keyExtractor={r => r.repostId} scrollEnabled onEndReached={() => handleLoadMore('Reposts')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
     }
     if (activeTab === 'LookUps') {
-      if (!tabLoading && myLookups.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>No group buy lookups yet.</Text></View>;
-      return <FlatList data={myLookups} renderItem={renderLookupItem} keyExtractor={l => l.id} scrollEnabled onEndReached={() => handleLoadMore('LookUps')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
+      if (!tabLoading && (!myLookups || myLookups.length === 0)) return <View style={styles.emptyState}><Text style={styles.emptyText}>No group buy lookups yet.</Text></View>;
+      return <FlatList data={myLookups ?? []} renderItem={renderLookupItem} keyExtractor={l => l.id} scrollEnabled onEndReached={() => handleLoadMore('LookUps')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
     }
     if (activeTab === 'Ratings') {
-      if (!tabLoading && myRatings.length === 0) return <View style={styles.emptyState}><Text style={styles.emptyText}>No delivered orders to rate.</Text></View>;
-      return <FlatList data={myRatings} renderItem={renderRatingItem} keyExtractor={r => r.id} scrollEnabled onEndReached={() => handleLoadMore('Ratings')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
+      if (!tabLoading && (!myRatings || myRatings.length === 0)) return <View style={styles.emptyState}><Text style={styles.emptyText}>No delivered orders to rate.</Text></View>;
+      return <FlatList data={myRatings ?? []} renderItem={renderRatingItem} keyExtractor={r => r.id} scrollEnabled onEndReached={() => handleLoadMore('Ratings')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
     }
   };
 

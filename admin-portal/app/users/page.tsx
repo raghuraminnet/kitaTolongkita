@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { api } from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import { Search, Users, User, Mail, Phone, Calendar, Clock, Activity, CheckCircle2, Shield } from 'lucide-react'
 
 const ACTIVITY_ICONS: Record<string, string> = {
   deal_posted: '🏷️',
@@ -45,8 +46,8 @@ export default function UsersPage() {
     setLoading(true)
     api.appUsers({ search: search || undefined })
       .then((res: any) => {
-        setUsers(res.data || [])
-        setTotal(res.total || 0)
+        setUsers(res.items || res.data || [])
+        setTotal(res.totalCount || res.total || 0)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -119,21 +120,32 @@ export default function UsersPage() {
       <Sidebar />
       <main className="main">
         <div className="topbar">
-          <div className="page-title">App Users</div>
-          <div className="text-sm text-muted">{total} registered users</div>
+          <div>
+            <div className="page-title">Community & App Users</div>
+            <div className="text-sm text-muted">{total} registered member accounts</div>
+          </div>
         </div>
         <div className="page-content">
-          <div className="search-bar mb-4">
-            <input placeholder="Search by email or name..." value={search}
-              onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && loadUsers()} />
+          <div className="flex gap-2 mb-4" style={{ alignItems: 'center' }}>
+            <div className="search-input-wrap flex-1" style={{ maxWidth: 440 }}>
+              <Search size={16} />
+              <input placeholder="Search users by email, name, or phone..." value={search}
+                onChange={e => setSearch(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && loadUsers()} />
+            </div>
             <button className="btn btn-primary btn-sm" onClick={loadUsers}>Search</button>
           </div>
 
           {loading ? (
             <div className="loading"><div className="spinner" /></div>
           ) : users.length === 0 ? (
-            <div className="empty-state"><div className="icon">👥</div><h3>No users found</h3></div>
+            <div className="empty-state">
+              <div className="icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                <Users size={42} color="var(--muted)" />
+              </div>
+              <h3>No users found</h3>
+              <p className="text-sm text-muted">No accounts match your current query.</p>
+            </div>
           ) : (
             <div className="card">
               <div className="table-wrap">

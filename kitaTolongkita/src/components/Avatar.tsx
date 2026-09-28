@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Image, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, borderRadius } from '../theme';
+import { colors, borderRadius, DISPLAY_FONT } from '../theme';
 
 interface AvatarProps {
   uri?: string;
@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
   },
   initialsText: {
     color: colors.white,
-    fontWeight: '700',
-    fontFamily: 'NunitoSans_700Bold',
+    fontWeight: '800',
+    fontFamily: DISPLAY_FONT,
   },
   badge: {
     position: 'absolute',

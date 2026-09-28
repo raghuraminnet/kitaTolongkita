@@ -18,15 +18,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Button, ProgressBar, Avatar, ImageCarousel, ExpandableText, QuickActionsSheet } from '../../components';
-import { typography, spacing, borderRadius, shadows } from '../../theme';
+import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
-import { dealsApi, savedDealsApi, commentsApi, repostsApi, request } from '../../api/client';
+import { dealsApi, savedDealsApi, commentsApi, repostsApi, request, API_BASE } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
 import type { Deal } from '../../api/client';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const API_BASE = 'http://76.13.219.191:5000/api';
 
 const MOCK_DEAL: Deal = {
   id: '1',
@@ -116,18 +114,18 @@ export const DealDetailScreen: React.FC = () => {
     // Content
     content: { padding: spacing.md },
     priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-    price: { fontFamily: 'NunitoSans_800ExtraBold', fontSize: 32, fontWeight: '800', color: colors.primary },
+    price: { fontFamily: DISPLAY_FONT, fontSize: 32, fontWeight: '800', color: colors.primary },
     originalPrice: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 20, fontWeight: '700',
+      fontFamily: DISPLAY_FONT, fontSize: 20, fontWeight: '700',
       color: colors['on-surface-variant'], textDecorationLine: 'line-through',
     },
     discountBadge: {
       backgroundColor: colors.error, paddingHorizontal: spacing.sm, paddingVertical: 2,
       borderRadius: borderRadius.sm, marginLeft: spacing.xs,
     },
-    discountText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, fontWeight: '700', color: colors.white },
+    discountText: { fontFamily: BODY_FONT, fontSize: 12, fontWeight: '700', color: colors.white },
     title: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 22, fontWeight: '700',
+      fontFamily: DISPLAY_FONT, fontSize: 22, fontWeight: '700',
       color: colors['on-background'], marginBottom: spacing.md, lineHeight: 30,
     },
     countdownContainer: {
@@ -136,27 +134,102 @@ export const DealDetailScreen: React.FC = () => {
       borderRadius: borderRadius.md, marginBottom: spacing.lg,
     },
     countdownIcon: { fontSize: 16, marginRight: spacing.xs },
-    countdownLabel: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-secondary-container'] },
-    countdownValue: { fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '700', color: colors['on-secondary-container'] },
+    countdownLabel: { fontFamily: BODY_FONT, fontSize: 14, color: colors['on-secondary-container'] },
+    countdownValue: { fontFamily: BODY_FONT, fontSize: 14, fontWeight: '700', color: colors['on-secondary-container'] },
     progressSection: { marginBottom: spacing.lg },
     progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
-    progressLabel: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], fontWeight: '600' },
-    progressValue: { fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '700', color: colors.secondary },
-    progressSubtext: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'], marginTop: spacing.xs },
+    progressLabel: { fontFamily: BODY_FONT, fontSize: 14, color: colors['on-surface'], fontWeight: '600' },
+    progressValue: { fontFamily: BODY_FONT, fontSize: 14, fontWeight: '700', color: colors.secondary },
+    progressSubtext: { fontFamily: BODY_FONT, fontSize: 12, color: colors['on-surface-variant'], marginTop: spacing.xs },
     divider: { height: 1, backgroundColor: colors['outline-variant'], marginVertical: spacing.lg },
     sellerSection: { marginBottom: 0 },
-    sectionTitle: { fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700', color: colors['on-background'], marginBottom: spacing.md },
+    sectionTitle: { fontFamily: DISPLAY_FONT, fontSize: 18, fontWeight: '800', color: colors['on-background'], marginBottom: spacing.md },
     sellerCard: {
       flexDirection: 'row', alignItems: 'center',
       backgroundColor: colors['surface-container-lowest'], padding: spacing.md, borderRadius: borderRadius.lg,
       ...shadows.card,
     },
     sellerInfo: { flex: 1, marginLeft: spacing.md },
-    sellerName: { fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600', color: colors['on-surface'], marginBottom: 2 },
-    sellerMeta: { fontFamily: 'Inter_400Regular', fontSize: 13, color: colors['on-surface-variant'] },
+    sellerName: { fontFamily: DISPLAY_FONT, fontSize: 16, fontWeight: '700', color: colors['on-surface'], marginBottom: 2 },
+    sellerMeta: { fontFamily: BODY_FONT, fontSize: 13, color: colors['on-surface-variant'] },
     messageBtn: {
       width: 44, height: 44, borderRadius: 22,
       backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center',
+    },
+    // Tier Card
+    tierCard: {
+      backgroundColor: colors['surface-container'],
+      padding: spacing.md,
+      borderRadius: borderRadius.lg,
+      marginBottom: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors['outline-variant'],
+    },
+    tierHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.sm,
+    },
+    tierTitle: {
+      fontFamily: DISPLAY_FONT,
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors['on-surface'],
+    },
+    tierStatus: {
+      fontFamily: BODY_FONT,
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors['primary-container'],
+    },
+    tierStepsRow: {
+      flexDirection: 'row',
+      gap: spacing.xs,
+      marginBottom: spacing.sm,
+    },
+    tierStep: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingVertical: 6,
+      paddingHorizontal: 8,
+      borderRadius: borderRadius.md,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    tierStepActive: {
+      borderColor: colors.secondary,
+      backgroundColor: colors['secondary-container'],
+    },
+    tierStepLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors['on-surface-variant'],
+    },
+    tierStepPrice: {
+      fontSize: 12.5,
+      fontWeight: '800',
+      color: colors['on-surface'],
+      marginTop: 2,
+    },
+    tierFooterText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors['on-surface-variant'],
+      marginTop: 8,
+    },
+    verifiedHostPill: {
+      backgroundColor: colors['secondary-container'],
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: borderRadius.full,
+      marginLeft: 6,
+    },
+    verifiedHostText: {
+      fontSize: 10.5,
+      fontWeight: '700',
+      color: colors['on-secondary-container'],
     },
     section: { marginBottom: 0 },
     // Hashtags
@@ -202,8 +275,8 @@ export const DealDetailScreen: React.FC = () => {
     reactionLabelActive: { color: colors.white, fontWeight: '700' },
     ctaRow: { flexDirection: 'row', alignItems: 'center' },
     ctaLeft: { marginRight: spacing.lg },
-    ctaPrice: { fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700', color: colors['on-surface'] },
-    ctaLabel: { fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'] },
+    ctaPrice: { fontFamily: DISPLAY_FONT, fontSize: 18, fontWeight: '800', color: colors['on-surface'] },
+    ctaLabel: { fontFamily: BODY_FONT, fontSize: 12, color: colors['on-surface-variant'] },
     ctaButton: { flex: 1 },
     // ── Comments ────────────────────────────────────────────────────────────────
     commentsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
@@ -272,17 +345,56 @@ export const DealDetailScreen: React.FC = () => {
   const loadDeal = async () => {
     try {
       if (dealId) {
-        const data = await dealsApi.getById(dealId);
-        setDeal(data);
-        if (data.hashtags) setHashtags(data.hashtags);
+        if (dealParam) {
+          setDeal(dealParam);
+        } else {
+          try {
+            const data = await dealsApi.getById(dealId);
+            setDeal(data);
+            if (data.hashtags) setHashtags(data.hashtags);
+          } catch {
+            const curated = [
+              {
+                id: 'drop-1',
+                title: 'Musang King Durian Fresh Pack (800g Sealed)',
+                description: 'Freshly harvested from Raub, Pahang. Direct farm delivery to community collection hub in Bangsar. Certified Grade A pulp with rich creamy texture.',
+                category: 'Food',
+                originalPrice: 88,
+                groupPrice: 48,
+                minMembers: 20,
+                maxMembers: 50,
+                membersJoined: 42,
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 4.5).toISOString(),
+                pickupLocation: 'Bangsar Community Hall, KL',
+                imageUrls: ['https://images.unsplash.com/photo-1587334274328-64186a80aeee?auto=format&fit=crop&w=600&q=80'],
+                status: 'Active',
+                organizerName: 'Uncle Tan Orchards',
+                createdAt: new Date().toISOString(),
+              },
+              {
+                id: 'drop-2',
+                title: 'Cameron Highlands Organic Farm Veggie Box (4kg)',
+                description: 'Hydroponic butterhead, Japanese cucumber, cherry tomatoes, baby spinach & sweet corn.',
+                category: 'Groceries',
+                originalPrice: 65,
+                groupPrice: 32,
+                minMembers: 15,
+                maxMembers: 40,
+                membersJoined: 36,
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 8).toISOString(),
+                pickupLocation: 'SS2 Community Hub, PJ',
+                imageUrls: ['https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80'],
+                status: 'Active',
+                organizerName: 'GreenPastures MY',
+                createdAt: new Date().toISOString(),
+              },
+            ].find(d => d.id === dealId);
+            setDeal(curated ?? MOCK_DEAL);
+          }
+        }
       } else {
         setDeal(dealParam ?? MOCK_DEAL);
-        if ((dealParam ?? MOCK_DEAL).hashtags) {
-          setHashtags((dealParam ?? MOCK_DEAL).hashtags as any);
-        }
       }
-    } catch {
-      setDeal(dealParam ?? MOCK_DEAL);
     } finally {
       setLoading(false);
     }
@@ -571,19 +683,7 @@ export const DealDetailScreen: React.FC = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
-
   const displayDeal = deal ?? MOCK_DEAL;
-  const discount = Math.round((1 - displayDeal.groupPrice / displayDeal.originalPrice) * 100);
-  const countdown = getCountdown(displayDeal.deadline);
-  const spotsLeft = displayDeal.maxMembers - displayDeal.membersJoined;
-
   const dealLat = (displayDeal as any).latitude ?? null;
   const dealLon = (displayDeal as any).longitude ?? null;
   const distanceFromUser =
@@ -598,6 +698,18 @@ export const DealDetailScreen: React.FC = () => {
       setShowVerifyPrompt(true);
     }
   }, [isNearby]);
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  const discount = Math.round((1 - displayDeal.groupPrice / displayDeal.originalPrice) * 100);
+  const countdown = getCountdown(displayDeal.deadline);
+  const spotsLeft = displayDeal.maxMembers - displayDeal.membersJoined;
 
   return (
     <View style={styles.container}>
@@ -682,22 +794,44 @@ export const DealDetailScreen: React.FC = () => {
             <Text style={styles.countdownValue}>{countdown}</Text>
           </View>
 
-          {/* Progress */}
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Group Buy Progress</Text>
-              <Text style={styles.progressValue}>
-                {displayDeal.membersJoined} / {displayDeal.maxMembers} joined
+          {/* Group-Order Tier Card */}
+          <View style={styles.tierCard}>
+            <View style={styles.tierHeader}>
+              <Text style={styles.tierTitle}>🎯 Group-Order Tier Savings</Text>
+              <Text style={styles.tierStatus}>
+                {displayDeal.membersJoined >= displayDeal.maxMembers
+                  ? 'Max Tier Unlocked! 🎉'
+                  : `${displayDeal.membersJoined}/${displayDeal.maxMembers} Joined`}
               </Text>
             </View>
+
+            {/* Visual Steps */}
+            <View style={styles.tierStepsRow}>
+              <View style={[styles.tierStep, displayDeal.membersJoined >= Math.round(displayDeal.maxMembers * 0.3) && styles.tierStepActive]}>
+                <Text style={styles.tierStepLabel}>Tier 1 (Base)</Text>
+                <Text style={styles.tierStepPrice}>RM {(displayDeal.groupPrice * 1.15).toFixed(2)}</Text>
+              </View>
+              <View style={[styles.tierStep, displayDeal.membersJoined >= Math.round(displayDeal.maxMembers * 0.7) && styles.tierStepActive]}>
+                <Text style={styles.tierStepLabel}>Tier 2 (Mid)</Text>
+                <Text style={styles.tierStepPrice}>RM {(displayDeal.groupPrice * 1.08).toFixed(2)}</Text>
+              </View>
+              <View style={[styles.tierStep, displayDeal.membersJoined >= displayDeal.maxMembers && styles.tierStepActive]}>
+                <Text style={styles.tierStepLabel}>Tier 3 (Max)</Text>
+                <Text style={[styles.tierStepPrice, { color: colors.secondary }]}>RM {displayDeal.groupPrice.toFixed(2)}</Text>
+              </View>
+            </View>
+
             <ProgressBar
               current={displayDeal.membersJoined}
               total={displayDeal.maxMembers}
-              height={10}
+              height={8}
               showText={false}
             />
-            <Text style={styles.progressSubtext}>
-              {spotsLeft > 0 ? `${spotsLeft} more needed to unlock deal` : 'Deal unlocked! 🥳'}
+
+            <Text style={styles.tierFooterText}>
+              {spotsLeft > 0
+                ? `⚡ Only ${spotsLeft} more neighbors needed to unlock the best price!`
+                : '🥳 Target reached! Everyone in this group gets maximum discount.'}
             </Text>
           </View>
 
@@ -720,7 +854,12 @@ export const DealDetailScreen: React.FC = () => {
             >
               <Avatar name={displayDeal.organizerName} uri={displayDeal.organizerAvatar} size={48} verified />
               <View style={styles.sellerInfo}>
-                <Text style={styles.sellerName}>{displayDeal.organizerName}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                  <Text style={styles.sellerName}>{displayDeal.organizerName}</Text>
+                  <View style={styles.verifiedHostPill}>
+                    <Text style={styles.verifiedHostText}>Verified Host ★ 4.9</Text>
+                  </View>
+                </View>
                 <Text style={styles.sellerMeta}>📍 {displayDeal.pickupLocation?.split(',')[0] ?? 'Kuala Lumpur'}</Text>
               </View>
               <TouchableOpacity style={styles.messageBtn} onPress={() => navigation.navigate('ChatInbox')}>

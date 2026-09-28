@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
 import { useTheme } from '../../contexts/ThemeContext';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { authApi, setAccessToken } from '../../api/client';
 import { signInWithGoogle } from '../../api/googleAuth';
 import * as DemoMode from '../../api/demoMode';
@@ -25,7 +25,7 @@ export const LoginScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,24 +55,29 @@ export const LoginScreen: React.FC = () => {
       textAlign: 'center',
     },
     branding: {
-      alignItems: 'center', marginBottom: spacing.xl, paddingTop: spacing.xl,
+      alignItems: 'center', marginBottom: spacing.lg, paddingTop: spacing.md,
     },
     logoContainer: {
-      width: 80, height: 80, borderRadius: 40,
+      width: 76, height: 76, borderRadius: 38,
       backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center',
-      marginBottom: spacing.md,
+      marginBottom: spacing.sm,
+      shadowColor: colors['primary-container'],
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.35,
+      shadowRadius: 14,
+      elevation: 6,
     },
-    logo: { fontSize: 40 },
+    logo: { fontSize: 38 },
     appName: {
-      fontFamily: 'NunitoSans_800ExtraBold', fontSize: 24, fontWeight: '800',
-      color: colors['primary-container'], marginBottom: spacing.xs,
+      fontFamily: DISPLAY_FONT, fontSize: 26, fontWeight: '800',
+      color: colors['on-background'], marginBottom: 2,
     },
-    tagline: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'] },
+    tagline: { fontFamily: BODY_FONT, fontSize: 13.5, color: colors['on-surface-variant'] },
     demoBadge: {
       marginTop: spacing.xs,
       backgroundColor: colors['primary-container'],
       color: colors.white,
-      fontFamily: 'Inter_700Bold',
+      fontFamily: BODY_FONT,
       fontSize: 10,
       fontWeight: '700',
       paddingHorizontal: spacing.sm,
@@ -80,47 +85,55 @@ export const LoginScreen: React.FC = () => {
       borderRadius: 4,
       overflow: 'hidden',
     },
-    form: { marginBottom: spacing.xl },
+    form: {
+      backgroundColor: isDark ? colors['surface-container'] : colors.white,
+      borderRadius: borderRadius.xl,
+      padding: 22,
+      marginBottom: spacing.lg,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      ...shadows.card,
+    },
     formTitle: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 24, fontWeight: '700',
-      color: colors['on-background'], marginBottom: spacing.xs,
+      fontFamily: DISPLAY_FONT, fontSize: 22, fontWeight: '800',
+      color: colors['on-background'], marginBottom: 4,
     },
     formSubtitle: {
-      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
-      marginBottom: spacing.xl,
+      fontFamily: BODY_FONT, fontSize: 13.5, color: colors['on-surface-variant'],
+      marginBottom: spacing.lg,
     },
     input: { marginBottom: spacing.md },
     forgotBtn: { alignItems: 'center', marginTop: spacing.md },
     forgotText: {
-      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['primary-container'],
+      fontFamily: BODY_FONT, fontSize: 13.5, color: colors.primary,
       fontWeight: '600',
     },
     dividerContainer: {
-      flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl,
+      flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg,
     },
     dividerLine: { flex: 1, height: 1, backgroundColor: colors['outline-variant'] },
     dividerText: {
-      fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface-variant'],
+      fontFamily: BODY_FONT, fontSize: 13, color: colors['on-surface-variant'],
       paddingHorizontal: spacing.md,
     },
-    socialButtons: { gap: spacing.md, marginBottom: spacing.xl },
+    socialButtons: { gap: spacing.md, marginBottom: spacing.lg },
     socialBtn: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-      paddingVertical: 14, borderRadius: borderRadius.lg,
-      borderWidth: 1.5, borderColor: colors['outline-variant'],
-      backgroundColor: colors['surface-container-lowest'],
+      paddingVertical: 13, borderRadius: borderRadius.md,
+      borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+      backgroundColor: isDark ? colors['surface-container'] : colors.white,
     },
     socialBtnDisabled: { opacity: 0.5 },
-    socialIcon: { fontSize: 20, marginRight: spacing.sm },
+    socialIcon: { fontSize: 18, marginRight: spacing.sm },
     socialText: {
-      fontFamily: 'Inter_600SemiBold', fontSize: 16, fontWeight: '600',
+      fontFamily: DISPLAY_FONT, fontSize: 15, fontWeight: '700',
       color: colors['on-surface'],
     },
     terms: {
-      fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'],
+      fontFamily: BODY_FONT, fontSize: 12, color: colors['on-surface-variant'],
       textAlign: 'center', lineHeight: 18,
     },
-    termsLink: { color: colors['primary-container'], fontWeight: '600' },
+    termsLink: { color: colors.primary, fontWeight: '600' },
   });
 
   // ── Email login ────────────────────────────────────────────────────────────
@@ -147,7 +160,8 @@ export const LoginScreen: React.FC = () => {
         navigation.replace('ProfileSetup');
       }
     } catch (err: any) {
-      if (err.message === 'EMAIL_NOT_VERIFIED') {
+      console.error('Login error:', err);
+      if (err.message === 'EMAIL_NOT_VERIFIED' || err.message?.toLowerCase().includes('verify')) {
         setStep('otp');
       } else {
         Alert.alert('Login failed', err.message);

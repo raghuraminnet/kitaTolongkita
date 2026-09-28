@@ -11,7 +11,7 @@ namespace KitaTolongKita.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/audit-logs")]
-[Authorize(AuthenticationSchemes = "InternalApiKey", Roles = "InternalApi")]
+[Authorize(Policy = "AdminOrInternal")]
 public class AuditLogsController : ControllerBase
 {
     private readonly IActivityLogService _logService;

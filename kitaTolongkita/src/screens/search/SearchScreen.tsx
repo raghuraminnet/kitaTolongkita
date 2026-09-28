@@ -16,14 +16,13 @@ import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Search, SlidersHorizontal, Bell } from 'lucide-react-native';
 import { useLocation } from '../../contexts/LocationContext';
-import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import { colors, typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { dealsApi } from '../../api/client';
 import { EmptyState } from '../../components';
 import { timeUntil } from '../../utils/time';
 import type { Deal } from '../../api/client';
 
-const API_BASE = 'http://76.13.219.191:5000/api';
 const CATEGORIES = ['All', 'Food', 'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Drinks'];
 const SORT_OPTIONS = [
   { key: 'newest', label: 'Newest' },
@@ -35,20 +34,30 @@ const MOCK_DEALS: Deal[] = [
   {
     id: '1', title: 'Aneka Kuih Muih — Premium Ramadan Set A', description: '', category: 'Food',
     originalPrice: 38, groupPrice: 25, minMembers: 50, maxMembers: 100, membersJoined: 42,
-    deadline: new Date(Date.now() + 216000000).toISOString(), pickupLocation: 'Kuala Lumpur',
-    imageUrls: [], status: 'Active', organizerName: 'Makcik Ros', createdAt: new Date().toISOString(),
+    deadline: new Date(Date.now() + 216000000).toISOString(), pickupLocation: 'Bangsar, KL',
+    imageUrls: ['https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80'],
+    status: 'Active', organizerName: 'Makcik Ros', createdAt: new Date().toISOString(),
   },
   {
     id: '2', title: 'Wireless Earbuds Pro — Noise Cancelling', description: '', category: 'Electronics',
     originalPrice: 149, groupPrice: 89, minMembers: 30, maxMembers: 80, membersJoined: 78,
     deadline: new Date(Date.now() + 108000000).toISOString(), pickupLocation: 'Petaling Jaya',
-    imageUrls: [], status: 'Active', organizerName: 'TechDeals MY', createdAt: new Date().toISOString(),
+    imageUrls: ['https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=600&q=80'],
+    status: 'Active', organizerName: 'TechDeals MY', createdAt: new Date().toISOString(),
   },
   {
-    id: '3', title: 'Malaysian Batik — Limited Edition 2024', description: '', category: 'Fashion',
+    id: '3', title: 'Malaysian Batik — Limited Edition 2026', description: '', category: 'Fashion',
     originalPrice: 99, groupPrice: 65, minMembers: 20, maxMembers: 50, membersJoined: 15,
     deadline: new Date(Date.now() + 324000000).toISOString(), pickupLocation: 'Shah Alam',
-    imageUrls: [], status: 'Active', organizerName: 'Batik Heritage', createdAt: new Date().toISOString(),
+    imageUrls: ['https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=600&q=80'],
+    status: 'Active', organizerName: 'Batik Heritage', createdAt: new Date().toISOString(),
+  },
+  {
+    id: '4', title: 'Cameron Highlands Organic Farm Box (4kg)', description: '', category: 'Groceries',
+    originalPrice: 65, groupPrice: 32, minMembers: 20, maxMembers: 40, membersJoined: 36,
+    deadline: new Date(Date.now() + 144000000).toISOString(), pickupLocation: 'Damansara, PJ',
+    imageUrls: ['https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80'],
+    status: 'Active', organizerName: 'GreenPastures MY', createdAt: new Date().toISOString(),
   },
 ];
 
@@ -124,7 +133,7 @@ export const SearchScreen: React.FC = () => {
 
       if (results.length === 0) {
         const fallback = await dealsApi.search({ sortBy, page: currentPage, pageSize: 20 });
-        results = fallback.items ?? MOCK_DEALS;
+        results = (fallback?.items && fallback.items.length > 0) ? fallback.items : MOCK_DEALS;
       }
 
       if (reset) {
@@ -523,7 +532,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: spacing.md,
   },
   headerTitle: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 24, fontWeight: '700',
+    fontFamily: DISPLAY_FONT, fontSize: 24, fontWeight: '800',
   },
   notificationBtn: {
     width: 44, height: 44, borderRadius: 22,
@@ -539,13 +548,13 @@ const styles = StyleSheet.create({
   },
   searchIcon: { fontSize: 16, marginRight: spacing.sm },
   searchInput: {
-    flex: 1, fontFamily: 'Inter_400Regular', fontSize: 16,
+    flex: 1, fontFamily: BODY_FONT, fontSize: 15,
   },
   sortBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     borderRadius: borderRadius.full, paddingHorizontal: spacing.md, height: 44, justifyContent: 'center',
   },
-  sortBtnText: { fontFamily: 'Inter_400Regular', fontSize: 13 },
+  sortBtnText: { fontFamily: BODY_FONT, fontSize: 13, fontWeight: '600' },
   sortMenu: {
     marginHorizontal: spacing.md, marginBottom: spacing.sm,
     borderRadius: borderRadius.lg, overflow: 'hidden', paddingVertical: spacing.xs,
@@ -564,16 +573,16 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
   },
   categoryFilterText: {
-    fontFamily: 'Inter_400Regular', fontSize: 13,
+    fontFamily: BODY_FONT, fontSize: 13, fontWeight: '600',
   },
   list: { paddingHorizontal: spacing.md, paddingBottom: 120 },
   dealCard: {
     flexDirection: 'row',
-    borderRadius: borderRadius.lg, padding: spacing.sm, marginBottom: spacing.sm,
+    borderRadius: borderRadius.xl, padding: spacing.sm + 2, marginBottom: spacing.sm + 4,
     ...shadows.card,
   },
   thumbnail: {
-    width: 88, height: 88, borderRadius: borderRadius.md,
+    width: 88, height: 88, borderRadius: borderRadius.lg,
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   thumbnailImage: { width: '100%', height: '100%', resizeMode: 'cover' },
@@ -589,20 +598,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', marginBottom: 4,
   },
   categoryChip: {
-    paddingHorizontal: 6, paddingVertical: 1,
-    borderRadius: borderRadius.sm,
+    paddingHorizontal: 8, paddingVertical: 2,
+    borderRadius: borderRadius.full,
   },
-  categoryChipText: { ...typography['label-sm'], fontSize: 10 },
+  categoryChipText: { ...typography['label-sm'], fontSize: 10, fontWeight: '700' },
   distance: { ...typography['label-sm'], fontSize: 11 },
   dealTitle: {
-    fontFamily: 'Inter_600SemiBold', fontSize: 14, lineHeight: 18, marginBottom: 4,
+    fontFamily: DISPLAY_FONT, fontSize: 14, fontWeight: '700', lineHeight: 18, marginBottom: 4,
   },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   groupPrice: {
-    fontFamily: 'NunitoSans_700Bold', fontSize: 16, fontWeight: '800',
+    fontFamily: DISPLAY_FONT, fontSize: 17, fontWeight: '800',
   },
   originalPrice: {
-    fontFamily: 'Inter_400Regular', fontSize: 12, textDecorationLine: 'line-through',
+    fontFamily: BODY_FONT, fontSize: 12, textDecorationLine: 'line-through',
   },
   dealFooter: { gap: 4 },
   progressTrack: { height: 4, borderRadius: 2 },

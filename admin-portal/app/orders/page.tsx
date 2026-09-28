@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { api } from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import { Search, Package, PackageCheck } from 'lucide-react'
 
-const STATUSES = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled']
+const STATUSES = ['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled']
 
 export default function OrdersPage() {
   const router = useRouter()
@@ -25,7 +26,7 @@ export default function OrdersPage() {
 
   const loadOrders = () => {
     setLoading(true)
-    api.orders({ status: status || undefined, search: search || undefined, page, pageSize })
+    api.orders({ status: status === 'All' ? undefined : (status || undefined), search: search || undefined, page, pageSize })
       .then((res: any) => { if (res.items) { setOrders(res.items); setTotal(res.totalCount) } })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -55,16 +56,23 @@ export default function OrdersPage() {
       <Sidebar />
       <main className="main">
         <div className="topbar">
-          <div className="page-title">Orders</div>
+          <div>
+            <div className="page-title">Order Fulfillment</div>
+            <div className="text-sm text-muted">{total} customer transactions</div>
+          </div>
           <div className="flex gap-2">
-            {['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'].map(s => (
-              <button key={s} className={`btn btn-sm ${status === s ? 'btn-primary' : 'btn-outline'}`}
-                onClick={() => { setStatus(s); setPage(1) }}>{s}</button>
-            ))}
+            {STATUSES.map(s => {
+              const active = (s === 'All' && !status) || status === s
+              return (
+                <button key={s} className={`btn btn-sm ${active ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => { setStatus(s === 'All' ? '' : s); setPage(1) }}>{s}</button>
+              )
+            })}
           </div>
         </div>
         <div className="page-content">
-          <div className="search-bar">
+          <div className="search-input-wrap mb-4" style={{ maxWidth: 460 }}>
+            <Search size={16} />
             <input placeholder="Search by buyer email or deal title..." value={search}
               onChange={e => setSearch(e.target.value)} />
           </div>
@@ -72,7 +80,13 @@ export default function OrdersPage() {
           {loading ? (
             <div className="loading"><div className="spinner" /></div>
           ) : orders.length === 0 ? (
-            <div className="empty-state"><div className="icon">📦</div><h3>No orders found</h3></div>
+            <div className="empty-state">
+              <div className="icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                <Package size={42} color="var(--muted)" />
+              </div>
+              <h3>No orders found</h3>
+              <p className="text-sm text-muted">No transactions matched your selected filters.</p>
+            </div>
           ) : (
             <>
               <div className="card">

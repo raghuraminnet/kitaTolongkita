@@ -28,7 +28,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHostedService<ConfigReloadService>();
 
 // ── Redis Distributed Cache ─────────────────────────────────────────────────
-var redisUrl = builder.Configuration["Redis:Url"] ?? "redis://redis:6379";
+var redisUrl = (builder.Configuration["Redis:Url"] ?? "redis:6379").Replace("redis://", "");
 builder.Services.AddStackExchangeRedisCache(opts =>
 {
     opts.Configuration = redisUrl;
@@ -144,12 +144,24 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization(opts =>
 {
-    opts.AddPolicy("SuperAdmin", p => p.RequireRole("SuperAdmin"));
-    opts.AddPolicy("Moderator", p => p.RequireRole("SuperAdmin", "Moderator"));
-    opts.AddPolicy("Viewer", p => p.RequireRole("SuperAdmin", "Moderator", "Viewer"));
+    opts.AddPolicy("SuperAdmin", p => {
+        p.AddAuthenticationSchemes("AdminJwt", "InternalApiKey");
+        p.RequireRole("SuperAdmin");
+    });
+    opts.AddPolicy("Moderator", p => {
+        p.AddAuthenticationSchemes("AdminJwt", "InternalApiKey");
+        p.RequireRole("SuperAdmin", "Moderator");
+    });
+    opts.AddPolicy("Viewer", p => {
+        p.AddAuthenticationSchemes("AdminJwt", "InternalApiKey");
+        p.RequireRole("SuperAdmin", "Moderator", "Viewer");
+    });
     // Allows either AdminJwt (admin portal) OR InternalApiKey (internal microservices)
     opts.AddPolicy("AdminOrInternal", p =>
-        p.RequireAuthenticatedUser()); // AuthN handled by scheme selection below
+    {
+        p.AddAuthenticationSchemes("AdminJwt", "InternalApiKey");
+        p.Requirements.Add(new AdminOrInternalRequirement());
+    });
 });
 
 // Custom policy that allows either AdminJwt OR InternalApiKey authentication
@@ -220,6 +232,7 @@ app.UseExceptionHandling();
 app.UseRequestLogging();
 app.UseProblemDetails();
 app.UseCors("AllowMobile");
+app.UseStaticFiles();
 
 // ── Internal Service Auth (must run BEFORE authentication) ──────────────────
 app.UseInternalServiceAuth();
@@ -233,7 +246,7 @@ app.MapControllers();
 //  1. If DB is completely empty  → EnsureCreated() lays down all tables from current model
 //  2. If DB exists but stale      → Migrate() applies any pending EF migrations
 // This survives volume wipes without needing `dotnet ef` CLI in the container.
-await using var scope = app.Services.CreateScope();
+using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 

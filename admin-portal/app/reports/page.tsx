@@ -115,31 +115,35 @@ export default function ReportsPage() {
         { label: 'Under Review', value: stats.underReviewCount, color: '#2196F3' },
         { label: 'Resolved (7d)', value: stats.resolvedThisWeek, color: '#4CAF50' },
       ]
-    : []
+    : [];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif', background: '#f5f5f5' }}>
+    <div className="layout">
       <Sidebar />
-      <main style={{ flex: 1, padding: '24px 32px', overflow: 'auto' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>Reports</h1>
-            <p style={{ margin: '4px 0 0', color: '#666', fontSize: 14 }}>Review and act on user-submitted reports</p>
+      <main className="main">
+        <div className="topbar">
+          <div className="topbar-left">
+            <div className="page-title">Community Reports</div>
+            <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
+              Review and act on user-submitted moderation reports
+            </div>
           </div>
         </div>
 
-        {/* Stats */}
-        {statCards.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-            {statCards.map((s) => (
-              <div key={s.label} style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-                <p style={{ margin: 0, fontSize: 13, color: '#666', marginBottom: 4 }}>{s.label}</p>
-                <p style={{ margin: 0, fontSize: 32, fontWeight: 800, color: s.color ?? '#1a1a1a' }}>{s.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="page-content">
+          {/* Stats */}
+          {statCards.length > 0 && (
+            <div className="kpi-grid" style={{ marginBottom: 24 }}>
+              {statCards.map((s) => (
+                <div key={s.label} className="kpi-card">
+                  <div className="kpi-label">{s.label}</div>
+                  <div className="kpi-value" style={{ color: s.color ?? '#0F172A', marginTop: 6 }}>
+                    {s.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
         {/* Filters */}
         <div style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', marginBottom: 16 }}>
@@ -248,6 +252,7 @@ export default function ReportsPage() {
             </div>
           )}
         </div>
+      </div>
       </main>
 
       {/* Detail Modal */}

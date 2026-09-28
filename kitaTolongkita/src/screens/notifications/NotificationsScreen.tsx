@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { typography, spacing, borderRadius } from '../../theme';
+import { typography, spacing, borderRadius, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { notificationsApi } from '../../api/client';
 
@@ -34,7 +34,7 @@ export const NotificationsScreen: React.FC = () => {
     },
     backBtn: { fontSize: 24, color: colors['on-surface'] },
     headerTitle: {
-      fontFamily: 'NunitoSans_700Bold', fontSize: 18, fontWeight: '700',
+      fontFamily: DISPLAY_FONT, fontSize: 18, fontWeight: '800',
       color: colors['on-background'],
     },
     list: { paddingBottom: 100 },
@@ -49,15 +49,15 @@ export const NotificationsScreen: React.FC = () => {
     notifContent: { flex: 1 },
     notifHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
     notifTitle: {
-      fontFamily: 'Inter_400Regular', fontSize: 15, fontWeight: '400',
+      fontFamily: BODY_FONT, fontSize: 15, fontWeight: '500',
       color: colors['on-surface'],
     },
     unreadTitle: { fontWeight: '700' },
     notifTime: {
-      fontFamily: 'Inter_400Regular', fontSize: 12, color: colors['on-surface-variant'],
+      fontFamily: BODY_FONT, fontSize: 12, color: colors['on-surface-variant'],
     },
     notifDesc: {
-      fontFamily: 'Inter_400Regular', fontSize: 13, color: colors['on-surface-variant'],
+      fontFamily: BODY_FONT, fontSize: 13, color: colors['on-surface-variant'],
       lineHeight: 18,
     },
     unreadDot: {

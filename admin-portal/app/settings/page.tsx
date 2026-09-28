@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { api, AiConfig, AiConfigInput } from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import { User, Cpu, ShieldCheck, Users, KeyRound, Plus, Check, Play } from 'lucide-react'
 
 type Tab = 'account' | 'ai-configs' | 'moderation' | 'admins'
 
@@ -148,24 +149,35 @@ export default function SettingsPage() {
     } catch (err: any) { alert(err.message) }
   }
 
-  const TABS: { id: Tab; label: string }[] = [
-    { id: 'account', label: '👤 Account' },
-    { id: 'ai-configs', label: '🤖 AI Configs' },
-    { id: 'moderation', label: '⚖️ Moderation Rules' },
-    { id: 'admins', label: '🔐 Admin Users' },
+  const TABS: { id: Tab; label: string; icon: any }[] = [
+    { id: 'account', label: 'Security & Account', icon: KeyRound },
+    { id: 'ai-configs', label: 'AI Inference Engines', icon: Cpu },
+    { id: 'moderation', label: 'Moderation Rules', icon: ShieldCheck },
+    { id: 'admins', label: 'Admin Staff', icon: Users },
   ]
 
   return (
     <div className="layout">
       <Sidebar />
       <main className="main">
-        <div className="topbar"><div className="page-title">Settings</div></div>
+        <div className="topbar">
+          <div>
+            <div className="page-title">Platform & System Settings</div>
+            <div className="text-sm text-muted">Configure AI engines, safety policies, and administrative access</div>
+          </div>
+        </div>
         <div className="page-content">
-          <div className="flex gap-2 mb-4">
-            {TABS.map(t => (
-              <button key={t.id} className={`btn ${tab === t.id ? 'btn-primary' : 'btn-outline'}`}
-                onClick={() => setTab(t.id)}>{t.label}</button>
-            ))}
+          <div className="flex gap-2 mb-4" style={{ flexWrap: 'wrap' }}>
+            {TABS.map(t => {
+              const Icon = t.icon
+              return (
+                <button key={t.id} className={`btn btn-sm ${tab === t.id ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => setTab(t.id)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                  <Icon size={15} /> {t.label}
+                </button>
+              )
+            })}
           </div>
 
           {/* ── Account ── */}

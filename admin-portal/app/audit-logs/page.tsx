@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { api } from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import { Download, Search, RefreshCw } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -254,7 +255,7 @@ export default function AuditLogsPage() {
     if (!token) return
 
     const qs = new URLSearchParams(params as any).toString()
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api'
     const res = await fetch(`${API_BASE}/audit-logs/export?${qs}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -278,22 +279,17 @@ export default function AuditLogsPage() {
         {/* ── Top bar ── */}
         <div className="topbar">
           <div>
-            <div className="page-title">Audit Logs</div>
+            <div className="page-title">Audit & System Logs</div>
             <div style={{ fontSize: 13, color: 'var(--muted, #6B7280)', marginTop: 2 }}>
-              {total.toLocaleString()} entries
+              {total.toLocaleString()} recorded security & system events
             </div>
           </div>
           <button
             onClick={handleExport}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '8px 16px', borderRadius: 8,
-              border: '1px solid #E5E7EB',
-              backgroundColor: '#fff', fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', color: '#374151',
-            }}
+            className="btn btn-outline btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
-            📥 Export CSV
+            <Download size={14} /> Export CSV
           </button>
         </div>
 
