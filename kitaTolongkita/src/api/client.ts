@@ -362,7 +362,7 @@ export const followApi = {
 
   getFollowStatus: (userId: string) =>
     request<{ isFollowing: boolean; followerCount: number; followingCount: number }>(
-      'GET', `/users/${userId}/follow-status}`),
+      'GET', `/users/${userId}/follow-status`),
 
   getFollowers: (userId: string, page = 1, size = 20) =>
     request<{ followers: FollowItem[]; totalFollowers: number; totalFollowing: number }>(
@@ -418,7 +418,7 @@ export const repostsApi = {
 
   getRepostStatus: (dealId: string) =>
     request<{ hasReposted: boolean; repostCount: number }>(
-      'GET', `/deals/${dealId}/repost-status}`),
+      'GET', `/deals/${dealId}/repost-status`),
 
   getMyReposts: (page = 1, size = 20) =>
     request<{ reposts: RepostItem[]; page: number; size: number }>(

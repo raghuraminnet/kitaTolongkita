@@ -6,6 +6,7 @@ using KitaTolongKita.Infrastructure.Services;
 namespace KitaTolongKita.Api.Controllers;
 
 [ApiController]
+[Route("api")]
 [Authorize]
 public class RatingsController : ControllerBase
 {
