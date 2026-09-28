@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { api } from '@/lib/api'
 import { useRouter } from 'next/navigation'
-import { Search, Users, User, Mail, Phone, Calendar, Clock, Activity, CheckCircle2, Shield } from 'lucide-react'
+import { Search, Users, User, Mail, Phone, Calendar, Clock, Activity, CheckCircle2, Shield, X } from 'lucide-react'
 
 const ACTIVITY_ICONS: Record<string, string> = {
   deal_posted: '🏷️',
@@ -40,9 +40,15 @@ export default function UsersPage() {
     const token = localStorage.getItem('admin_token')
     if (!token) { router.push('/'); return }
     loadUsers()
+  }, [])
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => loadUsers(), 400)
+    return () => clearTimeout(timer)
   }, [search])
 
-  const loadUsers = () => {
+  const loadUsers = useCallback(() => {
     setLoading(true)
     api.appUsers({ search: search || undefined })
       .then((res: any) => {
@@ -51,7 +57,7 @@ export default function UsersPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }
+  }, [search])
 
   const openUser = (user: any) => {
     setSelectedUser(user)
@@ -127,11 +133,17 @@ export default function UsersPage() {
         </div>
         <div className="page-content">
           <div className="flex gap-2 mb-4" style={{ alignItems: 'center' }}>
-            <div className="search-input-wrap flex-1" style={{ maxWidth: 440 }}>
+            <div className="search-input-wrap flex-1" style={{ maxWidth: 440, position: 'relative' }}>
               <Search size={16} />
               <input placeholder="Search users by email, name, or phone..." value={search}
                 onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && loadUsers()} />
+              {search && (
+                <button onClick={() => setSearch('')}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                  <X size={14} />
+                </button>
+              )}
             </div>
             <button className="btn btn-primary btn-sm" onClick={loadUsers}>Search</button>
           </div>

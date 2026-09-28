@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { api } from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import { Search, Tag } from 'lucide-react'
 
 interface Category {
   id: number
@@ -16,6 +17,7 @@ interface Category {
 export default function CategoriesPage() {
   const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
+  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [createName, setCreateName] = useState('')
@@ -95,21 +97,44 @@ export default function CategoriesPage() {
     }
   }
 
+  // Local search filter
+  const displayed = search
+    ? categories.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || (c.description || '').toLowerCase().includes(search.toLowerCase()))
+    : categories
+
   return (
     <div className="layout">
       <Sidebar />
       <main className="main">
         <div className="topbar">
-          <div className="page-title">🏷️ Categories</div>
+          <div>
+            <div className="page-title">Categories</div>
+            <div className="text-sm text-muted">{categories.length} categories configured</div>
+          </div>
           <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
             + Add Category
           </button>
         </div>
         <div className="page-content">
+          {/* Search */}
+          <div className="flex gap-2 mb-4" style={{ alignItems: 'center' }}>
+            <div className="search-input-wrap flex-1" style={{ maxWidth: 380 }}>
+              <Search size={16} />
+              <input
+                placeholder="Search categories..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+
           {loading ? (
             <div className="loading"><div className="spinner" /></div>
-          ) : categories.length === 0 ? (
-            <div className="empty-state"><div className="icon">🏷️</div><h3>No categories yet</h3></div>
+          ) : displayed.length === 0 ? (
+            <div className="empty-state">
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Tag size={42} color="var(--text-muted)" /></div>
+              <h3>{search ? 'No categories match your search' : 'No categories yet'}</h3>
+            </div>
           ) : (
             <div className="card">
               <div className="table-wrap">
@@ -118,7 +143,7 @@ export default function CategoriesPage() {
                     <tr><th>Name</th><th>Description</th><th>Deal Count</th><th>Status</th><th>Actions</th></tr>
                   </thead>
                   <tbody>
-                    {categories.map(cat => (
+                    {displayed.map(cat => (
                       <tr key={cat.id}>
                         <td className="font-bold">{cat.name}</td>
                         <td className="text-sm text-muted">{cat.description || '-'}</td>
@@ -162,12 +187,12 @@ export default function CategoriesPage() {
               <div className="form-group">
                 <label>Category Name *</label>
                 <input value={createName} onChange={e => setCreateName(e.target.value)}
-                  placeholder="e.g. Food & Beverages" required style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }} />
+                  placeholder="e.g. Food & Beverages" required />
               </div>
               <div className="form-group">
                 <label>Description</label>
                 <textarea value={createDesc} onChange={e => setCreateDesc(e.target.value)}
-                  placeholder="Optional description..." rows={3} style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }} />
+                  placeholder="Optional description..." rows={3} />
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setShowCreate(false)}>Cancel</button>
@@ -191,17 +216,16 @@ export default function CategoriesPage() {
             <form onSubmit={handleEdit}>
               <div className="form-group">
                 <label>Category Name *</label>
-                <input value={editName} onChange={e => setEditName(e.target.value)}
-                  required style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }} />
+                <input value={editName} onChange={e => setEditName(e.target.value)} required />
               </div>
               <div className="form-group">
                 <label>Description</label>
-                <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)}
-                  rows={3} style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }} />
+                <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} />
               </div>
               <div className="form-group">
-                <label>
-                  <input type="checkbox" checked={editActive} onChange={e => setEditActive(e.target.checked)} style={{ marginRight: 8 }} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={editActive} onChange={e => setEditActive(e.target.checked)}
+                    style={{ width: 16, height: 16, accentColor: 'var(--primary)' }} />
                   Active (visible in app)
                 </label>
               </div>
