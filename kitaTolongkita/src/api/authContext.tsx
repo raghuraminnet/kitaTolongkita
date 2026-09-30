@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authApi, getAccessToken, setAccessToken, clearTokens } from '../api/client';
 import * as DemoMode from '../api/demoMode';
+import { registerForPushNotifications } from '../api/notifications';
 import type { User } from '../api/client';
 
 interface AuthContextType {
@@ -58,6 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(stored);
       const me = await authApi.getMe();
       setUser(me);
+
+      // Register device for push notifications in the background
+      registerForPushNotifications().catch(() => {});
     } catch {
       await clearTokens();
       setToken(null);
@@ -81,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const me = await authApi.getMe();
       setUser(me);
+      registerForPushNotifications().catch(() => {});
     } catch {
       setUser(null);
     }

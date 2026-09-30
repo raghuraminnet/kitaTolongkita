@@ -350,6 +350,8 @@ export const notificationsApi = {
     }
     return request<Notification[]>('GET', '/notifications');
   },
+  markAsRead: (id: string) => request<{ success: boolean }>('PATCH', `/notifications/${id}/read`),
+  markAllAsRead: () => request<{ count: number }>('POST', '/notifications/read-all'),
 };
 
 // ── Follow API ─────────────────────────────────────────────────────────────────
@@ -822,5 +824,10 @@ export const usersApi = {
   /** Get public deals posted by a specific user. */
   getDealsByUser: async (userId: string): Promise<Deal[]> => {
     return request('GET', `/deals/user/${userId}`, undefined, true) as Promise<Deal[]>;
+  },
+
+  /** Register or update device push token on backend */
+  registerPushToken: async (token: string, platform: 'android' | 'ios' | 'web'): Promise<{ message: string }> => {
+    return request<{ message: string }>('POST', '/users/push-token', { token, platform });
   },
 };

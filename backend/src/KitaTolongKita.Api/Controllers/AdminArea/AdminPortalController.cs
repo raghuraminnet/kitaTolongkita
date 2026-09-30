@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Infrastructure.Data;
+using KitaTolongKita.Infrastructure.Services;
 
 namespace KitaTolongKita.Api.Controllers.AdminArea;
 
@@ -23,11 +24,22 @@ public class AdminPortalController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly ILogger<AdminPortalController> _logger;
+    private readonly IPushNotificationService _push;
+    private readonly IAdminAlertService _adminAlerts;
+    private readonly IElasticsearchService _es;
 
-    public AdminPortalController(AppDbContext db, ILogger<AdminPortalController> logger)
+    public AdminPortalController(
+        AppDbContext db,
+        ILogger<AdminPortalController> logger,
+        IPushNotificationService push,
+        IAdminAlertService adminAlerts,
+        IElasticsearchService es)
     {
         _db = db;
         _logger = logger;
+        _push = push;
+        _adminAlerts = adminAlerts;
+        _es = es;
     }
 
     private object Paged<T>(List<T> items, int total, int page, int pageSize) =>
@@ -316,6 +328,21 @@ public class AdminPortalController : ControllerBase
         deal.ModerationRejectReason = null;
         deal.Status = DealStatus.Active;
         await _db.SaveChangesAsync();
+
+        // Sync to Elasticsearch so the approved deal immediately appears in search
+        try { await _es.RefreshDealIndexAsync(deal.Id); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Failed to sync deal {DealId} to ES after admin approve", deal.Id); }
+
+        if (deal.OrganizerId.HasValue)
+        {
+            await _push.SendAndStoreAsync(
+                deal.OrganizerId.Value,
+                "deal_approved",
+                "Deal Approved! 🎉",
+                $"Your deal '{deal.Title}' has been approved and is now live.",
+                new { dealId = deal.Id, type = "deal" });
+        }
+
         return Ok(new { success = true, message = "Deal approved and published." });
     }
 
@@ -328,6 +355,21 @@ public class AdminPortalController : ControllerBase
         deal.ModerationRejectReason = body?.Reason ?? "Rejected by administrator.";
         deal.Status = DealStatus.Cancelled;
         await _db.SaveChangesAsync();
+
+        // Sync to Elasticsearch so rejected deal disappears from search
+        try { await _es.RefreshDealIndexAsync(deal.Id); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Failed to sync deal {DealId} to ES after admin reject", deal.Id); }
+
+        if (deal.OrganizerId.HasValue)
+        {
+            await _push.SendAndStoreAsync(
+                deal.OrganizerId.Value,
+                "deal_rejected",
+                "Deal Moderation Update",
+                $"Your deal '{deal.Title}' was declined: {deal.ModerationRejectReason}",
+                new { dealId = deal.Id, type = "deal" });
+        }
+
         return Ok(new { success = true, message = "Deal rejected." });
     }
 
@@ -383,10 +425,27 @@ public class AdminPortalController : ControllerBase
     [HttpPatch("orders/{id:guid}/status")]
     public async Task<IActionResult> UpdateOrderStatus(Guid id, [FromBody] UpdateOrderStatusRequest body)
     {
-        var o = await _db.DealOrders.FindAsync(id);
+        var o = await _db.DealOrders.Include(x => x.Deal).FirstOrDefaultAsync(x => x.Id == id);
         if (o == null) return NotFound();
         if (Enum.TryParse<OrderStatus>(body.Status, true, out var s)) o.Status = s;
         await _db.SaveChangesAsync();
+
+        var statusEmoji = body.Status.ToLowerInvariant() switch
+        {
+            "confirmed" => "🛍️",
+            "shipped" or "outfordelivery" => "🚚",
+            "delivered" => "✅",
+            "cancelled" => "⚠️",
+            _ => "📦"
+        };
+
+        await _push.SendAndStoreAsync(
+            o.BuyerId,
+            "order_update",
+            $"Order {body.Status} {statusEmoji}",
+            $"Your order for '{(o.Deal != null ? o.Deal.Title : "Deal")}' is now {body.Status}.",
+            new { orderId = o.Id, type = "order", status = body.Status });
+
         return Ok(new { message = "Order status updated." });
     }
 
@@ -514,12 +573,14 @@ public class AdminPortalController : ControllerBase
             {
                 deal.ModerationStatus = ModerationStatus.Approved;
                 deal.Status = DealStatus.Active;
+                _ = Task.Run(async () => { try { await _es.RefreshDealIndexAsync(deal.Id); } catch {} });
             }
             else if (req.Action == "reject")
             {
                 deal.ModerationStatus = ModerationStatus.Rejected;
                 deal.Status = DealStatus.Cancelled;
                 deal.ModerationRejectReason = req.Reason;
+                _ = Task.Run(async () => { try { await _es.RefreshDealIndexAsync(deal.Id); } catch {} });
             }
             succeeded++;
         }
@@ -579,6 +640,86 @@ public class AdminPortalController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(new { message = "Comment deleted." });
     }
+
+    // ── ADMIN ALERTS ────────────────────────────────────────────────────────
+    [HttpGet("alerts")]
+    public async Task<IActionResult> GetAdminAlerts(
+        [FromQuery] bool? isRead = null,
+        [FromQuery] string? severity = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        var (items, total, unreadCount) = await _adminAlerts.GetAlertsAsync(isRead, severity, page, pageSize);
+        return Ok(new { items, totalCount = total, unreadCount, page, pageSize });
+    }
+
+    [HttpGet("alerts/unread-count")]
+    public async Task<IActionResult> GetAdminAlertsUnreadCount()
+    {
+        var unreadCount = await _adminAlerts.GetUnreadCountAsync();
+        return Ok(new { unreadCount });
+    }
+
+    [HttpPatch("alerts/{id:guid}/read")]
+    public async Task<IActionResult> MarkAdminAlertRead(Guid id)
+    {
+        var ok = await _adminAlerts.MarkAsReadAsync(id);
+        if (!ok) return NotFound();
+        return Ok(new { success = true });
+    }
+
+    [HttpPost("alerts/read-all")]
+    public async Task<IActionResult> MarkAllAdminAlertsRead()
+    {
+        var count = await _adminAlerts.MarkAllAsReadAsync();
+        return Ok(new { success = true, count });
+    }
+
+    // ── PUSH TOOLS & BROADCASTING ──────────────────────────────────────────
+    [HttpPost("push/broadcast")]
+    public async Task<IActionResult> BroadcastPush([FromBody] BroadcastPushRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Title) || string.IsNullOrWhiteSpace(req.Body))
+            return BadRequest(new { message = "Title and body are required." });
+
+        var sentCount = await _push.BroadcastAsync(req.Title, req.Body, req.Data, req.TargetRole);
+        return Ok(new { success = true, sentCount, message = $"Broadcast sent to {sentCount} active devices." });
+    }
+
+    [HttpPost("push/send-test")]
+    public async Task<IActionResult> SendTestPush([FromBody] SendTestPushRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Token))
+            return BadRequest(new { message = "Device push token is required." });
+
+        var (success, message) = await _push.SendTestNotificationAsync(
+            req.Token,
+            req.Title ?? "KitaTolongKita Test Alert 🔔",
+            req.Body ?? "This is a test notification from the Admin Portal.",
+            req.Data);
+
+        return Ok(new { success, message });
+    }
+
+    [HttpPost("push/send-to-user")]
+    public async Task<IActionResult> SendPushToUser([FromBody] SendUserPushRequest req)
+    {
+        if (req.UserId == Guid.Empty || string.IsNullOrWhiteSpace(req.Title) || string.IsNullOrWhiteSpace(req.Body))
+            return BadRequest(new { message = "UserId, title and body are required." });
+
+        await _push.SendAndStoreAsync(req.UserId, "admin_message", req.Title, req.Body, req.Data);
+        return Ok(new { success = true, message = "Notification sent to user devices." });
+    }
+
+    [HttpGet("push/stats")]
+    public async Task<IActionResult> GetPushStats()
+    {
+        var totalTokens = await _db.PushTokens.CountAsync();
+        var activeTokens = await _db.PushTokens.CountAsync(t => t.IsActive);
+        var androidCount = await _db.PushTokens.CountAsync(t => t.Platform == "android" && t.IsActive);
+        var iosCount = await _db.PushTokens.CountAsync(t => t.Platform == "ios" && t.IsActive);
+        return Ok(new { totalTokens, activeTokens, androidCount, iosCount });
+    }
 }
 
 // ── Shared request DTOs ─────────────────────────────────────────────────────
@@ -588,3 +729,6 @@ public record UpdateOrderStatusRequest(string Status);
 public record BulkModerateRequest(List<string> Ids, string Action, string? Reason);
 public record AdminPortalRejectRequest(string? Reason = null);
 public record AdminPortalFeatureRequest(bool Featured = false);
+public record BroadcastPushRequest(string Title, string Body, object? Data = null, string? TargetRole = null);
+public record SendTestPushRequest(string Token, string? Title = null, string? Body = null, object? Data = null);
+public record SendUserPushRequest(Guid UserId, string Title, string Body, object? Data = null);

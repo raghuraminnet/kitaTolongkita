@@ -1,11 +1,14 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { NavigationContainer, useNavigationState } from '@react-navigation/native';
+import { NavigationContainer, useNavigationState, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBar } from '../components';
 import { useTheme } from '../contexts/ThemeContext';
+import { onNotificationResponse } from '../api/notifications';
+
+export const navigationRef = createNavigationContainerRef<any>();
 
 import { OnboardingScreen } from '../screens/onboarding';
 import { LoginScreen } from '../screens/auth';
@@ -102,8 +105,32 @@ function MainTabs() {
 
 export default function AppNavigator() {
   const { colors } = useTheme();
+
+  React.useEffect(() => {
+    const sub = onNotificationResponse((response) => {
+      const data: any = response?.notification?.request?.content?.data;
+      if (!data || !navigationRef.isReady()) return;
+
+      if (data.type === 'deal' && data.dealId) {
+        navigationRef.navigate('DealDetail', { dealId: data.dealId });
+      } else if (data.type === 'order') {
+        navigationRef.navigate('Orders');
+      } else if (data.type === 'chat' || data.type === 'chat_message') {
+        navigationRef.navigate('ChatInbox');
+      } else if (data.type === 'contributor_application') {
+        navigationRef.navigate('Profile');
+      } else if (data.screen) {
+        navigationRef.navigate(data.screen, data.params || {});
+      }
+    });
+
+    return () => {
+      sub.remove();
+    };
+  }, []);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         initialRouteName="Main"
         screenOptions={{

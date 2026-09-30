@@ -55,12 +55,18 @@ public class ContributorService : IContributorService
 {
     private readonly AppDbContext _db;
     private readonly IPushNotificationService _push;
+    private readonly IAdminAlertService _adminAlerts;
     private readonly ILogger<ContributorService> _logger;
 
-    public ContributorService(AppDbContext db, IPushNotificationService push, ILogger<ContributorService> logger)
+    public ContributorService(
+        AppDbContext db,
+        IPushNotificationService push,
+        IAdminAlertService adminAlerts,
+        ILogger<ContributorService> logger)
     {
         _db = db;
         _push = push;
+        _adminAlerts = adminAlerts;
         _logger = logger;
     }
 
@@ -89,6 +95,22 @@ public class ContributorService : IContributorService
 
         _db.ContributorApplications.Add(app);
         await _db.SaveChangesAsync();
+
+        // Alert administrators in the Admin Portal
+        try
+        {
+            await _adminAlerts.CreateAlertAsync(
+                "contributor_application",
+                "medium",
+                "New Contributor Application 📝",
+                $"User '{user.FullName}' ({user.Email}) has submitted an application for Contributor status.",
+                app.Id.ToString(),
+                "/contributors");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create admin alert for contributor application {AppId}", app.Id);
+        }
 
         _logger.LogInformation("Contributor application submitted by user {UserId}", userId);
         return app;

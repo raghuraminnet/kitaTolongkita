@@ -85,6 +85,7 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<NotificationQueueS
 builder.Services.AddSingleton<ElasticsearchCleanupService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ElasticsearchCleanupService>());
 builder.Services.AddScoped<IPushNotificationService, FcmPushService>();
+builder.Services.AddScoped<IAdminAlertService, AdminAlertService>();
 
 // ── Core Services ─────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<IElasticsearchService, ElasticsearchService>();
@@ -286,6 +287,23 @@ if (dbExisted)
             logger.LogInformation("Database has {TableCount} tables — running pending migrations...", tableCount);
             db.Database.Migrate();
             logger.LogInformation("Migrate() succeeded — all migrations applied.");
+
+            // Ensure AdminAlerts table exists
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE IF NOT EXISTS ""AdminAlerts"" (
+                    ""Id"" uuid NOT NULL PRIMARY KEY,
+                    ""Type"" text NOT NULL,
+                    ""Severity"" text NOT NULL,
+                    ""Title"" text NOT NULL,
+                    ""Message"" text NOT NULL,
+                    ""TargetId"" text NULL,
+                    ""ActionUrl"" text NULL,
+                    ""IsRead"" boolean NOT NULL,
+                    ""CreatedAt"" timestamp with time zone NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS ""IX_AdminAlerts_CreatedAt"" ON ""AdminAlerts"" (""CreatedAt"");
+                CREATE INDEX IF NOT EXISTS ""IX_AdminAlerts_IsRead"" ON ""AdminAlerts"" (""IsRead"");
+            ");
         }
     }
     catch (Exception ex)

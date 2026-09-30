@@ -5,6 +5,7 @@ using System.Security.Claims;
 using KitaTolongKita.Core.Entities;
 using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
+using KitaTolongKita.Infrastructure.Services;
 
 namespace KitaTolongKita.Api.Controllers;
 
@@ -14,12 +15,18 @@ public class ReportsController : ControllerBase
 {
     private readonly IReportService _reports;
     private readonly AppDbContext _db;
+    private readonly IAdminAlertService _adminAlerts;
     private readonly ILogger<ReportsController> _logger;
 
-    public ReportsController(IReportService reports, AppDbContext db, ILogger<ReportsController> logger)
+    public ReportsController(
+        IReportService reports,
+        AppDbContext db,
+        IAdminAlertService adminAlerts,
+        ILogger<ReportsController> logger)
     {
         _reports = reports;
         _db = db;
+        _adminAlerts = adminAlerts;
         _logger = logger;
     }
 
@@ -40,6 +47,17 @@ public class ReportsController : ControllerBase
         try
         {
             var dto = await _reports.SubmitAsync(reporterId.Value, request);
+
+            // Alert admin portal in real time
+            var reasonsStr = string.Join(", ", request.Reasons);
+            await _adminAlerts.CreateAlertAsync(
+                "user_report",
+                "urgent",
+                $"🚨 New Report: {request.TargetType}",
+                $"User reported {request.TargetType} for {reasonsStr}. Description: {request.Description ?? "No description provided."}",
+                dto.Id.ToString(),
+                $"/reports");
+
             return Ok(dto);
         }
         catch (InvalidOperationException ex)

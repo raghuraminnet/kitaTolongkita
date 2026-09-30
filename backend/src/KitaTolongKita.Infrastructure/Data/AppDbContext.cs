@@ -37,6 +37,7 @@ public class AppDbContext : DbContext
     public DbSet<AiConfig> AiConfigs => Set<AiConfig>();
     public DbSet<ModerationRule> ModerationRules => Set<ModerationRule>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<AdminAlert> AdminAlerts => Set<AdminAlert>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

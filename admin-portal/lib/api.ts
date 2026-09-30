@@ -215,6 +215,27 @@ export const api = {
   },
   notificationStats: () => request('/admin-portal/notifications/stats'),
 
+  // ── Admin Real-Time Alerts ──────────────────────────────────────────────────
+  adminAlerts: (params?: { isRead?: boolean; severity?: string; page?: number; pageSize?: number }) => {
+    const q = params ? cleanParams(params as Record<string, any>) : "";
+    return request(`/admin-portal/alerts${q ? '?' + q : ''}`);
+  },
+  adminAlertsUnreadCount: () => request<{ unreadCount: number }>('/admin-portal/alerts/unread-count'),
+  markAdminAlertRead: (id: string) =>
+    request(`/admin-portal/alerts/${id}/read`, { method: 'PATCH' }),
+  markAllAdminAlertsRead: () =>
+    request('/admin-portal/alerts/read-all', { method: 'POST' }),
+
+  // ── Push Broadcasting & Tools ───────────────────────────────────────────────
+  broadcastPush: (data: { title: string; body: string; targetRole?: string; data?: any }) =>
+    request('/admin-portal/push/broadcast', { method: 'POST', body: JSON.stringify(data) }),
+  sendTestPush: (data: { token: string; title?: string; body?: string }) =>
+    request('/admin-portal/push/send-test', { method: 'POST', body: JSON.stringify(data) }),
+  sendUserPush: (data: { userId: string; title: string; body: string; data?: any }) =>
+    request('/admin-portal/push/send-to-user', { method: 'POST', body: JSON.stringify(data) }),
+  pushStats: () =>
+    request<{ totalTokens: number; activeTokens: number; androidCount: number; iosCount: number }>('/admin-portal/push/stats'),
+
   // ── Conversations / Chat ──────────────────────────────────────────────────────
   conversations: (params?: { search?: string; page?: number; pageSize?: number }) => {
     const q = params ? cleanParams(params as Record<string, any>) : "";

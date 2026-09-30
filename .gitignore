@@ -48,3 +48,4 @@ Thumbs.db
 # Local developer launch profile (ports are machine-specific)
 **/Properties/launchSettings.json
 .next/
+*.tsbuildinfo

@@ -22,14 +22,13 @@ import { Button, Input } from '../../components';
 import { typography, spacing, borderRadius, shadows } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi } from '../../api/client';
-import { getAccessToken } from '../../api/client';
+import { getAccessToken, API_BASE } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
 import { request as apiRequest } from '../../api/client';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const API_BASE = 'http://76.13.219.191:5000/api';
 const CATEGORIES = ['Food', 'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Drinks'];
 
 const CATEGORY_ICONS: Record<string, string> = {

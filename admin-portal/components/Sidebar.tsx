@@ -22,6 +22,7 @@ import {
   LogOut,
   ShieldCheck,
 } from 'lucide-react'
+import { AdminAlertCenter } from './AdminAlertCenter'
 
 interface NavSection {
   title: string
@@ -106,14 +107,17 @@ export function Sidebar({ pendingCount = 0 }: { pendingCount?: number }) {
   return (
     <aside className="sidebar">
       {/* Brand Header */}
-      <div className="sidebar-logo">
-        <div className="logo-badge">
-          🤝
+      <div className="sidebar-logo flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="logo-badge">
+            🤝
+          </div>
+          <div className="logo-text">
+            <span className="logo-title">KitaAdmin</span>
+            <span className="logo-sub">Flagship Hub</span>
+          </div>
         </div>
-        <div className="logo-text">
-          <span className="logo-title">KitaAdmin</span>
-          <span className="logo-sub">Flagship Hub</span>
-        </div>
+        <AdminAlertCenter />
       </div>
 
       {/* Navigation Groups */}

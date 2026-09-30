@@ -1,8 +1,12 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usersApi } from './client';
 
-// Configure notification handler
+const PUSH_TOKEN_STORAGE_KEY = 'kitatolongkita_push_token';
+
+// Configure notification presentation for foreground alerts
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -22,42 +26,82 @@ export interface NotificationRecord {
   read: boolean;
 }
 
-// Request permissions and get push token
-export async function registerForPushNotifications(): Promise<string | null> {
-  if (!Device.isDevice) {
-    console.log('Push notifications only work on physical devices');
-    return null;
-  }
-
-  // Check existing permissions
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  if (existingStatus === 'granted') {
-    return getPushToken();
-  }
-
-  // Request permission
-  const { status } = await Notifications.requestPermissionsAsync();
-  if (status !== 'granted') {
-    console.log('Push notification permission not granted');
-    return null;
-  }
-
-  return getPushToken();
-}
-
-async function getPushToken(): Promise<string | null> {
-  try {
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: process.env.EXPO_PUBLIC_PROJECT_ID, // Add your Expo project ID here
+/**
+ * Configure Android notification channel (required for Android 8.0+)
+ */
+export async function setupAndroidNotificationChannel(): Promise<void> {
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'General Notifications',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF3366',
+      sound: 'default',
     });
-    return tokenData.data;
+  }
+}
+
+/**
+ * Requests permissions, retrieves Expo push token, and registers it with backend.
+ */
+export async function registerForPushNotifications(): Promise<string | null> {
+  await setupAndroidNotificationChannel();
+
+  if (Platform.OS === 'web') {
+    console.log('[Push] Web platform detected; push tokens operate on native iOS/Android');
+    return null;
+  }
+
+  if (!Device.isDevice) {
+    console.log('[Push] Running on simulator/emulator; push notifications require a physical device');
+    return null;
+  }
+
+  try {
+    // 1. Check existing permissions
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.log('[Push] Notification permission not granted');
+      return null;
+    }
+
+    // 2. Obtain Expo push token
+    const tokenData = await Notifications.getExpoPushTokenAsync().catch(() => null);
+    const token = tokenData?.data;
+
+    if (!token) {
+      console.log('[Push] Failed to acquire Expo push token');
+      return null;
+    }
+
+    console.log('[Push] Acquired push token:', token);
+
+    // 3. Compare with previously stored token to prevent redundant API calls
+    const storedToken = await AsyncStorage.getItem(PUSH_TOKEN_STORAGE_KEY);
+    if (storedToken !== token) {
+      const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+      await usersApi.registerPushToken(token, platform);
+      await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token);
+      console.log('[Push] Successfully registered push token with backend');
+    }
+
+    return token;
   } catch (error) {
-    console.error('Failed to get push token:', error);
+    console.warn('[Push] Error during push notification registration:', error);
     return null;
   }
 }
 
-// Schedule a local notification
+/**
+ * Schedule a local notification
+ */
 export async function scheduleNotification(
   title: string,
   body: string,
@@ -71,31 +115,26 @@ export async function scheduleNotification(
   return id;
 }
 
-// Cancel a scheduled notification
 export async function cancelNotification(id: string): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(id);
 }
 
-// Cancel all notifications
 export async function cancelAllNotifications(): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
-// Add notification received listener
 export function onNotificationReceived(
   callback: (notification: Notifications.Notification) => void
 ): Notifications.EventSubscription {
   return Notifications.addNotificationReceivedListener(callback);
 }
 
-// Add notification response (tap) listener
 export function onNotificationResponse(
   callback: (response: Notifications.NotificationResponse) => void
 ): Notifications.EventSubscription {
   return Notifications.addNotificationResponseReceivedListener(callback);
 }
 
-// Badge count
 export async function setBadgeCount(count: number): Promise<void> {
   await Notifications.setBadgeCountAsync(count);
 }
@@ -104,7 +143,7 @@ export async function getBadgeCount(): Promise<number> {
   return Notifications.getBadgeCountAsync();
 }
 
-// In-app notification display (for when app is in foreground)
+// In-app notification display listener
 let inAppCallback: ((title: string, body: string, data?: Record<string, unknown>) => void) | null = null;
 
 export function showInAppNotification(title: string, body: string, data?: Record<string, unknown>) {

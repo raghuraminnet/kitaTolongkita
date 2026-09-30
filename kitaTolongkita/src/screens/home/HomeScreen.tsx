@@ -188,7 +188,7 @@ export const HomeScreen: React.FC = () => {
         likes={item.likeCount ?? 0}
         upvotes={item.upvoteCount ?? 0}
         organizerName={item.organizerName}
-        imageUrl={item.imageUrls?.[0] || item.imageUrl}
+        imageUrl={item.imageUrls?.[0] || (item as any).imageUrl}
         isSaved={item.isSaved}
         onPress={() => navigation.navigate('DealDetail', { dealId: item.id })}
       />
@@ -295,7 +295,7 @@ export const HomeScreen: React.FC = () => {
       padding: spacing.lg,
       position: 'relative',
       overflow: 'hidden',
-      ...shadows.cardActive,
+      ...shadows['card-active'],
     },
     heroContent: {
       maxWidth: '75%',
