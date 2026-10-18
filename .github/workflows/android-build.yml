@@ -46,8 +46,11 @@ jobs:
         run: |
           cd kitaTolongkita
           npx expo prebuild --platform android --clean
+          echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1536m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" >> android/gradle.properties
 
       - name: Build Android Release
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1536m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
         run: |
           cd kitaTolongkita/android
           chmod +x gradlew
