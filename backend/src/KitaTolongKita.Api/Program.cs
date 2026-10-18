@@ -302,8 +302,15 @@ if (dbExisted)
         else
         {
             logger.LogInformation("Database has {TableCount} tables — running pending migrations...", tableCount);
-            db.Database.Migrate();
-            logger.LogInformation("Migrate() succeeded — all migrations applied.");
+            try
+            {
+                db.Database.Migrate();
+                logger.LogInformation("Migrate() succeeded — all migrations applied.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Migrate() warning — tables already exist: {Message}", ex.Message);
+            }
 
             // Ensure AdminAlerts table exists
             await db.Database.ExecuteSqlRawAsync(@"
