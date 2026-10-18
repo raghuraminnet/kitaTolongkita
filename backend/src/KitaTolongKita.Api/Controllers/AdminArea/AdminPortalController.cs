@@ -333,10 +333,10 @@ public class AdminPortalController : ControllerBase
         try { await _es.RefreshDealIndexAsync(deal.Id); }
         catch (Exception ex) { _logger.LogWarning(ex, "Failed to sync deal {DealId} to ES after admin approve", deal.Id); }
 
-        if (deal.OrganizerId.HasValue)
+        if (deal.OrganizerId != Guid.Empty)
         {
             await _push.SendAndStoreAsync(
-                deal.OrganizerId.Value,
+                deal.OrganizerId,
                 "deal_approved",
                 "Deal Approved! 🎉",
                 $"Your deal '{deal.Title}' has been approved and is now live.",
@@ -360,10 +360,10 @@ public class AdminPortalController : ControllerBase
         try { await _es.RefreshDealIndexAsync(deal.Id); }
         catch (Exception ex) { _logger.LogWarning(ex, "Failed to sync deal {DealId} to ES after admin reject", deal.Id); }
 
-        if (deal.OrganizerId.HasValue)
+        if (deal.OrganizerId != Guid.Empty)
         {
             await _push.SendAndStoreAsync(
-                deal.OrganizerId.Value,
+                deal.OrganizerId,
                 "deal_rejected",
                 "Deal Moderation Update",
                 $"Your deal '{deal.Title}' was declined: {deal.ModerationRejectReason}",

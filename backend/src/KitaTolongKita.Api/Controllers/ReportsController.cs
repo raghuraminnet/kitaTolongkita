@@ -53,8 +53,8 @@ public class ReportsController : ControllerBase
             await _adminAlerts.CreateAlertAsync(
                 "user_report",
                 "urgent",
-                $"🚨 New Report: {request.TargetType}",
-                $"User reported {request.TargetType} for {reasonsStr}. Description: {request.Description ?? "No description provided."}",
+                $"🚨 New Report: {request.Type}",
+                $"User reported {request.Type} for {reasonsStr}. Description: {request.Description ?? "No description provided."}",
                 dto.Id.ToString(),
                 $"/reports");
 
