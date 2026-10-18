@@ -1,4 +1,14 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
+function getApiBase(): string {
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname.includes('superpose.cloud')) {
+      return 'https://api-ktk.superpose.cloud/api';
+    }
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'https://api-ktk.superpose.cloud/api';
+}
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -19,7 +29,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const res = await fetch(`${getApiBase()}${path}`, { ...options, headers });
   const json = await res.json();
 
   if (!res.ok) {
