@@ -49,6 +49,7 @@ jobs:
           cd kitaTolongkita
           npx expo prebuild --platform android --clean
           sed -i '/org.gradle.jvmargs/d' android/gradle.properties
+          echo "" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1536m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" >> android/gradle.properties
 
       - name: Build Android Release
