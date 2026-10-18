@@ -12,9 +12,9 @@ import {
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { Search, SlidersHorizontal, Bell } from 'lucide-react-native';
+import { Search, SlidersHorizontal, Bell, Filter } from 'lucide-react-native';
 import { useLocation } from '../../contexts/LocationContext';
 import { colors, typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -82,6 +82,7 @@ function calcDistance(lat1: number, lon1: number, lat2: number, lon2: number): n
 
 export const SearchScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { latitude: userLat, longitude: userLon } = useLocation();
@@ -100,12 +101,22 @@ export const SearchScreen: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<any>(null);
+
+  useEffect(() => {
+    if (route.params?.filterParams) {
+      const fp = route.params.filterParams;
+      setAppliedFilters(fp);
+      if (fp.sortBy) setSortBy(fp.sortBy);
+      if (fp.categories?.length > 0) setActiveCategory(fp.categories[0]);
+    }
+  }, [route.params?.filterParams]);
 
   useEffect(() => {
     loadDeals(true);
     loadRecentSearches();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [appliedFilters]);
 
   const loadDeals = async (reset = false) => {
     const currentPage = reset ? 1 : page;
@@ -120,12 +131,16 @@ export const SearchScreen: React.FC = () => {
         ...(query.trim() ? { query: query.trim() } : {}),
         ...(activeCategory !== 'All' ? { category: activeCategory } : {}),
         sortBy,
+        ...(appliedFilters?.halalStatus ? { halalStatus: appliedFilters.halalStatus } : {}),
+        ...(appliedFilters?.state ? { state: appliedFilters.state } : {}),
+        ...(appliedFilters?.minPrice != null ? { minPrice: appliedFilters.minPrice } : {}),
+        ...(appliedFilters?.maxPrice != null ? { maxPrice: appliedFilters.maxPrice } : {}),
       };
 
       if (userLat && userLon) {
         params.lat = userLat;
         params.lon = userLon;
-        params.radiusKm = 10;
+        params.radiusKm = appliedFilters?.radiusKm ?? 10;
       }
 
       const res = await dealsApi.search(params);
@@ -270,10 +285,24 @@ export const SearchScreen: React.FC = () => {
         {/* Info */}
         <View style={styles.dealInfo}>
           <View style={styles.dealTopRow}>
-            <View style={[styles.categoryChip, { backgroundColor: colors['secondary-container'] }]}>
-              <Text style={[styles.categoryChipText, { color: colors['on-secondary-container'] }]}>
-                {item.category}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1, flexWrap: 'wrap' }}>
+              <View style={[styles.categoryChip, { backgroundColor: colors['secondary-container'] }]}>
+                <Text style={[styles.categoryChipText, { color: colors['on-secondary-container'] }]}>
+                  {item.category}
+                </Text>
+              </View>
+              {item.halalStatus && item.halalStatus !== 'NotApplicable' && item.halalStatus !== 'None' && (
+                <View style={{
+                  paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10,
+                  backgroundColor: '#ECFDF5', borderWidth: 0.5, borderColor: '#6EE7B7'
+                }}>
+                  <Text style={{ fontSize: 9.5, fontWeight: '700', color: '#047857' }}>
+                    {item.halalStatus === 'JakimCertified' ? 'JAKIM Halal' :
+                     item.halalStatus === 'MuslimOwned' ? 'Muslim-Owned' :
+                     item.halalStatus === 'PorkFree' ? 'Pork-Free' : 'Vegetarian'}
+                  </Text>
+                </View>
+              )}
             </View>
             {distance !== null && (
               <Text style={[styles.distance, { color: colors['on-surface-variant'] }]}>
@@ -357,6 +386,16 @@ export const SearchScreen: React.FC = () => {
           />
           {searching && <ActivityIndicator size="small" color={colors['primary-container']} />}
         </View>
+
+        <TouchableOpacity
+          style={[styles.sortBtn, { backgroundColor: colors['surface-container'], marginRight: 6 }]}
+          onPress={() => navigation.navigate('SearchFilters')}
+        >
+          <Filter size={16} color={appliedFilters ? colors.primary : colors['on-surface']} strokeWidth={2} />
+          {appliedFilters && (appliedFilters.halalStatus || appliedFilters.state || appliedFilters.minPrice || appliedFilters.maxPrice) && (
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary, marginLeft: 2 }} />
+          )}
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.sortBtn, { backgroundColor: colors['surface-container'] }]}

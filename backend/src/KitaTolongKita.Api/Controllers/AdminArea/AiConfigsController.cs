@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 using KitaTolongKita.Core.Entities;
+using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
 
 namespace KitaTolongKita.Api.Controllers.AdminArea;
@@ -16,12 +17,14 @@ public class AiConfigsController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IDistributedCache _cache;
+    private readonly IConfigSyncService _sync;
     private readonly ILogger<AiConfigsController> _logger;
 
-    public AiConfigsController(AppDbContext db, IDistributedCache cache, ILogger<AiConfigsController> logger)
+    public AiConfigsController(AppDbContext db, IDistributedCache cache, IConfigSyncService sync, ILogger<AiConfigsController> logger)
     {
         _db = db;
         _cache = cache;
+        _sync = sync;
         _logger = logger;
     }
 
@@ -87,7 +90,12 @@ public class AiConfigsController : ControllerBase
 
         // Auto-activate if it's the first one
         var count = await _db.AiConfigs.CountAsync();
-        if (count == 1) { config.IsActive = true; await _db.SaveChangesAsync(); }
+        if (count == 1)
+        {
+            config.IsActive = true;
+            await _db.SaveChangesAsync();
+            try { await _sync.PublishAiConfigAsync(config); } catch (Exception ex) { _logger.LogWarning(ex, "Failed to publish AI config to Redis"); }
+        }
 
         await LogActionAsync("CREATED_AI_CONFIG", "AiConfig", config.Id.ToString(),
             $"Created {config.Name} ({config.Provider})");
@@ -118,6 +126,11 @@ public class AiConfigsController : ControllerBase
 
         config.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+
+        if (config.IsActive)
+        {
+            try { await _sync.PublishAiConfigAsync(config); } catch (Exception ex) { _logger.LogWarning(ex, "Failed to publish AI config to Redis"); }
+        }
 
         await LogActionAsync("UPDATED_AI_CONFIG", "AiConfig", config.Id.ToString(),
             $"Updated {config.Name}");

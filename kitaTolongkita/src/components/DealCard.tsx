@@ -24,6 +24,8 @@ interface DealCardProps {
   /** Organizer avatar URL */
   organizerAvatar?: string;
   isSaved?: boolean;
+  halalStatus?: string;
+  state?: string;
   onPress?: () => void;
   onBookmarkPress?: () => void;
 }
@@ -42,6 +44,8 @@ export const DealCard: React.FC<DealCardProps> = ({
   organizerName,
   organizerAvatar,
   isSaved,
+  halalStatus,
+  state,
   onPress,
   onBookmarkPress,
 }) => {
@@ -62,6 +66,44 @@ export const DealCard: React.FC<DealCardProps> = ({
       discountPct = Math.round(((numOrig - numPrice) / numOrig) * 100);
     }
   }
+
+  const renderHalalBadge = () => {
+    if (!halalStatus || halalStatus === 'NotApplicable' || halalStatus === 'None') return null;
+    let label = '';
+    let bg = '#ECFDF5';
+    let text = '#047857';
+    let border = '#6EE7B7';
+
+    if (halalStatus === 'JakimCertified' || halalStatus === 'JakimHalal') {
+      label = '🟢 Halal JAKIM';
+      bg = '#ECFDF5';
+      text = '#047857';
+      border = '#6EE7B7';
+    } else if (halalStatus === 'MuslimOwned') {
+      label = '🟢 Muslim-Owned';
+      bg = '#F0FDF4';
+      text = '#15803D';
+      border = '#86EFAC';
+    } else if (halalStatus === 'PorkFree') {
+      label = '🟡 Pork-Free';
+      bg = '#FFFBEB';
+      text = '#B45309';
+      border = '#FDE68A';
+    } else if (halalStatus === 'Vegetarian') {
+      label = '🥬 Vegetarian';
+      bg = '#F0FDF4';
+      text = '#166534';
+      border = '#BBF7D0';
+    } else {
+      return null;
+    }
+
+    return (
+      <View style={[styles.halalBadge, { backgroundColor: bg, borderColor: border }]}>
+        <Text style={[styles.halalBadgeText, { color: text }]}>{label}</Text>
+      </View>
+    );
+  };
 
   return (
     <TouchableOpacity
@@ -125,6 +167,8 @@ export const DealCard: React.FC<DealCardProps> = ({
 
       {/* ── Card Body ───────────────────────────────── */}
       <View style={styles.body}>
+        {renderHalalBadge()}
+
         {/* Title */}
         <Text
           style={[styles.title, { color: colors['on-surface'] }]}
@@ -361,5 +405,18 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: borderRadius.full,
+  },
+  halalBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    marginBottom: 6,
+  },
+  halalBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 });

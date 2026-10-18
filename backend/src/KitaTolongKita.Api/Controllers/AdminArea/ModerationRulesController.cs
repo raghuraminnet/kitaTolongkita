@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KitaTolongKita.Core.Entities;
+using KitaTolongKita.Core.Interfaces;
 using KitaTolongKita.Infrastructure.Data;
 
 namespace KitaTolongKita.Api.Controllers.AdminArea;
@@ -13,11 +14,13 @@ namespace KitaTolongKita.Api.Controllers.AdminArea;
 public class ModerationRulesController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IConfigSyncService _sync;
     private readonly ILogger<ModerationRulesController> _logger;
 
-    public ModerationRulesController(AppDbContext db, ILogger<ModerationRulesController> logger)
+    public ModerationRulesController(AppDbContext db, IConfigSyncService sync, ILogger<ModerationRulesController> logger)
     {
         _db = db;
+        _sync = sync;
         _logger = logger;
     }
 
@@ -67,6 +70,20 @@ public class ModerationRulesController : ControllerBase
 
         await LogActionAsync("UPDATED_MODERATION_RULE", "ModerationRule", rule.Id.ToString(),
             $"{rule.Key} = {rule.Value} (active={rule.IsActive})");
+
+        // Sync all active rules to Redis so AI and moderation queue reload thresholds immediately
+        try
+        {
+            var activeRules = await _db.ModerationRules
+                .AsNoTracking()
+                .Where(r => r.IsActive)
+                .ToDictionaryAsync(r => r.Key, r => r.Value);
+            await _sync.PublishModerationRulesAsync(activeRules);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to broadcast updated moderation rules to Redis");
+        }
 
         return Ok(new AdminApiResponse(true, "Rule updated.", new ModerationRuleItem(
             rule.Id, rule.Key, rule.Value, rule.Description, rule.Category, rule.IsActive, rule.UpdatedAt)));

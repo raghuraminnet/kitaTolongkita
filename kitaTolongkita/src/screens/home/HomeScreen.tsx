@@ -42,6 +42,9 @@ const CURATED_COMMUNITY_DROPS: Deal[] = [
     createdAt: new Date().toISOString(),
     likeCount: 124,
     upvoteCount: 89,
+    halalStatus: 'Vegetarian',
+    state: 'Kuala Lumpur',
+    district: 'Bangsar',
   },
   {
     id: 'drop-2',
@@ -61,6 +64,9 @@ const CURATED_COMMUNITY_DROPS: Deal[] = [
     createdAt: new Date().toISOString(),
     likeCount: 98,
     upvoteCount: 71,
+    halalStatus: 'Vegetarian',
+    state: 'Selangor',
+    district: 'Petaling Jaya',
   },
   {
     id: 'drop-3',
@@ -80,6 +86,9 @@ const CURATED_COMMUNITY_DROPS: Deal[] = [
     createdAt: new Date().toISOString(),
     likeCount: 165,
     upvoteCount: 112,
+    halalStatus: 'MuslimOwned',
+    state: 'Kuala Lumpur',
+    district: 'TTDI',
   },
   {
     id: 'drop-4',
@@ -99,6 +108,9 @@ const CURATED_COMMUNITY_DROPS: Deal[] = [
     createdAt: new Date().toISOString(),
     likeCount: 230,
     upvoteCount: 180,
+    halalStatus: 'NotApplicable',
+    state: 'Kuala Lumpur',
+    district: 'Damansara',
   },
 ];
 
@@ -190,6 +202,8 @@ export const HomeScreen: React.FC = () => {
         organizerName={item.organizerName}
         imageUrl={item.imageUrls?.[0] || (item as any).imageUrl}
         isSaved={item.isSaved}
+        halalStatus={item.halalStatus}
+        state={item.state}
         onPress={() => navigation.navigate('DealDetail', { dealId: item.id })}
       />
     </View>

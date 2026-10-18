@@ -94,6 +94,15 @@ public class DealService : IDealService
         if (request.MaxPrice.HasValue)
             query = query.Where(d => d.GroupPrice <= request.MaxPrice);
 
+        if (!string.IsNullOrEmpty(request.HalalStatus) && request.HalalStatus != "All")
+            query = query.Where(d => d.HalalStatus == request.HalalStatus);
+
+        if (!string.IsNullOrEmpty(request.State) && request.State != "All")
+            query = query.Where(d => d.State == request.State);
+
+        if (!string.IsNullOrEmpty(request.District))
+            query = query.Where(d => d.District == request.District);
+
         query = (request.SortBy?.ToLowerInvariant()) switch
         {
             "price_asc" => query.OrderBy(d => d.GroupPrice),
@@ -145,6 +154,9 @@ public class DealService : IDealService
             Latitude = request.Latitude,
             Longitude = request.Longitude,
             LocationName = request.LocationName,
+            State = request.State,
+            District = request.District,
+            HalalStatus = request.HalalStatus ?? "NotApplicable",
             Hashtags = request.Hashtags ?? new(),
             Status = DealStatus.Active,
             PublishedAt = DateTime.UtcNow,
@@ -222,32 +234,59 @@ public class DealService : IDealService
 
     public async Task<DealOrderDto> JoinDealAsync(Guid dealId, Guid buyerId, int quantity, string? notes)
     {
-        var deal = await _db.Deals.FindAsync(dealId)
-            ?? throw new InvalidOperationException("Deal not found.");
+        // Wrap in explicit database transaction with row-level locking (FOR UPDATE)
+        // to prevent race conditions and over-subscription under high concurrency
+        await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        if (deal.Status != DealStatus.Active)
-            throw new InvalidOperationException("This deal is no longer accepting orders.");
-
-        if (deal.Deadline < DateTime.UtcNow)
-            throw new InvalidOperationException("This deal has ended.");
-
-        if (deal.MembersJoined + quantity > deal.MaxMembers)
-            throw new InvalidOperationException("Not enough spots remaining.");
-
-        var order = new DealOrder
+        try
         {
-            DealId = dealId,
-            BuyerId = buyerId,
-            Quantity = quantity,
-            TotalPrice = deal.GroupPrice * quantity,
-            Notes = notes
-        };
+            var deal = await _db.Deals
+                .FromSqlInterpolated($"SELECT * FROM \"Deals\" WHERE \"Id\" = {dealId} FOR UPDATE")
+                .FirstOrDefaultAsync()
+                ?? throw new InvalidOperationException("Deal not found.");
 
-        deal.MembersJoined += quantity;
-        _db.DealOrders.Add(order);
-        await _db.SaveChangesAsync();
+            if (deal.Status != DealStatus.Active)
+                throw new InvalidOperationException("This deal is no longer accepting orders.");
 
-        return ToOrderDto(order, deal);
+            if (deal.Deadline < DateTime.UtcNow)
+                throw new InvalidOperationException("This deal has ended.");
+
+            if (deal.MembersJoined + quantity > deal.MaxMembers)
+                throw new InvalidOperationException("Not enough spots remaining.");
+
+            var order = new DealOrder
+            {
+                DealId = dealId,
+                BuyerId = buyerId,
+                Quantity = quantity,
+                TotalPrice = deal.GroupPrice * quantity,
+                Notes = notes
+            };
+
+            deal.MembersJoined += quantity;
+            if (deal.MembersJoined >= deal.MaxMembers)
+            {
+                deal.Status = DealStatus.Fulfilled;
+            }
+
+            _db.DealOrders.Add(order);
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            // Refresh Elasticsearch deal index so updated member counts appear in search results immediately
+            _ = Task.Run(async () =>
+            {
+                try { await _es.RefreshDealIndexAsync(dealId); }
+                catch (Exception ex) { _logger.LogWarning(ex, "Failed to refresh deal index after join: {DealId}", dealId); }
+            });
+
+            return ToOrderDto(order, deal);
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<List<DealOrderDto>> GetUserOrdersAsync(Guid userId)
@@ -456,7 +495,9 @@ public class DealService : IDealService
         d.Latitude, d.Longitude, d.LocationName,
         d.Hashtags, d.UpvoteCount, d.LikeCount,
         d.ModerationStatus, d.ModerationRejectReason,
-        distanceKm, d.OrganizerId
+        distanceKm, d.OrganizerId,
+        false, null,
+        d.HalalStatus, d.State, d.District
     );
 
     private static DealOrderDto ToOrderDto(DealOrder o, Deal d) => new(

@@ -657,6 +657,9 @@ export interface Deal {
   organizerId?: string;
   isSaved?: boolean;
   savedListIds?: string[];
+  halalStatus?: string;
+  state?: string;
+  district?: string;
 }
 
 export interface CreateDealPayload {
@@ -673,6 +676,9 @@ export interface CreateDealPayload {
   latitude?: number;
   longitude?: number;
   hashtags?: string[];
+  halalStatus?: string;
+  state?: string;
+  district?: string;
 }
 
 export interface Order {

@@ -41,6 +41,20 @@ const CATEGORY_ICONS: Record<string, string> = {
   Drinks: '🥤',
 };
 
+const MALAYSIAN_STATES = [
+  'Selangor', 'Kuala Lumpur', 'Johor', 'Penang', 'Perak',
+  'Kedah', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Kelantan',
+  'Terengganu', 'Sabah', 'Sarawak', 'Putrajaya', 'Perlis', 'Labuan'
+];
+
+const HALAL_OPTIONS = [
+  { key: 'NotApplicable', label: 'None / General', icon: '🏷️' },
+  { key: 'JakimCertified', label: 'JAKIM Halal', icon: '🟢' },
+  { key: 'MuslimOwned', label: 'Muslim-Owned', icon: '🟢' },
+  { key: 'PorkFree', label: 'Pork-Free', icon: '🟡' },
+  { key: 'Vegetarian', label: 'Vegetarian', icon: '🥬' },
+];
+
 export const PostDealScreen: React.FC = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -232,6 +246,9 @@ export const PostDealScreen: React.FC = () => {
   const [enableLookup, setEnableLookup] = useState(false);
   const [capturedLat, setCapturedLat] = useState<number | null>(null);
   const [capturedLon, setCapturedLon] = useState<number | null>(null);
+  const [halalStatus, setHalalStatus] = useState<string>('NotApplicable');
+  const [selectedState, setSelectedState] = useState<string>('Selangor');
+  const [district, setDistrict] = useState<string>('');
 
   // Reverse geocode GPS coords to a readable address
   const reverseGeocode = async (lat: number, lon: number): Promise<string> => {
@@ -239,6 +256,13 @@ export const PostDealScreen: React.FC = () => {
       const results = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
       if (results.length > 0) {
         const r = results[0];
+        if (r.region) {
+          const matched = MALAYSIAN_STATES.find(s => r.region?.toLowerCase().includes(s.toLowerCase()));
+          if (matched) setSelectedState(matched);
+        }
+        if (r.city || r.subregion) {
+          setDistrict(r.city || r.subregion || '');
+        }
         const parts = [r.street, r.city, r.region, r.country].filter(Boolean);
         return parts.length > 0 ? parts.join(', ') : `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
       }
@@ -455,6 +479,9 @@ export const PostDealScreen: React.FC = () => {
         pickupLocation: pickupLocation.trim(),
         latitude: enableLookup ? (capturedLat ?? undefined) : undefined,
         longitude: enableLookup ? (capturedLon ?? undefined) : undefined,
+        halalStatus: halalStatus !== 'NotApplicable' ? halalStatus : undefined,
+        state: selectedState || undefined,
+        district: district.trim() || undefined,
         hashtags: hashtags.length > 0 ? hashtags : undefined,
         imageUrls: uploadedUrls,
       };
@@ -560,6 +587,23 @@ export const PostDealScreen: React.FC = () => {
                   <Text style={styles.categoryEmoji}>{CATEGORY_ICONS[cat] || '📦'}</Text>
                   <Text style={[styles.categoryName, selectedCategory === cat && styles.categoryNameSelected]}>
                     {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Dietary / Halal Status */}
+            <Text style={styles.sectionTitle}>Dietary & Halal Status</Text>
+            <View style={styles.categoryGrid}>
+              {HALAL_OPTIONS.map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[styles.categoryItem, halalStatus === item.key && styles.categoryItemSelected]}
+                  onPress={() => setHalalStatus(item.key)}
+                >
+                  <Text style={styles.categoryEmoji}>{item.icon}</Text>
+                  <Text style={[styles.categoryName, halalStatus === item.key && styles.categoryNameSelected]}>
+                    {item.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -697,11 +741,36 @@ export const PostDealScreen: React.FC = () => {
 
             {/* Manual location override */}
             <Input
-              label="Or enter address manually"
-              
+              label="Pickup Address / Landmark"
               value={pickupLocation}
               onChangeText={setPickupLocation}
               prefix="📍"
+              containerStyle={styles.input}
+            />
+
+            {/* Malaysian State Selection */}
+            <Text style={styles.sectionTitle}>State / Wilayah 🇲🇾</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
+              <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                {MALAYSIAN_STATES.map((s) => (
+                  <TouchableOpacity
+                    key={s}
+                    style={[styles.categoryItem, selectedState === s && styles.categoryItemSelected]}
+                    onPress={() => setSelectedState(s)}
+                  >
+                    <Text style={[styles.categoryName, selectedState === s && styles.categoryNameSelected]}>
+                      {s}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+
+            <Input
+              label="District / Kawasan (e.g. Bangsar, PJ, Subang)"
+              value={district}
+              onChangeText={setDistrict}
+              prefix="🏘️"
               containerStyle={styles.input}
             />
 

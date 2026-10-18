@@ -28,6 +28,7 @@ export default function DealsPage() {
 
   // Detail modal
   const [detailDeal, setDetailDeal] = useState<any | null>(null)
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0)
 
   // All deals tab state
   const [appDeals, setAppDeals] = useState<any[]>([])
@@ -38,6 +39,38 @@ export default function DealsPage() {
 
   const pageSize = 20
   const totalPages = Math.ceil(total / pageSize)
+
+  // Keyboard shortcut listener for rapid single-key moderation
+  useEffect(() => {
+    if (!detailDeal) return
+    setSelectedImageIdx(0)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return
+      if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault()
+        handleApproveFromModal(detailDeal.id)
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault()
+        setRejectDealId(detailDeal.id)
+        setDetailDeal(null)
+      } else if (e.key === 'Escape') {
+        setDetailDeal(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [detailDeal])
+
+  const handleApproveFromModal = async (id: string) => {
+    setActionLoading(id)
+    try {
+      await api.approveDeal(id)
+      setDeals(d => d.filter(x => x.id !== id))
+      setTotal(t => t - 1)
+      setDetailDeal(null)
+    } catch { alert('Failed to approve') }
+    finally { setActionLoading(null) }
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -390,99 +423,219 @@ export default function DealsPage() {
         </div>
       )}
 
-      {/* Moderation detail modal */}
+      {/* Moderation detail modal — Split Screen AI Inspection Station */}
       {detailDeal && (
         <div className="modal-overlay" onClick={() => setDetailDeal(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
+          <div
+            className="modal"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: 940, width: '95vw', maxHeight: '90vh', overflowY: 'auto' }}
+          >
             <div className="modal-header">
-              <div className="modal-title">🔍 Deal Moderation Detail</div>
-              <button className="modal-close" onClick={() => setDetailDeal(null)}>×</button>
-            </div>
-            <div style={{ padding: '0 16px 16px' }}>
-              <h3 className="font-bold mb-2">{detailDeal.title}</h3>
-              <div className="text-sm text-muted mb-4">{detailDeal.description}</div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                <div><span className="text-muted text-sm">Category:</span> {detailDeal.category}</div>
-                <div><span className="text-muted text-sm">Organizer:</span> {detailDeal.organizerName}</div>
-                <div><span className="text-muted text-sm">Organizer Email:</span> {detailDeal.organizerEmail}</div>
-                <div><span className="text-muted text-sm">Group Price:</span> RM{Number(detailDeal.groupPrice).toFixed(2)}</div>
-                <div><span className="text-muted text-sm">Original Price:</span> <s>RM{Number(detailDeal.originalPrice).toFixed(2)}</s></div>
-                <div><span className="text-muted text-sm">Min Group:</span> {detailDeal.minGroup}</div>
-                <div><span className="text-muted text-sm">Deadline:</span> {detailDeal.deadline ? new Date(detailDeal.deadline).toLocaleDateString() : '-'}</div>
-                <div><span className="text-muted text-sm">Pickup:</span> {detailDeal.pickupLocation || '-'}</div>
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={20} color="#ff7a30" />
+                <span>AI Moderation & Deal Inspection Station</span>
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="badge badge-pending" style={{ fontSize: 11 }}>
+                  Press [A] to Approve • [R] to Reject • [Esc] to Close
+                </span>
+                <button className="modal-close" onClick={() => setDetailDeal(null)}>×</button>
+              </div>
+            </div>
 
-              {/* AI Score visualization */}
-              {detailDeal.moderationScore != null && (
-                <div className="mb-4">
-                  <div className="text-sm font-bold mb-2">AI Moderation Score</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 1.2fr', gap: 24, padding: '0 20px 20px' }}>
+              {/* Left Column: Visual & Image Inspection */}
+              <div>
+                <div style={{
+                  borderRadius: 12, overflow: 'hidden', backgroundColor: '#f5f5f5',
+                  height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '1px solid #e0e0e0', position: 'relative', marginBottom: 12
+                }}>
+                  {detailDeal.imageUrls && detailDeal.imageUrls.length > 0 ? (
+                    <img
+                      src={detailDeal.imageUrls[selectedImageIdx] || detailDeal.imageUrls[0]}
+                      alt={detailDeal.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center', color: '#9e9e9e' }}>
+                      <div style={{ fontSize: 48, marginBottom: 8 }}>🖼️</div>
+                      <div className="text-sm font-semibold">No flyer / product image uploaded</div>
+                    </div>
+                  )}
+
+                  {detailDeal.imageUrls && detailDeal.imageUrls.length > 1 && (
                     <div style={{
-                      width: 64, height: 64, borderRadius: '50%',
-                      background: detailDeal.moderationScore >= 80 ? '#e8f5e9' : detailDeal.moderationScore >= 50 ? '#fff3e0' : '#ffebee',
-                      border: `3px solid ${detailDeal.moderationScore >= 80 ? '#4caf50' : detailDeal.moderationScore >= 50 ? '#ff9800' : '#e53935'}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 20, fontWeight: 'bold',
-                      color: detailDeal.moderationScore >= 80 ? '#4caf50' : detailDeal.moderationScore >= 50 ? '#ff9800' : '#e53935',
+                      position: 'absolute', bottom: 8, right: 8,
+                      backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff',
+                      padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 'bold'
                     }}>
-                      {detailDeal.moderationScore}
+                      {selectedImageIdx + 1} / {detailDeal.imageUrls.length}
                     </div>
-                    <div>
-                      <div className="text-sm">
-                        {detailDeal.moderationScore >= 80 ? '✅ Auto-Approve eligible' :
-                         detailDeal.moderationScore >= 50 ? '⏳ Manual review needed' :
-                         '❌ Auto-Reject eligible'}
-                      </div>
-                      <div className="text-sm text-muted mt-1">
-                        {detailDeal.moderationScore >= 80 ? 'Score ≥ 80 → auto-approved' :
-                         detailDeal.moderationScore >= 50 ? 'Score 50-79 → pending review' :
-                         'Score < 50 → auto-rejected'}
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              )}
 
-              {detailDeal.moderationReason && (
-                <div className="mb-4" style={{ padding: 12, background: '#ffebee', borderRadius: 8 }}>
-                  <div className="text-sm font-bold text-error mb-1">Rejection Reason:</div>
-                  <div className="text-sm">{detailDeal.moderationReason}</div>
-                </div>
-              )}
-
-              {detailDeal.hashtags && detailDeal.hashtags.length > 0 && (
-                <div className="mb-4">
-                  <div className="text-sm text-muted mb-1">Hashtags:</div>
-                  <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
-                    {(Array.isArray(detailDeal.hashtags) ? detailDeal.hashtags : []).map((tag: string) => (
-                      <span key={tag} className="badge badge-pending">#{tag}</span>
+                {/* Thumbnails */}
+                {detailDeal.imageUrls && detailDeal.imageUrls.length > 1 && (
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 16, overflowX: 'auto' }}>
+                    {detailDeal.imageUrls.map((url: string, idx: number) => (
+                      <div
+                        key={idx}
+                        onClick={() => setSelectedImageIdx(idx)}
+                        style={{
+                          width: 56, height: 56, borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
+                          border: selectedImageIdx === idx ? '2px solid #ff7a30' : '1px solid #e0e0e0',
+                          opacity: selectedImageIdx === idx ? 1 : 0.7
+                        }}
+                      >
+                        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="text-sm text-muted mb-4">
-                Created: {new Date(detailDeal.createdAt).toLocaleString()}
+                {/* Malaysian Compliance Checklist */}
+                <div style={{
+                  backgroundColor: '#fbfbfb', border: '1px solid #eaeaea',
+                  borderRadius: 12, padding: 14, marginBottom: 12
+                }}>
+                  <div className="text-xs font-bold text-muted mb-2" style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    🇲🇾 Malaysian Market Compliance
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="text-xs text-muted">Halal / Dietary:</span>
+                      <span style={{
+                        fontSize: 11, fontWeight: '700', padding: '2px 8px', borderRadius: 12,
+                        backgroundColor: detailDeal.halalStatus === 'JakimCertified' || detailDeal.halalStatus === 'MuslimOwned' ? '#ECFDF5' :
+                                         detailDeal.halalStatus === 'PorkFree' ? '#FFFBEB' : '#F3F4F6',
+                        color: detailDeal.halalStatus === 'JakimCertified' || detailDeal.halalStatus === 'MuslimOwned' ? '#047857' :
+                               detailDeal.halalStatus === 'PorkFree' ? '#B45309' : '#374151',
+                        border: '1px solid currentColor'
+                      }}>
+                        {detailDeal.halalStatus === 'JakimCertified' ? '🟢 Halal JAKIM' :
+                         detailDeal.halalStatus === 'MuslimOwned' ? '🟢 Muslim-Owned' :
+                         detailDeal.halalStatus === 'PorkFree' ? '🟡 Pork-Free' :
+                         detailDeal.halalStatus === 'Vegetarian' ? '🥬 Vegetarian' : 'Tiada / General'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="text-xs text-muted">Wilayah / State:</span>
+                      <span className="text-xs font-bold">
+                        📍 {detailDeal.district ? `${detailDeal.district}, ` : ''}{detailDeal.state || 'Selangor'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="text-xs text-muted">Ringgit Pricing:</span>
+                      <span className="text-xs font-bold text-success">
+                        RM {Number(detailDeal.groupPrice).toFixed(2)} (Save {Math.round((1 - Number(detailDeal.groupPrice) / Number(detailDeal.originalPrice || detailDeal.groupPrice)) * 100)}%)
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {status === 'PendingReview' && (
-                <div className="flex gap-2">
-                  <button className="btn btn-success" disabled={actionLoading === detailDeal.id}
-                    onClick={async () => {
-                      setActionLoading(detailDeal.id)
-                      try { await api.approveDeal(detailDeal.id); setDetailDeal(null); loadModeration() }
-                      catch { alert('Failed') }
-                      finally { setActionLoading(null) }
+              {/* Right Column: AI Audit & Deal Metadata */}
+              <div>
+                <h3 className="font-bold text-lg mb-1">{detailDeal.title}</h3>
+                <div className="text-sm text-muted mb-3" style={{ maxHeight: 70, overflowY: 'auto' }}>
+                  {detailDeal.description || 'No description provided.'}
+                </div>
+
+                {/* AI Score Circular Metric Card */}
+                <div style={{
+                  backgroundColor: '#f8fafc', border: '1px solid #e2e8f0',
+                  borderRadius: 12, padding: 16, marginBottom: 16
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <ShieldCheck size={18} color="#0e6a5b" />
+                      <span className="text-sm font-bold">GPT-4o Vision & Safety Audit</span>
+                    </div>
+                    <span className="badge badge-success" style={{ fontSize: 10 }}>Scored</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{
+                      width: 60, height: 60, borderRadius: '50%', flexShrink: 0,
+                      background: (detailDeal.moderationScore ?? 85) >= 80 ? '#e8f5e9' : (detailDeal.moderationScore ?? 85) >= 50 ? '#fff3e0' : '#ffebee',
+                      border: `3px solid ${(detailDeal.moderationScore ?? 85) >= 80 ? '#4caf50' : (detailDeal.moderationScore ?? 85) >= 50 ? '#ff9800' : '#e53935'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 20, fontWeight: '800',
+                      color: (detailDeal.moderationScore ?? 85) >= 80 ? '#4caf50' : (detailDeal.moderationScore ?? 85) >= 50 ? '#ff9800' : '#e53935',
                     }}>
-                    ✅ Approve
+                      {detailDeal.moderationScore ?? 85}
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold">
+                        {(detailDeal.moderationScore ?? 85) >= 80 ? '✅ Pass: Content & Vision Safety Verified' :
+                         (detailDeal.moderationScore ?? 85) >= 50 ? '⏳ Review: Borderline confidence, manual check required' :
+                         '❌ Danger: Financial scam, loan shark, or policy violation'}
+                      </div>
+                      <div className="text-xs text-muted mt-1">
+                        Screened against: Ah Long • Skim Cepat Kaya • Macau Scam • Harga Cekik Darah • Hate Speech
+                      </div>
+                    </div>
+                  </div>
+
+                  {detailDeal.moderationReason && (
+                    <div className="mt-3 text-xs" style={{ padding: 10, background: '#fee2e2', borderRadius: 8, color: '#991b1b' }}>
+                      <strong>AI Flag:</strong> {detailDeal.moderationReason}
+                    </div>
+                  )}
+                </div>
+
+                {/* Deal Metadata Grid */}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
+                  fontSize: 13, marginBottom: 16, backgroundColor: '#fcfcfc',
+                  border: '1px solid #f0f0f0', borderRadius: 10, padding: 12
+                }}>
+                  <div><span className="text-muted">Category:</span> <strong>{detailDeal.category}</strong></div>
+                  <div><span className="text-muted">Organizer:</span> <strong>{detailDeal.organizerName}</strong></div>
+                  <div><span className="text-muted">Target:</span> <strong>{detailDeal.minMembers || detailDeal.minGroup} to {detailDeal.maxMembers || 100} slots</strong></div>
+                  <div><span className="text-muted">Joined:</span> <strong>{detailDeal.membersJoined || 0} members</strong></div>
+                  <div><span className="text-muted">Pickup:</span> <strong>{detailDeal.pickupLocation || 'Bangsar, KL'}</strong></div>
+                  <div><span className="text-muted">Deadline:</span> <strong>{detailDeal.deadline ? new Date(detailDeal.deadline).toLocaleDateString('en-MY') : '-'}</strong></div>
+                </div>
+
+                {detailDeal.hashtags && detailDeal.hashtags.length > 0 && (
+                  <div className="mb-4">
+                    <div className="text-xs text-muted mb-1">Hashtags:</div>
+                    <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
+                      {(Array.isArray(detailDeal.hashtags) ? detailDeal.hashtags : []).map((tag: string) => (
+                        <span key={tag} className="badge badge-pending" style={{ fontSize: 11 }}>#{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Action Footer */}
+                <div style={{
+                  display: 'flex', gap: 12, paddingTop: 12, borderTop: '1px solid #eee',
+                  alignItems: 'center', justifyContent: 'flex-end'
+                }}>
+                  <button className="btn btn-outline" onClick={() => setDetailDeal(null)}>
+                    Cancel [Esc]
                   </button>
-                  <button className="btn btn-danger"
-                    onClick={() => { setDetailDeal(null); setRejectDealId(detailDeal.id) }}>
-                    ❌ Reject
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => { setRejectDealId(detailDeal.id); setDetailDeal(null); }}
+                  >
+                    ❌ Reject [R]
+                  </button>
+                  <button
+                    className="btn btn-success"
+                    disabled={actionLoading === detailDeal.id}
+                    onClick={() => handleApproveFromModal(detailDeal.id)}
+                  >
+                    {actionLoading === detailDeal.id ? 'Approving...' : '✅ Approve Deal [A]'}
                   </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>

@@ -26,6 +26,11 @@ public class Deal
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public string? LocationName { get; set; }
+    public string? State { get; set; }
+    public string? District { get; set; }
+
+    // ── Malaysian Market Localization ──────────────────────────────────────────
+    public string? HalalStatus { get; set; } // "JakimCertified" | "MuslimOwned" | "PorkFree" | "Vegetarian" | "NonHalal" | "NotApplicable"
 
     // ── Engagement ─────────────────────────────────────────────────────────────
     public List<string> Hashtags { get; set; } = [];

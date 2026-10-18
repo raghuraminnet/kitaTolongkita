@@ -23,6 +23,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi, savedDealsApi, commentsApi, repostsApi, request, API_BASE } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
 import type { Deal } from '../../api/client';
+import { shareToWhatsApp } from '../../utils/shareUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -305,6 +306,36 @@ export const DealDetailScreen: React.FC = () => {
     commentContent: { fontFamily: 'Inter_400Regular', fontSize: 14, color: colors['on-surface'], lineHeight: 20, flex: 1 },
     commentDeleteBtn: { marginLeft: spacing.sm, padding: 4 },
     commentDeleteText: { fontSize: 14 },
+    // Malaysian Halal & Location Badges
+    badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm, alignItems: 'center' },
+    halalBadge: {
+      paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: borderRadius.full, borderWidth: 1,
+    },
+    halalBadgeText: { fontSize: 11.5, fontWeight: '700' },
+    stateBadge: {
+      flexDirection: 'row', alignItems: 'center', backgroundColor: colors['surface-container-high'],
+      paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: borderRadius.full,
+    },
+    stateBadgeText: { fontSize: 11.5, fontWeight: '600', color: colors['on-surface-variant'] },
+    // Viral WhatsApp Gotong-Royong Card
+    whatsAppCard: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: '#E8F5E9', borderWidth: 1, borderColor: '#A5D6A7',
+      borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.md,
+      gap: spacing.sm,
+    },
+    whatsAppIconCircle: {
+      width: 42, height: 42, borderRadius: 21, backgroundColor: '#25D366',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    whatsAppTextContainer: { flex: 1 },
+    whatsAppTitle: { fontFamily: DISPLAY_FONT, fontSize: 14, fontWeight: '700', color: '#1B5E20' },
+    whatsAppSubtitle: { fontFamily: BODY_FONT, fontSize: 12, color: '#2E7D32', marginTop: 2 },
+    whatsAppButtonPill: {
+      backgroundColor: '#25D366', paddingHorizontal: spacing.md, paddingVertical: 6,
+      borderRadius: borderRadius.full,
+    },
+    whatsAppButtonText: { fontFamily: BODY_FONT, fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   });
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -776,6 +807,57 @@ export const DealDetailScreen: React.FC = () => {
 
         {/* Content */}
         <View style={styles.content}>
+          {/* Malaysian Halal & Location Badges */}
+          {((displayDeal as any).halalStatus || (displayDeal as any).state) && (
+            <View style={styles.badgeRow}>
+              {(() => {
+                const hs = (displayDeal as any).halalStatus;
+                if (!hs || hs === 'NotApplicable' || hs === 'None') return null;
+                let label = '';
+                let bg = '#ECFDF5';
+                let text = '#047857';
+                let border = '#6EE7B7';
+
+                if (hs === 'JakimCertified' || hs === 'JakimHalal') {
+                  label = '🟢 Halal JAKIM';
+                  bg = '#ECFDF5';
+                  text = '#047857';
+                  border = '#6EE7B7';
+                } else if (hs === 'MuslimOwned') {
+                  label = '🟢 Muslim-Owned';
+                  bg = '#F0FDF4';
+                  text = '#15803D';
+                  border = '#86EFAC';
+                } else if (hs === 'PorkFree') {
+                  label = '🟡 Pork-Free';
+                  bg = '#FFFBEB';
+                  text = '#B45309';
+                  border = '#FDE68A';
+                } else if (hs === 'Vegetarian') {
+                  label = '🥬 Vegetarian';
+                  bg = '#F0FDF4';
+                  text = '#166534';
+                  border = '#BBF7D0';
+                } else {
+                  return null;
+                }
+
+                return (
+                  <View style={[styles.halalBadge, { backgroundColor: bg, borderColor: border }]}>
+                    <Text style={[styles.halalBadgeText, { color: text }]}>{label}</Text>
+                  </View>
+                );
+              })()}
+              {(displayDeal as any).state && (
+                <View style={styles.stateBadge}>
+                  <Text style={styles.stateBadgeText}>
+                    📍 {(displayDeal as any).district ? `${(displayDeal as any).district}, ` : ''}{(displayDeal as any).state}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* Price & Title */}
           <View style={styles.priceRow}>
             <Text style={styles.price}>RM {displayDeal.groupPrice.toFixed(2)}</Text>
@@ -833,6 +915,37 @@ export const DealDetailScreen: React.FC = () => {
                 ? `⚡ Only ${spotsLeft} more neighbors needed to unlock the best price!`
                 : '🥳 Target reached! Everyone in this group gets maximum discount.'}
             </Text>
+
+            {/* Viral WhatsApp Share Callout */}
+            <TouchableOpacity
+              style={styles.whatsAppCard}
+              onPress={() => shareToWhatsApp({
+                id: dealId ?? displayDeal.id,
+                title: displayDeal.title,
+                groupPrice: displayDeal.groupPrice,
+                originalPrice: displayDeal.originalPrice,
+                minMembers: displayDeal.minMembers,
+                membersJoined: displayDeal.membersJoined,
+                pickupLocation: displayDeal.pickupLocation,
+                deadline: displayDeal.deadline,
+              })}
+              activeOpacity={0.85}
+            >
+              <View style={styles.whatsAppIconCircle}>
+                <Text style={{ fontSize: 20 }}>💬</Text>
+              </View>
+              <View style={styles.whatsAppTextContainer}>
+                <Text style={styles.whatsAppTitle}>Ajak Jiran di WhatsApp</Text>
+                <Text style={styles.whatsAppSubtitle}>
+                  {spotsLeft > 0
+                    ? `Kongsi ke group WhatsApp & cukupkan ${spotsLeft} slot!`
+                    : 'Kongsi berita gembira harga borong ini kepada jiran!'}
+                </Text>
+              </View>
+              <View style={styles.whatsAppButtonPill}>
+                <Text style={styles.whatsAppButtonText}>Ajak</Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.divider} />
@@ -1051,10 +1164,27 @@ export const DealDetailScreen: React.FC = () => {
         actions={[
           {
             icon: '💬',
-            label: 'Share Deal',
-            description: 'Share this deal with friends',
+            label: 'Ajak Jiran di WhatsApp',
+            description: 'Kongsi mesej gotong-royong terus ke WhatsApp',
+            onPress: () => {
+              shareToWhatsApp({
+                id: dealId ?? displayDeal.id,
+                title: displayDeal.title,
+                groupPrice: displayDeal.groupPrice,
+                originalPrice: displayDeal.originalPrice,
+                minMembers: displayDeal.minMembers,
+                membersJoined: displayDeal.membersJoined,
+                pickupLocation: displayDeal.pickupLocation,
+                deadline: displayDeal.deadline,
+              });
+            },
+          },
+          {
+            icon: '🔗',
+            label: 'Share Deal Link',
+            description: 'Salin atau kongsi pautan deal',
             onPress: async () => {
-              const message = `Check out this deal: ${displayDeal.title} for RM${displayDeal.groupPrice}!\nkitatolong://deal/${dealId ?? displayDeal.id}`;
+              const message = `Check out this deal: ${displayDeal.title} for RM${displayDeal.groupPrice}!\nhttps://kitatolong.my/deal/${dealId ?? displayDeal.id}`;
               try { await Share.share({ message }); } catch {}
             },
           },

@@ -101,6 +101,7 @@ builder.Services.AddScoped<IRepostService, RepostService>();
 builder.Services.AddScoped<IContributorService, ContributorService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IRatingService, RatingService>();
+builder.Services.AddSingleton<IConfigSyncService, ConfigSyncService>();
 
 // ── JWT Authentication ────────────────────────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "KitaTolongKita_SuperSecretKey_MinLength32Chars!";
@@ -210,13 +211,29 @@ Hellang.Middleware.ProblemDetails.ProblemDetailsExtensions
     .AddProblemDetails(builder.Services);
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
+var allowedOriginsConfig = builder.Configuration["Cors:AllowedOrigins"];
+var allowedOrigins = !string.IsNullOrWhiteSpace(allowedOriginsConfig)
+    ? allowedOriginsConfig.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    : Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowMobile", policy =>
     {
-        policy.SetIsOriginAllowed(_ => true)
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        if (builder.Environment.IsDevelopment() || allowedOrigins.Length == 0)
+        {
+            policy.SetIsOriginAllowed(_ => true)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        }
+        else
+        {
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        }
     });
 });
 
@@ -303,6 +320,11 @@ if (dbExisted)
                 );
                 CREATE INDEX IF NOT EXISTS ""IX_AdminAlerts_CreatedAt"" ON ""AdminAlerts"" (""CreatedAt"");
                 CREATE INDEX IF NOT EXISTS ""IX_AdminAlerts_IsRead"" ON ""AdminAlerts"" (""IsRead"");
+
+                -- Ensure Malaysian market localization columns exist on Deals table
+                ALTER TABLE ""Deals"" ADD COLUMN IF NOT EXISTS ""HalalStatus"" text NULL;
+                ALTER TABLE ""Deals"" ADD COLUMN IF NOT EXISTS ""State"" text NULL;
+                ALTER TABLE ""Deals"" ADD COLUMN IF NOT EXISTS ""District"" text NULL;
             ");
         }
     }

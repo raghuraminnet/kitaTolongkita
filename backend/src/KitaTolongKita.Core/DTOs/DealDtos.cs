@@ -36,7 +36,11 @@ public record DealDto(
     Guid? OrganizerId,
     // Saved state (populated by controller when user is authenticated)
     bool IsSaved = false,
-    List<Guid>? SavedListIds = null
+    List<Guid>? SavedListIds = null,
+    // Malaysian market localization
+    string? HalalStatus = null,
+    string? State = null,
+    string? District = null
 );
 
 public record CreateDealRequest(
@@ -54,7 +58,10 @@ public record CreateDealRequest(
     double? Latitude,
     double? Longitude,
     string? LocationName,
-    List<string>? Hashtags
+    List<string>? Hashtags,
+    string? HalalStatus = null,
+    string? State = null,
+    string? District = null
 );
 
 public record DealSearchRequest(
@@ -68,7 +75,10 @@ public record DealSearchRequest(
     double? Longitude,
     double? RadiusKm,
     int Page = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    string? HalalStatus = null,
+    string? State = null,
+    string? District = null
 );
 
 public record NearbyDealRequest(

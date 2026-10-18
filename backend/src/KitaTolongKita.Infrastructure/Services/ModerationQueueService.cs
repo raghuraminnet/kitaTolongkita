@@ -75,8 +75,32 @@ public class ModerationQueueService : BackgroundService
 
         _logger.LogInformation("Processing moderation for deal {DealId}: {Title}", dealId, deal.Title);
 
-        // Run AI analysis
-        var result = await moderation.AnalyseDealAsync(deal);
+        // Check if pilot auto-approval is enabled in database ModerationRules
+        var isPilotAutoApprove = await db.ModerationRules
+            .AsNoTracking()
+            .AnyAsync(r => r.IsActive &&
+                (r.Key == "pilot_auto_approve_deals" || r.Key == "pilot_mode_enabled") &&
+                r.Value.ToLower() == "true", ct);
+
+        ModerationResult result;
+        if (isPilotAutoApprove)
+        {
+            _logger.LogInformation("Pilot mode active — auto-approving deal {DealId}", dealId);
+            result = new ModerationResult
+            {
+                DealId = dealId,
+                Score = 100,
+                Decision = ModerationDecision.AutoApproved,
+                Summary = "Auto-approved via active Pilot Mode rule.",
+                AiProvider = "pilot-rule",
+                Flags = new List<ModerationFlag>()
+            };
+        }
+        else
+        {
+            // Run AI analysis
+            result = await moderation.AnalyseDealAsync(deal);
+        }
 
         // Update deal with moderation results
         deal.ModerationScore = result.Score;

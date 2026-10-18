@@ -19,12 +19,28 @@ const SORT_OPTIONS = [
   { key: 'newest', label: 'Newest' },
 ];
 
+const HALAL_FILTER_OPTIONS = [
+  { key: 'All', label: 'Semua / All' },
+  { key: 'JakimCertified', label: '🟢 Halal JAKIM' },
+  { key: 'MuslimOwned', label: '🟢 Muslim-Owned' },
+  { key: 'PorkFree', label: '🟡 Pork-Free' },
+  { key: 'Vegetarian', label: '🥬 Vegetarian' },
+];
+
+const STATE_FILTER_OPTIONS = [
+  'All', 'Selangor', 'Kuala Lumpur', 'Johor', 'Penang', 'Perak',
+  'Kedah', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Kelantan',
+  'Terengganu', 'Sabah', 'Sarawak', 'Putrajaya'
+];
+
 interface FilterState {
   radiusKm: number;
   categories: string[];
   minPrice: string;
   maxPrice: string;
   sortBy: string;
+  halalStatus: string;
+  state: string;
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -33,6 +49,8 @@ const DEFAULT_FILTERS: FilterState = {
   minPrice: '',
   maxPrice: '',
   sortBy: 'distance',
+  halalStatus: 'All',
+  state: 'All',
 };
 
 export const SearchFiltersScreen: React.FC = () => {
@@ -66,6 +84,8 @@ export const SearchFiltersScreen: React.FC = () => {
         minPrice: filters.minPrice ? parseFloat(filters.minPrice) : undefined,
         maxPrice: filters.maxPrice ? parseFloat(filters.maxPrice) : undefined,
         sortBy: filters.sortBy,
+        halalStatus: filters.halalStatus !== 'All' ? filters.halalStatus : undefined,
+        state: filters.state !== 'All' ? filters.state : undefined,
       },
     });
   };
@@ -132,6 +152,52 @@ export const SearchFiltersScreen: React.FC = () => {
                 >
                   {selected && <Text style={styles.chipCheck}>✓</Text>}
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{cat}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* Halal / Dietary Preferences */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Dietary & Halal Status 🟢</Text>
+          <View style={styles.chipGrid}>
+            {HALAL_FILTER_OPTIONS.map((item) => {
+              const selected = filters.halalStatus === item.key;
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => setFilters((f) => ({ ...f, halalStatus: item.key }))}
+                >
+                  {selected && <Text style={styles.chipCheck}>✓</Text>}
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{item.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* State / Wilayah Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>State / Wilayah 🇲🇾</Text>
+          <View style={styles.chipGrid}>
+            {STATE_FILTER_OPTIONS.map((s) => {
+              const selected = filters.state === s;
+              return (
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => setFilters((f) => ({ ...f, state: s }))}
+                >
+                  {selected && <Text style={styles.chipCheck}>✓</Text>}
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                    {s === 'All' ? 'Seluruh Malaysia' : s}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
