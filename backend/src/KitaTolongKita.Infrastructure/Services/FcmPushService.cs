@@ -145,9 +145,12 @@ public class FcmPushService : IPushNotificationService
 
         if (!string.IsNullOrWhiteSpace(targetRole))
         {
-            // Join with Users to filter by role (e.g., "contributor")
+            // Join with Users to filter by role (e.g., "contributor", "verified")
+            var roleLower = targetRole.Trim().ToLowerInvariant();
             var userIdsWithRole = await _db.Users
-                .Where(u => u.Role == targetRole)
+                .Where(u =>
+                    (roleLower == "contributor" && u.IsContributor) ||
+                    (roleLower == "verified" && u.IsVerified))
                 .Select(u => u.Id)
                 .ToListAsync();
 
