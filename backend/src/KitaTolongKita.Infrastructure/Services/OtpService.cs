@@ -52,7 +52,7 @@ public class OtpService : IOtpService
     public async Task<bool> ValidateOtpAsync(string email, string code, OtpPurpose purpose)
     {
         var otp = await _db.OtpCodes
-            .Where(o => o.Email == email && o.Code == code && o.Purpose == purpose && !o.Used)
+            .Where(o => o.Email == email && o.Purpose == purpose && !o.Used)
             .OrderByDescending(o => o.CreatedAt)
             .FirstOrDefaultAsync();
 
@@ -62,6 +62,11 @@ public class OtpService : IOtpService
 
         otp.Attempts++;
         await _db.SaveChangesAsync();
+
+        if (otp.Code != code)
+        {
+            return false;
+        }
 
         return true;
     }

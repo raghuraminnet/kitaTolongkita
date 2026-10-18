@@ -140,16 +140,18 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Quick Fill Helper */}
-        <button
-          type="button"
-          onClick={fillDemoCreds}
-          className="quick-fill-btn"
-          title="Click to auto-fill default admin credentials"
-        >
-          <Sparkles size={14} color="#FF7A45" />
-          Auto-fill Demo SuperAdmin (Admin@123)
-        </button>
+        {/* Quick Fill Helper - Only visible in development mode */}
+        {process.env.NODE_ENV !== 'production' && (
+          <button
+            type="button"
+            onClick={fillDemoCreds}
+            className="quick-fill-btn"
+            title="Click to auto-fill default admin credentials"
+          >
+            <Sparkles size={14} color="#FF7A45" />
+            Auto-fill Demo SuperAdmin (Admin@123)
+          </button>
+        )}
       </div>
     </div>
   )

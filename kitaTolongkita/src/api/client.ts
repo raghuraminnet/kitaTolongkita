@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import * as DemoMode from './demoMode';
 
-export const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5050/api';
+export const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://api-ktk.superpose.cloud/api';
 
 // Global location ref — set by LocationContext
 export let _globalLat: number | null = null;

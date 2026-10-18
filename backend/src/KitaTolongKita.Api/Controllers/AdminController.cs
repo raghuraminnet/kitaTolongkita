@@ -15,7 +15,7 @@ namespace KitaTolongKita.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/admin/moderation")]
-[Authorize(AuthenticationSchemes = "Bearer,AdminJwt")]
+[Authorize(Policy = "Moderator")]
 public class AdminController : ControllerBase
 {
     private readonly AppDbContext _db;
