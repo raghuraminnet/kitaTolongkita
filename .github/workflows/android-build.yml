@@ -57,9 +57,11 @@ jobs:
           EXPO_PUBLIC_API_URL: "https://api-ktk.superpose.cloud/api"
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1536m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
         run: |
-          cd kitaTolongkita/android
+          cd kitaTolongkita
+          export NODE_PATH="$PWD/node_modules"
+          cd android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --info
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
