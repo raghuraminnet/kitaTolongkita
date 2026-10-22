@@ -18,6 +18,7 @@ import { typography, spacing, borderRadius, DISPLAY_FONT, BODY_FONT } from '../.
 import { useTheme } from '../../contexts/ThemeContext';
 import { chatApi } from '../../api/chat';
 import type { ConversationDto, ChatMessageDto } from '../../api/chat';
+import { ArrowLeft, MessageSquare, PenSquare, Send } from 'lucide-react-native';
 
 const MOCK_CONVERSATIONS: ConversationDto[] = [
   { id: '1', otherParticipantName: 'Nur Aisyah Boutique', lastMessage: 'The pickup time has been updated to 6PM.', lastMessageAt: new Date(Date.now() - 120000).toISOString(), unreadCount: 1, dealId: '1' },
@@ -202,8 +203,8 @@ export const ChatInboxScreen: React.FC = () => {
       >
         {/* Header */}
         <View style={styles.threadHeader}>
-          <TouchableOpacity onPress={() => setActiveConversation(null)}>
-            <Text style={styles.backBtn}>←</Text>
+          <TouchableOpacity onPress={() => setActiveConversation(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
           </TouchableOpacity>
           <Avatar name={activeConversation.otherParticipantName} size={36} />
           <Text style={styles.threadTitle}>{activeConversation.otherParticipantName}</Text>
@@ -277,12 +278,12 @@ export const ChatInboxScreen: React.FC = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtn}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Messages</Text>
-        <TouchableOpacity>
-          <Text style={styles.newChatBtn}>✏️</Text>
+        <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <PenSquare size={20} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
@@ -295,7 +296,9 @@ export const ChatInboxScreen: React.FC = () => {
         ListEmptyComponent={
           !loading ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>💬</Text>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+                <MessageSquare size={32} color={colors['on-surface-variant']} strokeWidth={1.5} />
+              </View>
               <Text style={styles.emptyTitle}>No conversations yet</Text>
               <Text style={styles.emptySubtitle}>Start a chat from a deal page!</Text>
             </View>

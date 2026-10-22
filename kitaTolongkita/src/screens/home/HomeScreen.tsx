@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   ScrollView,
+  Image,
   RefreshControl,
   ActivityIndicator,
   Platform,
@@ -13,7 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { Bell, MapPin, Search, ChevronDown, Sparkles, SlidersHorizontal, Flame } from 'lucide-react-native';
+import { Bell, MapPin, Search, ChevronDown, Sparkles, SlidersHorizontal, Flame, Package, LayoutGrid, List, Zap } from 'lucide-react-native';
 import { DealCard, CategoryChip, SkeletonCard } from '../../components';
 import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -22,6 +23,14 @@ import type { Deal } from '../../api/client';
 
 const CATEGORIES = ['All', 'Food', 'Groceries', 'Household', 'Electronics', 'Fashion', 'Drinks'];
 const PAGE_SIZE = 20;
+
+const STORY_HIGHLIGHTS = [
+  { id: 'story-1', title: 'Raub Durian', organizer: 'Uncle Tan', avatar: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=80', dealId: 'drop-1' },
+  { id: 'story-2', title: 'Cameron Veg', organizer: 'GreenPastures', avatar: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=120&q=80', dealId: 'drop-2' },
+  { id: 'story-3', title: 'TTDI Kuih', organizer: 'Kak Siti', avatar: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=120&q=80', dealId: 'drop-3' },
+  { id: 'story-4', title: 'Bulk Tech', organizer: 'TechPals', avatar: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=120&q=80', dealId: 'drop-4' },
+  { id: 'story-5', title: 'Pasar Segar', organizer: 'Kelang Fresh', avatar: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=120&q=80', dealId: 'drop-1' },
+];
 
 const CURATED_COMMUNITY_DROPS: Deal[] = [
   {
@@ -36,7 +45,7 @@ const CURATED_COMMUNITY_DROPS: Deal[] = [
     membersJoined: 42,
     deadline: new Date(Date.now() + 1000 * 60 * 60 * 4.5).toISOString(),
     pickupLocation: 'Bangsar Community Hall, KL',
-    imageUrls: ['https://images.unsplash.com/photo-1587334274328-64186a80aeee?auto=format&fit=crop&w=600&q=80'],
+    imageUrls: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80'],
     status: 'Active',
     organizerName: 'Uncle Tan Orchards',
     createdAt: new Date().toISOString(),
@@ -128,6 +137,7 @@ export const HomeScreen: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [currentArea, setCurrentArea] = useState('Bangsar, KL');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const loadDeals = useCallback(async (reset = false) => {
     const currentPage = reset ? 1 : page;
@@ -188,7 +198,7 @@ export const HomeScreen: React.FC = () => {
   };
 
   const renderDeal = ({ item }: { item: Deal }) => (
-    <View style={localStyles.dealItem}>
+    <View style={viewMode === 'grid' ? localStyles.dealGridItem : localStyles.dealItem}>
       <DealCard
         title={item.title}
         price={`RM${item.groupPrice.toFixed(0)}`}
@@ -204,6 +214,7 @@ export const HomeScreen: React.FC = () => {
         isSaved={item.isSaved}
         halalStatus={item.halalStatus}
         state={item.state}
+        layout={viewMode}
         onPress={() => navigation.navigate('DealDetail', { dealId: item.id })}
       />
     </View>
@@ -211,7 +222,11 @@ export const HomeScreen: React.FC = () => {
 
   const localStyles = StyleSheet.create({
     dealItem: {
-      marginBottom: spacing.sm,
+      marginBottom: 6,
+    },
+    dealGridItem: {
+      flex: 0.5,
+      paddingHorizontal: 3,
     },
   });
 
@@ -364,26 +379,106 @@ export const HomeScreen: React.FC = () => {
       color: colors.primary,
       fontWeight: '700',
     },
-    heroEmoji: {
+    heroIconWrapper: {
       position: 'absolute',
-      right: 12,
-      bottom: 12,
-      fontSize: 68,
-      opacity: 0.88,
+      right: 14,
+      bottom: 14,
+      opacity: 0.9,
     },
     categoriesSection: {
-      marginBottom: spacing.md,
+      marginBottom: 10,
     },
     categoriesScrollContent: {
       paddingHorizontal: spacing.md,
-      gap: 8,
+      gap: 6,
     },
+    /* Stories Highlights Reel */
+    storiesContainer: {
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+      marginBottom: 10,
+    },
+    storiesScroll: {
+      paddingHorizontal: spacing.md,
+      gap: 12,
+    },
+    storyItem: {
+      alignItems: 'center',
+      width: 62,
+    },
+    storyRing: {
+      width: 54,
+      height: 54,
+      borderRadius: 27,
+      borderWidth: 2,
+      padding: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 4,
+    },
+    storyAvatar: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 25,
+    },
+    storyTitle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 10.5,
+      textAlign: 'center',
+    },
+    /* Compact Gotong-Royong Highlight Banner */
+    compactHeroBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginHorizontal: spacing.md,
+      marginBottom: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+    },
+    compactHeroTag: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
+    },
+    compactHeroContent: {
+      flex: 1,
+    },
+    compactHeroTitle: {
+      fontFamily: DISPLAY_FONT,
+      fontSize: 13,
+      fontWeight: '800',
+      letterSpacing: -0.2,
+    },
+    compactHeroSubtitle: {
+      fontFamily: BODY_FONT,
+      fontSize: 11,
+      marginTop: 1,
+    },
+    compactHeroCta: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: borderRadius.full,
+      marginLeft: 8,
+    },
+    compactHeroCtaText: {
+      fontFamily: 'Inter_700Bold',
+      fontSize: 11,
+      color: '#ffffff',
+    },
+    /* Section Header with View Mode Switcher */
     sectionHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: spacing.md,
-      marginBottom: spacing.sm,
+      marginBottom: 8,
     },
     sectionTitleRow: {
       flexDirection: 'row',
@@ -392,23 +487,40 @@ export const HomeScreen: React.FC = () => {
     },
     sectionTitle: {
       fontFamily: DISPLAY_FONT,
-      fontSize: 18,
+      fontSize: 16.5,
       fontWeight: '800',
       letterSpacing: -0.3,
     },
     dealCountBadge: {
-      paddingHorizontal: 8,
-      paddingVertical: 2,
+      paddingHorizontal: 7,
+      paddingVertical: 1.5,
       borderRadius: borderRadius.full,
     },
     dealCountText: {
       fontFamily: 'Inter_600SemiBold',
-      fontSize: 11,
+      fontSize: 10.5,
       fontWeight: '700',
+    },
+    sectionActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    viewToggleContainer: {
+      flexDirection: 'row',
+      borderRadius: borderRadius.sm,
+      padding: 2,
+    },
+    viewToggleBtn: {
+      width: 28,
+      height: 28,
+      borderRadius: 6,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     seeAll: {
       fontFamily: 'Inter_600SemiBold',
-      fontSize: 13,
+      fontSize: 12.5,
       fontWeight: '600',
     },
     flatListContent: {
@@ -432,7 +544,7 @@ export const HomeScreen: React.FC = () => {
           onPress={() => navigation.navigate('Search')}
           activeOpacity={0.8}
         >
-          <Search size={18} color={colors['on-surface-variant']} strokeWidth={2.2} style={{ marginRight: 8 }} />
+          <Search size={17} color={colors['on-surface-variant']} strokeWidth={2.2} style={{ marginRight: 8 }} />
           <Text style={[styles.searchPlaceholder, { color: colors['on-surface-variant'] }]}>
             Cari pasar segar, kuih muih, gajet...
           </Text>
@@ -453,31 +565,57 @@ export const HomeScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Hero Spotlight Card */}
+      {/* Story Highlights Reel — Instagram Creator Style */}
+      <View style={styles.storiesContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.storiesScroll}
+        >
+          {STORY_HIGHLIGHTS.map((story) => (
+            <TouchableOpacity
+              key={story.id}
+              style={styles.storyItem}
+              onPress={() => navigation.navigate('DealDetail', { dealId: story.dealId })}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.storyRing, { borderColor: colors.primary }]}>
+                <Image source={{ uri: story.avatar }} style={styles.storyAvatar} />
+              </View>
+              <Text style={[styles.storyTitle, { color: colors['on-surface'] }]} numberOfLines={1}>
+                {story.title}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* High-Density Community Highlight Ribbon */}
       <TouchableOpacity
         style={[
-          styles.heroBanner,
-          { backgroundColor: colors['primary-container'] },
+          styles.compactHeroBanner,
+          {
+            backgroundColor: isDark ? colors['surface-container'] : colors['primary-subtle'],
+            borderColor: isDark ? 'rgba(255, 122, 69, 0.25)' : 'rgba(255, 87, 34, 0.2)',
+          },
         ]}
-        activeOpacity={0.92}
+        activeOpacity={0.88}
         onPress={() => navigation.navigate('DealDetail', { dealId: 'drop-1' })}
       >
-        <View style={styles.heroContent}>
-          <View style={styles.heroTag}>
-            <Sparkles size={12} color="#ffffff" strokeWidth={2.5} style={{ marginRight: 4 }} />
-            <Text style={styles.heroTagText}>⚡ Gotong Royong Terkini</Text>
-          </View>
-          <Text style={styles.heroTitle}>
-            Beli Ramai-Ramai,{'\n'}Jimat Sehingga 50%!
-          </Text>
-          <Text style={styles.heroSubtitle}>
-            Gabung tempahan bersama jiran Bangsar untuk nikmati harga borong tanpa orang tengah.
-          </Text>
-          <View style={styles.heroCtaBtn}>
-            <Text style={styles.heroCtaText}>Sertai Sekarang →</Text>
-          </View>
+        <View style={styles.compactHeroTag}>
+          <Zap size={14} color="#ffffff" strokeWidth={2.5} />
         </View>
-        <Text style={styles.heroEmoji}>📦</Text>
+        <View style={styles.compactHeroContent}>
+          <Text style={[styles.compactHeroTitle, { color: colors['on-surface'] }]} numberOfLines={1}>
+            Bangsar Hub Gotong-Royong Aktif
+          </Text>
+          <Text style={[styles.compactHeroSubtitle, { color: colors['on-surface-variant'] }]} numberOfLines={1}>
+            Jimat 50% untuk Musang King & hasil tani Pahang
+          </Text>
+        </View>
+        <View style={[styles.compactHeroCta, { backgroundColor: colors['primary-container'] }]}>
+          <Text style={styles.compactHeroCtaText}>Sertai →</Text>
+        </View>
       </TouchableOpacity>
 
       {/* Horizontal Category Chips */}
@@ -498,12 +636,12 @@ export const HomeScreen: React.FC = () => {
         </ScrollView>
       </View>
 
-      {/* Section Header */}
+      {/* Section Header with View Switcher */}
       <View style={styles.sectionHeader}>
         <View style={styles.sectionTitleRow}>
-          <Flame size={19} color={colors.primary} strokeWidth={2.5} />
+          <Flame size={18} color={colors.primary} strokeWidth={2.5} />
           <Text style={[styles.sectionTitle, { color: colors['on-background'] }]}>
-            Tawaran Komuniti Hangat
+            Tawaran Komuniti
           </Text>
           <View style={[styles.dealCountBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9' }]}>
             <Text style={[styles.dealCountText, { color: colors['on-surface-variant'] }]}>
@@ -511,11 +649,32 @@ export const HomeScreen: React.FC = () => {
             </Text>
           </View>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Search')}>
-          <Text style={[styles.seeAll, { color: colors['primary-container'] }]}>
-            Lihat Semua →
-          </Text>
-        </TouchableOpacity>
+
+        <View style={styles.sectionActions}>
+          {/* View Mode Toggle: Grid vs List */}
+          <View style={[styles.viewToggleContainer, { backgroundColor: isDark ? colors['surface-container'] : '#F1F5F9' }]}>
+            <TouchableOpacity
+              style={[styles.viewToggleBtn, viewMode === 'grid' && { backgroundColor: colors['primary-container'] }]}
+              onPress={() => setViewMode('grid')}
+              activeOpacity={0.7}
+            >
+              <LayoutGrid size={15} color={viewMode === 'grid' ? '#ffffff' : colors['on-surface-variant']} strokeWidth={2.2} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.viewToggleBtn, viewMode === 'list' && { backgroundColor: colors['primary-container'] }]}
+              onPress={() => setViewMode('list')}
+              activeOpacity={0.7}
+            >
+              <List size={15} color={viewMode === 'list' ? '#ffffff' : colors['on-surface-variant']} strokeWidth={2.2} />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity onPress={() => navigation.navigate('Search')}>
+            <Text style={[styles.seeAll, { color: colors['primary-container'] }]}>
+              Semua →
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -556,11 +715,20 @@ export const HomeScreen: React.FC = () => {
       </View>
 
       <FlatList
+        key={viewMode}
         data={deals}
         renderItem={renderDeal}
+        numColumns={viewMode === 'grid' ? 2 : 1}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={<ListHeader />}
-        contentContainerStyle={styles.flatListContent}
+        contentContainerStyle={[
+          styles.flatListContent,
+          viewMode === 'grid' && { paddingHorizontal: spacing.sm },
+        ]}
+        removeClippedSubviews={Platform.OS === 'android'}
+        initialNumToRender={8}
+        maxToRenderPerBatch={6}
+        windowSize={5}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

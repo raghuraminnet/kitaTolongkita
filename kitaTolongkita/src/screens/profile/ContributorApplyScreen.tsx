@@ -9,6 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import { typography, spacing, borderRadius } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { contributorApi } from '../../api/client';
+import { ArrowLeft, Sparkles, Award } from 'lucide-react-native';
 
 const NATIONALITIES = ['Malaysian', 'Singaporean', 'Indonesian', 'Thai', 'Filipino', 'Vietnamese', 'Myanmar', 'Indian', 'Chinese', 'Other'];
 const RACES = ['Malay', 'Chinese', 'Indian', 'Indigenous', 'Other'];
@@ -101,14 +102,16 @@ export const ContributorApplyScreen: React.FC = () => {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backBtnText}>←</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Contributor Application</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.successState}>
-          <Text style={styles.successEmoji}>🎉</Text>
+          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors['primary-subtle'], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+            <Sparkles size={32} color={colors['primary-container']} strokeWidth={2} />
+          </View>
           <Text style={styles.successTitle}>Application Submitted!</Text>
           <Text style={styles.successBody}>
             Your contributor application is under review. We'll notify you once our admin team has reviewed your KYC details. This usually takes 1-2 business days.
@@ -124,8 +127,8 @@ export const ContributorApplyScreen: React.FC = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Become a Contributor</Text>
         <View style={{ width: 40 }} />
@@ -133,7 +136,10 @@ export const ContributorApplyScreen: React.FC = () => {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.intro}>
-          <Text style={styles.introTitle}>🏅 Contributor Application</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Award size={20} color={colors.primary} strokeWidth={2} />
+            <Text style={styles.introTitle}>Contributor Application</Text>
+          </View>
           <Text style={styles.introBody}>
             As a contributor, you can post group buy deals and manage your own deals. Please fill in your KYC details for verification.
           </Text>

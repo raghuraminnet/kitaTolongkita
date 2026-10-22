@@ -24,6 +24,20 @@ import { dealsApi, savedDealsApi, commentsApi, repostsApi, request, API_BASE } f
 import { useLocation } from '../../contexts/LocationContext';
 import type { Deal } from '../../api/client';
 import { shareToWhatsApp } from '../../utils/shareUtils';
+import {
+  ArrowLeft,
+  Bookmark,
+  Share2,
+  ShieldCheck,
+  Check,
+  Leaf,
+  MapPin,
+  Sparkles,
+  Heart,
+  ThumbsUp,
+  Clock,
+  MoreVertical,
+} from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -761,24 +775,32 @@ export const DealDetailScreen: React.FC = () => {
                 <TouchableOpacity
                   style={[styles.backBtn, { top: insets.top + 8 }]}
                   onPress={() => navigation.goBack()}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                  <Text style={styles.backBtnText}>←</Text>
+                  <ArrowLeft size={20} color={colors['on-surface']} strokeWidth={2.4} />
                 </TouchableOpacity>
 
                 {/* Save Button */}
                 <TouchableOpacity
                   style={[styles.saveBtn, { top: insets.top + 8, right: spacing.md + 48 }]}
                   onPress={handleSave}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                  <Text style={{ fontSize: 18 }}>{isSaved ? '📌' : '🔖'}</Text>
+                  <Bookmark
+                    size={18}
+                    color={isSaved ? colors['primary-container'] : colors['on-surface']}
+                    fill={isSaved ? colors['primary-container'] : 'none'}
+                    strokeWidth={2.2}
+                  />
                 </TouchableOpacity>
 
                 {/* Share / Actions Button */}
                 <TouchableOpacity
                   style={[styles.shareBtn, { top: insets.top + 8 }]}
                   onPress={() => setShowActionsSheet(true)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                  <Text style={{ fontSize: 18 }}>⋯</Text>
+                  <Share2 size={18} color={colors['on-surface']} strokeWidth={2.2} />
                 </TouchableOpacity>
               </>
             )}
@@ -816,42 +838,49 @@ export const DealDetailScreen: React.FC = () => {
                 let label = '';
                 let bg = '#ECFDF5';
                 let text = '#047857';
-                let border = '#6EE7B7';
+                let border = '#A7F3D0';
+                let Icon = ShieldCheck;
 
                 if (hs === 'JakimCertified' || hs === 'JakimHalal') {
-                  label = '🟢 Halal JAKIM';
+                  label = 'JAKIM Halal';
                   bg = '#ECFDF5';
                   text = '#047857';
-                  border = '#6EE7B7';
+                  border = '#A7F3D0';
+                  Icon = ShieldCheck;
                 } else if (hs === 'MuslimOwned') {
-                  label = '🟢 Muslim-Owned';
+                  label = 'Muslim-Owned';
                   bg = '#F0FDF4';
                   text = '#15803D';
-                  border = '#86EFAC';
+                  border = '#BBF7D0';
+                  Icon = Check;
                 } else if (hs === 'PorkFree') {
-                  label = '🟡 Pork-Free';
+                  label = 'Pork-Free';
                   bg = '#FFFBEB';
                   text = '#B45309';
                   border = '#FDE68A';
+                  Icon = Check;
                 } else if (hs === 'Vegetarian') {
-                  label = '🥬 Vegetarian';
+                  label = 'Vegetarian';
                   bg = '#F0FDF4';
                   text = '#166534';
                   border = '#BBF7D0';
+                  Icon = Leaf;
                 } else {
                   return null;
                 }
 
                 return (
-                  <View style={[styles.halalBadge, { backgroundColor: bg, borderColor: border }]}>
+                  <View style={[styles.halalBadge, { backgroundColor: bg, borderColor: border, flexDirection: 'row', alignItems: 'center' }]}>
+                    <Icon size={11} color={text} strokeWidth={2.5} style={{ marginRight: 4 }} />
                     <Text style={[styles.halalBadgeText, { color: text }]}>{label}</Text>
                   </View>
                 );
               })()}
               {(displayDeal as any).state && (
-                <View style={styles.stateBadge}>
+                <View style={[styles.stateBadge, { flexDirection: 'row', alignItems: 'center' }]}>
+                  <MapPin size={11} color={colors['on-surface-variant']} strokeWidth={2} style={{ marginRight: 3 }} />
                   <Text style={styles.stateBadgeText}>
-                    📍 {(displayDeal as any).district ? `${(displayDeal as any).district}, ` : ''}{(displayDeal as any).state}
+                    {(displayDeal as any).district ? `${(displayDeal as any).district}, ` : ''}{(displayDeal as any).state}
                   </Text>
                 </View>
               )}
@@ -871,7 +900,7 @@ export const DealDetailScreen: React.FC = () => {
 
           {/* Countdown */}
           <View style={styles.countdownContainer}>
-            <Text style={styles.countdownIcon}>⏰</Text>
+            <Clock size={13} color={colors['primary-container']} strokeWidth={2.2} style={{ marginRight: 4 }} />
             <Text style={styles.countdownLabel}>Ends in: </Text>
             <Text style={styles.countdownValue}>{countdown}</Text>
           </View>
@@ -879,10 +908,13 @@ export const DealDetailScreen: React.FC = () => {
           {/* Group-Order Tier Card */}
           <View style={styles.tierCard}>
             <View style={styles.tierHeader}>
-              <Text style={styles.tierTitle}>🎯 Group-Order Tier Savings</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Sparkles size={15} color={colors['primary-container']} strokeWidth={2.2} style={{ marginRight: 6 }} />
+                <Text style={styles.tierTitle}>Group-Order Tier Savings</Text>
+              </View>
               <Text style={styles.tierStatus}>
                 {displayDeal.membersJoined >= displayDeal.maxMembers
-                  ? 'Max Tier Unlocked! 🎉'
+                  ? 'Max Tier Unlocked! ✓'
                   : `${displayDeal.membersJoined}/${displayDeal.maxMembers} Joined`}
               </Text>
             </View>

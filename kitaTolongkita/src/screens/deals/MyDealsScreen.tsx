@@ -14,6 +14,7 @@ import { typography, spacing, borderRadius, shadows, colors as ColorsType } from
 import { useTheme } from '../../contexts/ThemeContext';
 import { request, getAccessToken } from '../../api/client';
 import { useTranslation } from 'react-i18next';
+import { ArrowLeft, Plus, FileText } from 'lucide-react-native';
 
 interface DealListItem {
   id: string;
@@ -233,15 +234,16 @@ export const MyDealsScreen: React.FC = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Deals</Text>
         <TouchableOpacity
           onPress={() => navigation.navigate('PostDeal')}
-          style={styles.addBtn}
+          style={[styles.addBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
         >
-          <Text style={styles.addBtnText}>+ Post Deal</Text>
+          <Plus size={16} color="#ffffff" strokeWidth={2.5} />
+          <Text style={styles.addBtnText}>Post Deal</Text>
         </TouchableOpacity>
       </View>
 
@@ -249,7 +251,9 @@ export const MyDealsScreen: React.FC = () => {
         <View style={styles.centered}><Text style={styles.loadingText}>Loading your deals...</Text></View>
       ) : deals.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>📋</Text>
+          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+            <FileText size={32} color={colors['on-surface-variant']} strokeWidth={1.5} />
+          </View>
           <Text style={styles.emptyTitle}>No deals yet</Text>
           <Text style={styles.emptySubtitle}>Post your first group deal and start building your community!</Text>
           <TouchableOpacity

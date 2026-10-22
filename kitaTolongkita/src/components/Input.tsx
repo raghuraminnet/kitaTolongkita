@@ -12,8 +12,8 @@ import { colors, typography, borderRadius, spacing } from '../theme';
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
-  prefix?: string;
-  suffix?: string;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
   containerStyle?: ViewStyle;
 }
 
@@ -38,7 +38,13 @@ export const Input: React.FC<InputProps> = ({
           error && styles.inputError,
         ]}
       >
-        {prefix && <Text style={styles.prefix}>{prefix}</Text>}
+        {prefix && (
+          typeof prefix === 'string' ? (
+            <Text style={styles.prefix}>{prefix}</Text>
+          ) : (
+            <View style={{ marginRight: spacing.sm }}>{prefix}</View>
+          )
+        )}
         <TextInput
           style={styles.input}
           placeholderTextColor={colors['on-surface-variant']}
@@ -46,7 +52,13 @@ export const Input: React.FC<InputProps> = ({
           onBlur={() => setFocused(false)}
           {...props}
         />
-        {suffix && <Text style={styles.suffix}>{suffix}</Text>}
+        {suffix && (
+          typeof suffix === 'string' ? (
+            <Text style={styles.suffix}>{suffix}</Text>
+          ) : (
+            <View style={{ marginLeft: spacing.sm }}>{suffix}</View>
+          )
+        )}
       </View>
 
       {error && <Text style={styles.error}>{error}</Text>}

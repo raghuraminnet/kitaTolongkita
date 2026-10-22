@@ -11,6 +11,16 @@ import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../../components';
 import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import {
+  X,
+  Check,
+  Minus,
+  Plus,
+  ShieldCheck,
+  Leaf,
+  MapPin,
+  Sparkles,
+} from 'lucide-react-native';
 
 const CATEGORIES = ['Food', 'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Drinks', 'Other'];
 const SORT_OPTIONS = [
@@ -20,17 +30,17 @@ const SORT_OPTIONS = [
 ];
 
 const HALAL_FILTER_OPTIONS = [
-  { key: 'All', label: 'Semua / All' },
-  { key: 'JakimCertified', label: '🟢 Halal JAKIM' },
-  { key: 'MuslimOwned', label: '🟢 Muslim-Owned' },
-  { key: 'PorkFree', label: '🟡 Pork-Free' },
-  { key: 'Vegetarian', label: '🥬 Vegetarian' },
+  { key: 'All', label: 'Semua / All', Icon: null },
+  { key: 'JakimCertified', label: 'Halal JAKIM', Icon: ShieldCheck, iconColor: '#16A34A' },
+  { key: 'MuslimOwned', label: 'Muslim-Owned', Icon: ShieldCheck, iconColor: '#16A34A' },
+  { key: 'PorkFree', label: 'Pork-Free', Icon: Check, iconColor: '#EAB308' },
+  { key: 'Vegetarian', label: 'Vegetarian', Icon: Leaf, iconColor: '#22C55E' },
 ];
 
 const STATE_FILTER_OPTIONS = [
   'All', 'Selangor', 'Kuala Lumpur', 'Johor', 'Penang', 'Perak',
   'Kedah', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Kelantan',
-  'Terengganu', 'Sabah', 'Sarawak', 'Putrajaya'
+  'Terengganu', 'Sabah', 'Sarawak', 'Putrajaya',
 ];
 
 interface FilterState {
@@ -60,23 +70,23 @@ export const SearchFiltersScreen: React.FC = () => {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
   const setRadius = (delta: number) => {
-    setFilters((f) => ({
-      ...f,
-      radiusKm: Math.min(50, Math.max(1, f.radiusKm + delta)),
+    setFilters((prev) => ({
+      ...prev,
+      radiusKm: Math.min(50, Math.max(1, prev.radiusKm + delta)),
     }));
   };
 
   const toggleCategory = (cat: string) => {
-    setFilters((f) => ({
-      ...f,
-      categories: f.categories.includes(cat)
-        ? f.categories.filter((c) => c !== cat)
-        : [...f.categories, cat],
-    }));
+    setFilters((prev) => {
+      const exists = prev.categories.includes(cat);
+      const next = exists
+        ? prev.categories.filter((c) => c !== cat)
+        : [...prev.categories, cat];
+      return { ...prev, categories: next };
+    });
   };
 
   const handleApply = () => {
-    // Pass filter state back via navigation params
     navigation.navigate('Search', {
       filterParams: {
         radiusKm: filters.radiusKm,
@@ -96,8 +106,11 @@ export const SearchFiltersScreen: React.FC = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.closeBtn}>✕</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <X size={22} color={colors['on-surface']} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('search.filters')}</Text>
         <TouchableOpacity onPress={handleReset}>
@@ -110,15 +123,23 @@ export const SearchFiltersScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('search.radius')}</Text>
           <View style={styles.radiusCard}>
-            <TouchableOpacity style={styles.radiusBtn} onPress={() => setRadius(-1)}>
-              <Text style={styles.radiusBtnText}>−</Text>
+            <TouchableOpacity
+              style={styles.radiusBtn}
+              onPress={() => setRadius(-1)}
+              activeOpacity={0.8}
+            >
+              <Minus size={18} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
             <View style={styles.radiusValue}>
               <Text style={styles.radiusNumber}>{filters.radiusKm}</Text>
               <Text style={styles.radiusUnit}>{t('search.km')}</Text>
             </View>
-            <TouchableOpacity style={styles.radiusBtn} onPress={() => setRadius(1)}>
-              <Text style={styles.radiusBtnText}>+</Text>
+            <TouchableOpacity
+              style={styles.radiusBtn}
+              onPress={() => setRadius(1)}
+              activeOpacity={0.8}
+            >
+              <Plus size={18} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
             <View style={styles.radiusBar}>
               {[1, 5, 10, 20, 30, 50].map((val) => (
@@ -149,8 +170,9 @@ export const SearchFiltersScreen: React.FC = () => {
                   key={cat}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleCategory(cat)}
+                  activeOpacity={0.7}
                 >
-                  {selected && <Text style={styles.chipCheck}>✓</Text>}
+                  {selected && <Check size={12} color={colors.white} strokeWidth={2.5} />}
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{cat}</Text>
                 </TouchableOpacity>
               );
@@ -162,18 +184,26 @@ export const SearchFiltersScreen: React.FC = () => {
 
         {/* Halal / Dietary Preferences */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dietary & Halal Status 🟢</Text>
+          <Text style={styles.sectionTitle}>Dietary & Halal Verification</Text>
           <View style={styles.chipGrid}>
             {HALAL_FILTER_OPTIONS.map((item) => {
               const selected = filters.halalStatus === item.key;
+              const IconComp = item.Icon;
               return (
                 <TouchableOpacity
                   key={item.key}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => setFilters((f) => ({ ...f, halalStatus: item.key }))}
+                  activeOpacity={0.7}
                 >
-                  {selected && <Text style={styles.chipCheck}>✓</Text>}
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{item.label}</Text>
+                  {selected ? (
+                    <Check size={12} color={colors.white} strokeWidth={2.5} />
+                  ) : IconComp ? (
+                    <IconComp size={13} color={item.iconColor} strokeWidth={2.2} />
+                  ) : null}
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                    {item.label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
@@ -184,7 +214,10 @@ export const SearchFiltersScreen: React.FC = () => {
 
         {/* State / Wilayah Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>State / Wilayah 🇲🇾</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.md }}>
+            <MapPin size={16} color={colors['primary-container']} strokeWidth={2.2} />
+            <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>State & Community Region</Text>
+          </View>
           <View style={styles.chipGrid}>
             {STATE_FILTER_OPTIONS.map((s) => {
               const selected = filters.state === s;
@@ -193,8 +226,9 @@ export const SearchFiltersScreen: React.FC = () => {
                   key={s}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => setFilters((f) => ({ ...f, state: s }))}
+                  activeOpacity={0.7}
                 >
-                  {selected && <Text style={styles.chipCheck}>✓</Text>}
+                  {selected && <Check size={12} color={colors.white} strokeWidth={2.5} />}
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
                     {s === 'All' ? 'Seluruh Malaysia' : s}
                   </Text>
@@ -245,10 +279,13 @@ export const SearchFiltersScreen: React.FC = () => {
                   key={opt.key}
                   style={styles.sortItem}
                   onPress={() => setFilters((f) => ({ ...f, sortBy: opt.key }))}
+                  activeOpacity={0.7}
                 >
                   <Text style={[styles.sortText, selected && styles.sortTextSelected]}>
-                    {opt.key === 'distance' ? t('search.sortDistance')
-                      : opt.key === 'price_asc' ? t('search.sortPrice')
+                    {opt.key === 'distance'
+                      ? t('search.sortDistance')
+                      : opt.key === 'price_asc'
+                      ? t('search.sortPrice')
                       : t('search.sortNewest')}
                   </Text>
                   <View style={[styles.radio, selected && styles.radioSelected]}>
@@ -277,37 +314,51 @@ export const SearchFiltersScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-    borderBottomWidth: 1, borderBottomColor: colors['outline-variant'],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors['outline-variant'],
   },
-  closeBtn: { fontSize: 20, color: colors['on-surface-variant'], padding: spacing.xs },
-  headerTitle: { ...typography['title-md'], color: colors['on-background'] },
-  resetBtn: { ...typography['body-md'], color: colors['primary-container'], fontWeight: '600' },
-  scrollContent: { padding: spacing.md, paddingBottom: 100 },
+  headerTitle: { ...typography['title-md'], color: colors['on-background'], fontWeight: '700' },
+  resetBtn: { ...typography['body-md'], color: colors['primary-container'], fontWeight: '700' },
+  scrollContent: { padding: spacing.md, paddingBottom: 110 },
   section: { marginBottom: spacing.lg },
-  sectionTitle: { ...typography['title-md'], color: colors['on-background'], marginBottom: spacing.md },
+  sectionTitle: { ...typography['title-md'], color: colors['on-background'], fontWeight: '700', marginBottom: spacing.md },
   divider: { height: 1, backgroundColor: colors['outline-variant'], marginBottom: spacing.lg },
   // Radius
   radiusCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors['surface-container-lowest'], borderRadius: borderRadius.lg,
-    padding: spacing.md, gap: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors['surface-container-lowest'],
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    gap: spacing.md,
   },
   radiusBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: colors['primary-container'], alignItems: 'center', justifyContent: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors['primary-container'],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  radiusBtnText: { fontSize: 20, color: colors.white, fontWeight: '700' },
   radiusValue: { alignItems: 'center', minWidth: 60 },
   radiusNumber: { ...typography['headline-lg'], color: colors['on-surface'], fontWeight: '800' },
   radiusUnit: { ...typography['label-sm'], color: colors['on-surface-variant'] },
   radiusBar: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.xs,
   },
   radiusMark: {
-    width: 8, height: 8, borderRadius: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: colors['outline-variant'],
   },
   radiusMarkActive: { backgroundColor: colors['primary-container'] },
@@ -315,13 +366,17 @@ const styles = StyleSheet.create({
   // Categories
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.full,
-    backgroundColor: colors['surface-container'], borderWidth: 1, borderColor: colors['outline-variant'],
-    gap: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors['surface-container'],
+    borderWidth: 1,
+    borderColor: colors['outline-variant'],
+    gap: 6,
   },
   chipSelected: { backgroundColor: colors['primary-container'], borderColor: colors['primary-container'] },
-  chipCheck: { color: colors.white, fontSize: 12, fontWeight: '700' },
   chipText: { ...typography['label-sm'], color: colors['on-surface'] },
   chipTextSelected: { color: colors.white, fontWeight: '700' },
   // Price
@@ -331,23 +386,40 @@ const styles = StyleSheet.create({
   // Sort
   sortList: { gap: spacing.xs },
   sortItem: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: spacing.md, paddingHorizontal: spacing.md,
-    backgroundColor: colors['surface-container-lowest'], borderRadius: borderRadius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors['surface-container-lowest'],
+    borderRadius: borderRadius.md,
   },
   sortText: { ...typography['body-lg'], color: colors['on-surface'] },
   sortTextSelected: { fontWeight: '600', color: colors['primary-container'] },
   radio: {
-    width: 22, height: 22, borderRadius: 11, borderWidth: 2,
-    borderColor: colors['outline-variant'], alignItems: 'center', justifyContent: 'center',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors['outline-variant'],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   radioSelected: { borderColor: colors['primary-container'] },
   radioInner: {
-    width: 12, height: 12, borderRadius: 6, backgroundColor: colors['primary-container'],
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors['primary-container'],
   },
   bottomCta: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    paddingHorizontal: spacing.md, paddingTop: spacing.md,
-    backgroundColor: colors['surface-container-lowest'], ...shadows.modal,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    backgroundColor: colors['surface-container-lowest'],
+    ...shadows.modal,
   },
 });

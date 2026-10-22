@@ -18,6 +18,7 @@ import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } f
 import { authApi, setAccessToken } from '../../api/client';
 import { signInWithGoogle } from '../../api/googleAuth';
 import * as DemoMode from '../../api/demoMode';
+import { Mail, Lock, KeyRound, Sparkles, ArrowLeft } from 'lucide-react-native';
 
 type Step = 'login' | 'otp';
 
@@ -267,13 +268,13 @@ export const LoginScreen: React.FC = () => {
       >
         {isDemo && (
           <TouchableOpacity style={s.demoBanner} onPress={handleDemoLogin} activeOpacity={0.8}>
-            <Text style={s.demoBannerText}>🎮 Demo Mode — Tap here to explore all screens instantly</Text>
+            <Text style={s.demoBannerText}>Demo Mode — Tap here to explore all screens instantly</Text>
           </TouchableOpacity>
         )}
 
         <View style={s.branding}>
           <View style={s.logoContainer}>
-            <Text style={s.logo}>🤝</Text>
+            <Sparkles size={38} color={colors.white} strokeWidth={2.4} />
           </View>
           <Text style={s.appName}>KitaTolongKita</Text>
           <Text style={s.tagline}>Gotong Royong, Lebih Jimat!</Text>
@@ -298,7 +299,7 @@ export const LoginScreen: React.FC = () => {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                prefix="📧"
+                prefix={<Mail size={18} color={colors['primary-container']} strokeWidth={2.2} />}
                 containerStyle={s.input}
               />
               <Input
@@ -306,7 +307,7 @@ export const LoginScreen: React.FC = () => {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                prefix="🔒"
+                prefix={<Lock size={18} color={colors['primary-container']} strokeWidth={2.2} />}
                 containerStyle={s.input}
               />
 
@@ -332,7 +333,7 @@ export const LoginScreen: React.FC = () => {
                 onChangeText={setOtp}
                 keyboardType="number-pad"
                 maxLength={6}
-                prefix="🔐"
+                prefix={<KeyRound size={18} color={colors['primary-container']} strokeWidth={2.2} />}
                 containerStyle={s.input}
               />
 
@@ -344,10 +345,11 @@ export const LoginScreen: React.FC = () => {
               />
 
               <TouchableOpacity
-                style={s.forgotBtn}
+                style={[s.forgotBtn, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}
                 onPress={() => setStep('login')}
               >
-                <Text style={s.forgotText}>← Back to login</Text>
+                <ArrowLeft size={16} color={colors['primary-container']} strokeWidth={2} style={{ marginRight: 6 }} />
+                <Text style={s.forgotText}>Back to login</Text>
               </TouchableOpacity>
             </>
           )}
@@ -366,7 +368,6 @@ export const LoginScreen: React.FC = () => {
             activeOpacity={0.7}
             disabled={isDemo}
           >
-            <Text style={s.socialIcon}>🍎</Text>
             <Text style={s.socialText}>Continue with Apple</Text>
           </TouchableOpacity>
 
@@ -376,7 +377,6 @@ export const LoginScreen: React.FC = () => {
             activeOpacity={0.7}
             disabled={isDemo}
           >
-            <Text style={s.socialIcon}>📘</Text>
             <Text style={s.socialText}>Continue with Google</Text>
           </TouchableOpacity>
         </View>

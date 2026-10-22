@@ -1,5 +1,18 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, View } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
+import {
+  Sparkles,
+  UtensilsCrossed,
+  Smartphone,
+  Shirt,
+  Home,
+  Coffee,
+  ShoppingBag,
+  Activity,
+  Wrench,
+  Tag,
+  Sparkle,
+} from 'lucide-react-native';
 import { typography, borderRadius, spacing } from '../theme';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -10,20 +23,20 @@ interface CategoryChipProps {
   style?: ViewStyle;
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  All: '✨',
-  Food: '🍜',
-  Makan: '🍜',
-  Electronics: '📱',
-  Fashion: '👗',
-  Home: '🏠',
-  Household: '🏠',
-  Beauty: '🧴',
-  Sports: '⚽',
-  Drinks: '🧋',
-  Groceries: '🥦',
-  'Fresh Produce': '🥦',
-  Services: '🛠️',
+const CATEGORY_ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string; strokeWidth?: number }>> = {
+  All: Sparkles,
+  Food: UtensilsCrossed,
+  Makan: UtensilsCrossed,
+  Electronics: Smartphone,
+  Fashion: Shirt,
+  Home: Home,
+  Household: Home,
+  Beauty: Sparkle,
+  Sports: Activity,
+  Drinks: Coffee,
+  Groceries: ShoppingBag,
+  'Fresh Produce': ShoppingBag,
+  Services: Wrench,
 };
 
 export const CategoryChip: React.FC<CategoryChipProps> = ({
@@ -33,7 +46,8 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({
   style,
 }) => {
   const { colors, isDark } = useTheme();
-  const icon = CATEGORY_ICONS[label] || '🏷️';
+  const IconComp = CATEGORY_ICON_MAP[label] || Tag;
+  const iconColor = selected ? colors.white : colors['primary-container'];
 
   return (
     <TouchableOpacity
@@ -58,7 +72,9 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({
       onPress={onPress}
       activeOpacity={0.75}
     >
-      <Text style={styles.icon}>{icon}</Text>
+      <View style={{ marginRight: 6 }}>
+        <IconComp size={15} color={iconColor} strokeWidth={2.4} />
+      </View>
       <Text
         style={[
           styles.label,
@@ -87,12 +103,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  icon: {
-    fontSize: 14,
-    marginRight: 6,
-  },
   label: {
     ...typography['label-sm'],
     fontSize: 13,
   },
 });
+

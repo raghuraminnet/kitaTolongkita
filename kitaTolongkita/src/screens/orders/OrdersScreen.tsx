@@ -16,6 +16,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi, getAccessToken, lookupsApi } from '../../api/client';
 import { startOrderPolling, stopOrderPolling, subscribeToOrders } from '../../api/orderPolling';
 import type { Order } from '../../api/client';
+import { Bell, Package, Search, CheckCircle2, Clock } from 'lucide-react-native';
 
 const MOCK_ORDERS: Order[] = [
   { id: '1', dealId: 'd1', dealTitle: 'Aneka Kuih Muih — Ramadan Set A', quantity: 1, totalPrice: 25, status: 'Confirmed', createdAt: new Date().toISOString() },
@@ -58,7 +59,20 @@ export const OrdersScreen: React.FC = () => {
       fontFamily: DISPLAY_FONT, fontSize: 24, fontWeight: '800',
       color: colors['on-background'], letterSpacing: -0.4,
     },
-    bell: { fontSize: 24 },
+    notificationBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      ...shadows.card,
+    },
+    emptyIconWrapper: {
+      marginBottom: spacing.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     list: { paddingHorizontal: spacing.md, paddingBottom: 130 },
     tabsRow: {
       flexDirection: 'row',
@@ -273,9 +287,19 @@ export const OrdersScreen: React.FC = () => {
         <Text style={styles.orderQty}>Booking: {item.bookingId}</Text>
         <Text style={styles.orderPrice}>RM {item.totalPrice.toFixed(2)}</Text>
       </View>
-      <Text style={styles.orderDate}>
-        {item.qrVerified ? '✅ Verified Delivery' : '⏳ Pending Delivery'}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+        {item.qrVerified ? (
+          <>
+            <CheckCircle2 size={13} color={colors.secondary} strokeWidth={2.5} style={{ marginRight: 4 }} />
+            <Text style={[styles.orderDate, { color: colors.secondary, fontWeight: '600' }]}>Verified Delivery</Text>
+          </>
+        ) : (
+          <>
+            <Clock size={13} color={colors['primary-container']} strokeWidth={2.5} style={{ marginRight: 4 }} />
+            <Text style={[styles.orderDate, { color: colors['primary-container'], fontWeight: '600' }]}>Pending Delivery</Text>
+          </>
+        )}
+      </View>
     </TouchableOpacity>
   );
 
@@ -293,8 +317,17 @@ export const OrdersScreen: React.FC = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Orders</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
-          <Text style={styles.bell}>🔔</Text>
+        <TouchableOpacity
+          style={[
+            styles.notificationBtn,
+            {
+              backgroundColor: isDark ? colors['surface-container'] : colors.white,
+              borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            },
+          ]}
+          onPress={() => navigation.navigate('Notifications')}
+        >
+          <Bell size={19} color={colors['on-surface']} strokeWidth={2.2} />
         </TouchableOpacity>
       </View>
 
@@ -326,7 +359,13 @@ export const OrdersScreen: React.FC = () => {
         ListEmptyComponent={
           !(loading || lookupsLoading) ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>{activeTab === 'orders' ? '📦' : '🔍'}</Text>
+              <View style={styles.emptyIconWrapper}>
+                {activeTab === 'orders' ? (
+                  <Package size={48} color={colors['on-surface-variant']} strokeWidth={1.5} />
+                ) : (
+                  <Search size={48} color={colors['on-surface-variant']} strokeWidth={1.5} />
+                )}
+              </View>
               <Text style={styles.emptyTitle}>{activeTab === 'orders' ? 'No orders yet' : 'No lookups yet'}</Text>
               <Text style={styles.emptySubtitle}>
                 {activeTab === 'orders' ? 'Join a group deal to get started!' : 'Join a group buy deal to see it here.'}

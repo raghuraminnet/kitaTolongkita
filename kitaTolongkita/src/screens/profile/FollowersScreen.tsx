@@ -11,6 +11,7 @@ import { typography, spacing, borderRadius } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { followApi, getAccessToken } from '../../api/client';
 import type { FollowItem } from '../../api/client';
+import { ArrowLeft } from 'lucide-react-native';
 
 interface RouteParams {
   userId?: string;
@@ -137,8 +138,8 @@ export const FollowersScreen: React.FC = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{mode === 'followers' ? 'Followers' : 'Following'}</Text>
         <View style={{ width: 40 }} />

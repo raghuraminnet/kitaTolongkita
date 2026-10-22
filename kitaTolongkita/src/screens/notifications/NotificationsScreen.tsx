@@ -13,12 +13,13 @@ import { useNavigation } from '@react-navigation/native';
 import { typography, spacing, borderRadius, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { notificationsApi } from '../../api/client';
+import { ArrowLeft, Bell, Package, Clock, Sparkles, MessageSquare } from 'lucide-react-native';
 
-const ICON_MAP: Record<string, string> = {
-  order_update: '📦',
-  deal_closing: '⏰',
-  promo: '🔥',
-  chat: '💬',
+const ICON_MAP: Record<string, any> = {
+  order_update: Package,
+  deal_closing: Clock,
+  promo: Sparkles,
+  chat: MessageSquare,
 };
 
 export const NotificationsScreen: React.FC = () => {
@@ -107,31 +108,36 @@ export const NotificationsScreen: React.FC = () => {
     return `${mins}m ago`;
   };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={[styles.notifItem, !item.read && styles.unread]}
-      onPress={() => {
-        if (item.type === 'chat') navigation.navigate('ChatInbox');
-      }}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.notifIcon}>{ICON_MAP[item.type] ?? '🔔'}</Text>
-      <View style={styles.notifContent}>
-        <View style={styles.notifHeader}>
-          <Text style={[styles.notifTitle, !item.read && styles.unreadTitle]}>{item.title}</Text>
-          <Text style={styles.notifTime}>{getTimeAgo(item.createdAt)}</Text>
+  const renderItem = ({ item }: { item: any }) => {
+    const IconComponent = ICON_MAP[item.type] ?? Bell;
+    return (
+      <TouchableOpacity
+        style={[styles.notifItem, !item.read && styles.unread]}
+        onPress={() => {
+          if (item.type === 'chat') navigation.navigate('ChatInbox');
+        }}
+        activeOpacity={0.7}
+      >
+        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors['primary-subtle'], alignItems: 'center', justifyContent: 'center', marginRight: spacing.md }}>
+          <IconComponent size={20} color={colors['primary-container']} strokeWidth={2} />
         </View>
-        <Text style={styles.notifDesc}>{item.body}</Text>
-      </View>
-      {!item.read && <View style={styles.unreadDot} />}
-    </TouchableOpacity>
-  );
+        <View style={styles.notifContent}>
+          <View style={styles.notifHeader}>
+            <Text style={[styles.notifTitle, !item.read && styles.unreadTitle]}>{item.title}</Text>
+            <Text style={styles.notifTime}>{getTimeAgo(item.createdAt)}</Text>
+          </View>
+          <Text style={styles.notifDesc}>{item.body}</Text>
+        </View>
+        {!item.read && <View style={styles.unreadDot} />}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtn}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <View style={{ width: 32 }} />
@@ -148,7 +154,9 @@ export const NotificationsScreen: React.FC = () => {
         ListEmptyComponent={
           !loading ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>🔔</Text>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+                <Bell size={32} color={colors['on-surface-variant']} strokeWidth={1.5} />
+              </View>
               <Text style={styles.emptyText}>No notifications yet</Text>
             </View>
           ) : null

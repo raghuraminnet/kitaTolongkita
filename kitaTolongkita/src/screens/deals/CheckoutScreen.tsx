@@ -14,6 +14,7 @@ import { Button, Input, ProgressBar } from '../../components';
 import { typography, spacing, borderRadius, shadows } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi } from '../../api/client';
+import { ArrowLeft, MapPin, CreditCard, Building2, Smartphone, Sparkles } from 'lucide-react-native';
 
 interface CheckoutScreenProps {
   route?: any;
@@ -268,8 +269,8 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>←</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <ArrowLeft size={24} color={colors['on-surface']} strokeWidth={2.2} />
           </TouchableOpacity>
           <Text style={styles.title}>Checkout</Text>
           <View style={{ width: 40 }} />
@@ -289,9 +290,12 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
             height={8}
             showText={false}
           />
-          <Text style={styles.progressHint}>
-            🎉 {deal.maxMembers - deal.membersJoined} more needed to confirm this deal!
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
+            <Sparkles size={14} color={colors['on-secondary-container']} strokeWidth={2} style={{ marginRight: 6 }} />
+            <Text style={styles.progressHint}>
+              {deal.maxMembers - deal.membersJoined} more needed to confirm this deal!
+            </Text>
+          </View>
         </View>
 
         {/* Order Summary */}
@@ -347,10 +351,10 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
           <View style={styles.card}>
             <TouchableOpacity style={styles.locationOption}>
               <View style={styles.locationLeft}>
-                <Text style={styles.locationIcon}>📍</Text>
-                <View>
+                <MapPin size={22} color={colors['primary-container']} strokeWidth={2.2} style={{ marginRight: spacing.sm, marginTop: 2 }} />
+                <View style={{ flex: 1, paddingRight: spacing.sm }}>
                   <Text style={styles.locationName}>{pickupLocation}</Text>
-                  <Text style={styles.locationAddress}>
+                  <Text style={styles.locationAddress} numberOfLines={2}>
                     Jln Hulu Kelang, Taman Melawati, 53100 Kuala Lumpur
                   </Text>
                 </View>
@@ -366,7 +370,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
           <View style={styles.card}>
             <TouchableOpacity style={styles.paymentOption}>
               <View style={styles.paymentLeft}>
-                <Text style={styles.paymentIcon}>💳</Text>
+                <CreditCard size={20} color={colors['primary-container']} strokeWidth={2} style={{ marginRight: spacing.md }} />
                 <Text style={styles.paymentName}>Credit / Debit Card</Text>
               </View>
               <View style={styles.radioSelected} />
@@ -376,7 +380,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
 
             <TouchableOpacity style={styles.paymentOption}>
               <View style={styles.paymentLeft}>
-                <Text style={styles.paymentIcon}>🏦</Text>
+                <Building2 size={20} color={colors['primary-container']} strokeWidth={2} style={{ marginRight: spacing.md }} />
                 <View>
                   <Text style={styles.paymentName}>Online Banking</Text>
                   <Text style={styles.paymentSub}>FPX, Maybank, CIMB, etc.</Text>
@@ -389,7 +393,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
 
             <TouchableOpacity style={styles.paymentOption}>
               <View style={styles.paymentLeft}>
-                <Text style={styles.paymentIcon}>📱</Text>
+                <Smartphone size={20} color={colors['primary-container']} strokeWidth={2} style={{ marginRight: spacing.md }} />
                 <View>
                   <Text style={styles.paymentName}>E-Wallet</Text>
                   <Text style={styles.paymentSub}>Touch 'n Go, GrabPay</Text>

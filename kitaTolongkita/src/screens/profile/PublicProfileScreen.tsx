@@ -17,6 +17,7 @@ import { typography, spacing, borderRadius } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { usersApi, dealsApi, followApi } from '../../api/client';
 import type { PublicUserProfile, Deal } from '../../api/client';
+import { ArrowLeft, User, MessageSquare } from 'lucide-react-native';
 
 function DealCard({ deal, onPress, styles }: { deal: Deal; onPress: () => void; styles: any }) {
   const discount = deal.originalPrice > 0
@@ -244,14 +245,16 @@ export const PublicProfileScreen: React.FC = () => {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backBtnText}>←</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{userName ?? 'User'}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={[styles.centerState, { flex: 1 }]}>
-          <Text style={styles.errorEmoji}>👤</Text>
+          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+            <User size={32} color={colors['on-surface-variant']} strokeWidth={1.5} />
+          </View>
           <Text style={styles.errorText}>{error ?? 'User not found'}</Text>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.retryText}>Go Back</Text>
@@ -265,15 +268,16 @@ export const PublicProfileScreen: React.FC = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{profile.fullName}</Text>
         <TouchableOpacity
           style={styles.msgBtn}
           onPress={() => navigation.navigate('ChatInbox')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Text style={styles.msgBtnText}>💬</Text>
+          <MessageSquare size={20} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
       </View>
 

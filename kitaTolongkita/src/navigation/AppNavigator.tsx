@@ -46,15 +46,18 @@ const ROUTE_TO_TAB: Record<string, string> = {
   Search: 'search',
   Orders: 'orders',
   Profile: 'profile',
+  home: 'home',
+  search: 'search',
+  orders: 'orders',
+  profile: 'profile',
 };
 
 // Reads current route name and highlights the correct tab
 function TabBarWithActiveState({ navigation }: { navigation: any }) {
-  const insets = useSafeAreaInsets();
   const state = useNavigationState((s: any) => s);
 
-  const currentRoute = state?.routes?.[state.index ?? 0]?.name ?? 'Home';
-  const activeTab = ROUTE_TO_TAB[currentRoute] ?? 'home';
+  const currentRoute = state?.routes?.[state.index ?? 0]?.name ?? 'home';
+  const activeTab = ROUTE_TO_TAB[currentRoute] || currentRoute.toLowerCase() || 'home';
 
   const handlePress = (key: string) => {
     if (key === 'post') {
@@ -64,11 +67,7 @@ function TabBarWithActiveState({ navigation }: { navigation: any }) {
     }
   };
 
-  return (
-    <View style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
-      <BottomTabBar activeTab={activeTab} onTabPress={handlePress} />
-    </View>
-  );
+  return <BottomTabBar activeTab={activeTab} onTabPress={handlePress} />;
 }
 
 function MainTabs() {

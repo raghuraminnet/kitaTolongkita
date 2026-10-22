@@ -28,18 +28,41 @@ import { request as apiRequest } from '../../api/client';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import {
+  ArrowLeft,
+  Camera,
+  X,
+  Plus,
+  UtensilsCrossed,
+  Smartphone,
+  Shirt,
+  Home,
+  Sparkles,
+  Activity,
+  Coffee,
+  Tag,
+  ShieldCheck,
+  Check,
+  CheckCircle2,
+  Leaf,
+  MapPin,
+  Building,
+  Calendar,
+  ShoppingBag,
+  Package,
+} from 'lucide-react-native';
 
 const CATEGORIES = ['Food', 'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Drinks'];
 
-const CATEGORY_ICONS: Record<string, string> = {
-  Food: '🍔',
-  Electronics: '📱',
-  Fashion: '👗',
-  Home: '🏠',
-  Beauty: '💄',
-  Sports: '⚽',
-  Drinks: '🥤',
-};
+const CATEGORY_ITEMS = [
+  { id: 'Food', label: 'Food', Icon: UtensilsCrossed },
+  { id: 'Electronics', label: 'Electronics', Icon: Smartphone },
+  { id: 'Fashion', label: 'Fashion', Icon: Shirt },
+  { id: 'Home', label: 'Home', Icon: Home },
+  { id: 'Beauty', label: 'Beauty', Icon: Sparkles },
+  { id: 'Sports', label: 'Sports', Icon: Activity },
+  { id: 'Drinks', label: 'Drinks', Icon: Coffee },
+];
 
 const MALAYSIAN_STATES = [
   'Selangor', 'Kuala Lumpur', 'Johor', 'Penang', 'Perak',
@@ -47,12 +70,12 @@ const MALAYSIAN_STATES = [
   'Terengganu', 'Sabah', 'Sarawak', 'Putrajaya', 'Perlis', 'Labuan'
 ];
 
-const HALAL_OPTIONS = [
-  { key: 'NotApplicable', label: 'None / General', icon: '🏷️' },
-  { key: 'JakimCertified', label: 'JAKIM Halal', icon: '🟢' },
-  { key: 'MuslimOwned', label: 'Muslim-Owned', icon: '🟢' },
-  { key: 'PorkFree', label: 'Pork-Free', icon: '🟡' },
-  { key: 'Vegetarian', label: 'Vegetarian', icon: '🥬' },
+const HALAL_ITEMS = [
+  { key: 'NotApplicable', label: 'None / General', Icon: Tag, color: '#64748B' },
+  { key: 'JakimCertified', label: 'JAKIM Halal', Icon: ShieldCheck, color: '#059669' },
+  { key: 'MuslimOwned', label: 'Muslim-Owned', Icon: Check, color: '#0D9488' },
+  { key: 'PorkFree', label: 'Pork-Free', Icon: CheckCircle2, color: '#D97706' },
+  { key: 'Vegetarian', label: 'Vegetarian', Icon: Leaf, color: '#16A34A' },
 ];
 
 export const PostDealScreen: React.FC = () => {
@@ -515,11 +538,11 @@ export const PostDealScreen: React.FC = () => {
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation?.goBack()}>
-          <Text style={styles.backBtn}>←</Text>
+        <TouchableOpacity onPress={() => navigation?.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <ArrowLeft size={24} color={colors['on-surface']} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Post a Deal</Text>
-        <View style={{ width: 40 }} />
+        <View style={{ width: 24 }} />
       </View>
 
       {/* Step Indicator */}
@@ -544,7 +567,9 @@ export const PostDealScreen: React.FC = () => {
           <>
             {/* Image Upload Carousel */}
             <View style={styles.imageUploadSection}>
-              <Text style={styles.uploadIcon}>📷</Text>
+              <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors['primary-subtle'], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+                <Camera size={28} color={colors['primary-container']} strokeWidth={2} />
+              </View>
               <Text style={styles.uploadText}>Add Photos (up to 4)</Text>
               <Text style={styles.uploadHint}>First photo is the cover image</Text>
               {images.length === 0 ? (
@@ -557,7 +582,7 @@ export const PostDealScreen: React.FC = () => {
                     <View key={uri} style={styles.imageItem}>
                       <Image source={{ uri }} style={styles.thumbnailImage} />
                       <TouchableOpacity style={styles.removeImageBtn} onPress={() => handleRemoveImage(uri)}>
-                        <Text style={styles.removeImageBtnText}>×</Text>
+                        <X size={12} color="#ffffff" strokeWidth={2.5} />
                       </TouchableOpacity>
                       {idx === 0 && (
                         <View style={styles.coverBadge}>
@@ -568,7 +593,7 @@ export const PostDealScreen: React.FC = () => {
                   ))}
                   {images.length < 4 && (
                     <TouchableOpacity style={styles.addMoreImage} onPress={pickImages}>
-                      <Text style={styles.addMoreImageText}>+</Text>
+                      <Plus size={20} color={colors.primary} strokeWidth={2} />
                     </TouchableOpacity>
                   )}
                 </ScrollView>
@@ -578,35 +603,42 @@ export const PostDealScreen: React.FC = () => {
             {/* Category */}
             <Text style={styles.sectionTitle}>Category</Text>
             <View style={styles.categoryGrid}>
-              {CATEGORIES.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[styles.categoryItem, selectedCategory === cat && styles.categoryItemSelected]}
-                  onPress={() => setSelectedCategory(cat)}
-                >
-                  <Text style={styles.categoryEmoji}>{CATEGORY_ICONS[cat] || '📦'}</Text>
-                  <Text style={[styles.categoryName, selectedCategory === cat && styles.categoryNameSelected]}>
-                    {cat}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {CATEGORY_ITEMS.map(({ id: cat, label, Icon }) => {
+                const isSelected = selectedCategory === cat;
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[styles.categoryItem, isSelected && styles.categoryItemSelected]}
+                    onPress={() => setSelectedCategory(cat)}
+                  >
+                    <Icon size={16} color={isSelected ? colors.white : colors.primary} strokeWidth={2} />
+                    <Text style={[styles.categoryName, isSelected && styles.categoryNameSelected]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {/* Dietary / Halal Status */}
             <Text style={styles.sectionTitle}>Dietary & Halal Status</Text>
             <View style={styles.categoryGrid}>
-              {HALAL_OPTIONS.map((item) => (
-                <TouchableOpacity
-                  key={item.key}
-                  style={[styles.categoryItem, halalStatus === item.key && styles.categoryItemSelected]}
-                  onPress={() => setHalalStatus(item.key)}
-                >
-                  <Text style={styles.categoryEmoji}>{item.icon}</Text>
-                  <Text style={[styles.categoryName, halalStatus === item.key && styles.categoryNameSelected]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {HALAL_ITEMS.map((item) => {
+                const HalalIcon = item.Icon;
+                const isSelected = halalStatus === item.key;
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[styles.categoryItem, isSelected && styles.categoryItemSelected]}
+                    onPress={() => setHalalStatus(item.key)}
+                  >
+                    <HalalIcon size={15} color={isSelected ? colors.white : item.color} strokeWidth={2} />
+                    <Text style={[styles.categoryName, isSelected && styles.categoryNameSelected]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {/* Title */}
@@ -722,7 +754,9 @@ export const PostDealScreen: React.FC = () => {
             {/* Location */}
             <Text style={styles.sectionTitle}>Pickup Location</Text>
             <TouchableOpacity style={styles.locationCard} onPress={handleLocationCapture} disabled={locLoading}>
-              <Text style={styles.locationIcon}>📍</Text>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors['primary-subtle'], alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }}>
+                <MapPin size={20} color={colors['primary-container']} strokeWidth={2} />
+              </View>
               <View style={styles.locationInfo}>
                 <Text style={styles.locationName}>
                   {capturedLat && capturedLon ? 'Location captured ✓' : locLoading ? 'Getting location...' : 'Tap to use current location'}
@@ -744,12 +778,12 @@ export const PostDealScreen: React.FC = () => {
               label="Pickup Address / Landmark"
               value={pickupLocation}
               onChangeText={setPickupLocation}
-              prefix="📍"
+              prefix={<MapPin size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
               containerStyle={styles.input}
             />
 
             {/* Malaysian State Selection */}
-            <Text style={styles.sectionTitle}>State / Wilayah 🇲🇾</Text>
+            <Text style={styles.sectionTitle}>State / Wilayah</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
               <View style={{ flexDirection: 'row', gap: spacing.xs }}>
                 {MALAYSIAN_STATES.map((s) => (
@@ -770,7 +804,7 @@ export const PostDealScreen: React.FC = () => {
               label="District / Kawasan (e.g. Bangsar, PJ, Subang)"
               value={district}
               onChangeText={setDistrict}
-              prefix="🏘️"
+              prefix={<Building size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
               containerStyle={styles.input}
             />
 
@@ -782,7 +816,7 @@ export const PostDealScreen: React.FC = () => {
                 onPress={() => setShowDatePicker(true)}
               >
                 <Text style={styles.datePickerText}>{formatDate(deadline)}</Text>
-                <Text style={styles.datePickerIcon}>📅</Text>
+                <Calendar size={18} color={colors['on-surface-variant']} strokeWidth={2} />
               </TouchableOpacity>
             </View>
             {showDatePicker && (
@@ -815,7 +849,10 @@ export const PostDealScreen: React.FC = () => {
               </View>
             </View>
             {enableLookup && capturedLat && (
-              <Text style={styles.lookupActiveText}>📍 Location will be shared with buyers within 2km radius</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.md, marginLeft: spacing.xs }}>
+                <MapPin size={14} color={colors.secondary} strokeWidth={2} />
+                <Text style={styles.lookupActiveText}>Location will be shared with buyers within 2km radius</Text>
+              </View>
             )}
 
             {/* Nearby Similar Deals */}
@@ -839,7 +876,7 @@ export const PostDealScreen: React.FC = () => {
                           <Image source={{ uri: item.imageUrls[0] }} style={styles.nearbyImage} />
                         ) : (
                           <View style={styles.nearbyImagePlaceholder}>
-                            <Text>🛒</Text>
+                            <ShoppingBag size={22} color={colors['outline-variant']} strokeWidth={1.5} />
                           </View>
                         )}
                         <Text style={styles.nearbyTitle} numberOfLines={2}>{item.title}</Text>

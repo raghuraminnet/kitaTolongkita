@@ -10,6 +10,7 @@ import { typography, spacing, borderRadius } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { lookupsApi } from '../../api/client';
 import { OrderStatusStepper } from '../../components';
+import { ArrowLeft, QrCode, CheckCircle2, Clock, MapPin, Truck, Package } from 'lucide-react-native';
 
 const STATUS_BORDER_COLORS: Record<string, string> = {
   Pending: '#F59E0B',
@@ -147,8 +148,8 @@ export const LookupDetailScreen: React.FC = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Lookup</Text>
         <View style={{ width: 40 }} />
@@ -193,16 +194,22 @@ export const LookupDetailScreen: React.FC = () => {
         {/* QR Code Display */}
         {lookup.qrCode ? (
           <View style={styles.qrSection}>
-            <Text style={styles.sectionTitle}>📱 QR Code</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <QrCode size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={styles.sectionTitle}>QR Code</Text>
+            </View>
             <Text style={styles.qrSubtitle}>Show this to the contributor when collecting</Text>
             <View style={styles.qrPlaceholder}>
-              <Text style={styles.qrEmoji}>📱</Text>
-              <Text style={styles.qrNote}>QR Code</Text>
+              <QrCode size={48} color={colors['on-surface-variant']} strokeWidth={1.5} />
+              <Text style={[styles.qrNote, { marginTop: spacing.xs }]}>Pickup QR Code</Text>
               <Text style={styles.qrId}>{lookup.bookingId}</Text>
             </View>
             {lookup.qrVerified ? (
               <View style={styles.verifiedBanner}>
-                <Text style={styles.verifiedText}>✅ Delivery Confirmed</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <CheckCircle2 size={16} color="#059669" strokeWidth={2} />
+                  <Text style={styles.verifiedText}>Delivery Confirmed</Text>
+                </View>
                 {lookup.qrVerifiedAt && (
                   <Text style={styles.verifiedTime}>
                     {new Date(lookup.qrVerifiedAt).toLocaleString('en-GB')}
@@ -210,16 +217,22 @@ export const LookupDetailScreen: React.FC = () => {
                 )}
               </View>
             ) : (
-              <Text style={styles.pendingText}>
-                ⏳ Waiting for delivery confirmation
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm }}>
+                <Clock size={15} color="#D97706" strokeWidth={2} />
+                <Text style={styles.pendingText}>
+                  Waiting for delivery confirmation
+                </Text>
+              </View>
             )}
           </View>
         ) : null}
 
         {/* Delivery Info */}
         <View style={styles.deliverySection}>
-          <Text style={styles.sectionTitle}>📍 Delivery</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs }}>
+            <MapPin size={18} color={colors.primary} strokeWidth={2} />
+            <Text style={styles.sectionTitle}>Delivery</Text>
+          </View>
           <View style={styles.deliveryCard}>
             <Text style={styles.deliveryLabel}>Pickup Location</Text>
             <Text style={styles.deliveryValue}>{lookup.pickupLocation}</Text>
@@ -229,8 +242,8 @@ export const LookupDetailScreen: React.FC = () => {
                 <Text style={styles.deliveryLabel}>Mode</Text>
                 <Text style={styles.deliveryValue}>
                   {lookup.deliveryMode === 'ContributorDeliver'
-                    ? '🚚 Contributor Deliver — Face to Face'
-                    : '📦 Self Collect — Face to Face'}
+                    ? 'Contributor Deliver — Face to Face'
+                    : 'Self Collect — Face to Face'}
                 </Text>
               </View>
             )}

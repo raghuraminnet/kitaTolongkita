@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
 import { colors, typography, spacing, borderRadius, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { authApi } from '../../api/client';
+import { ArrowLeft, KeyRound, Mail, Lock } from 'lucide-react-native';
 
 type Step = 'email' | 'otp' | 'newPassword';
 
@@ -122,13 +123,16 @@ export const ForgotPasswordScreen: React.FC = () => {
           style={styles.backBtn}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backText}>← Back</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <ArrowLeft size={18} color={colors.primary} strokeWidth={2} />
+            <Text style={styles.backText}>Back</Text>
+          </View>
         </TouchableOpacity>
 
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Text style={styles.icon}>🔑</Text>
+            <KeyRound size={28} color={colors.primary} strokeWidth={2} />
           </View>
           <Text style={styles.title}>
             {step === 'email' && 'Forgot Password'}
@@ -153,7 +157,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                prefix="📧"
+                prefix={<Mail size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
                 containerStyle={styles.input}
               />
               <Button
@@ -174,7 +178,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                 onChangeText={setOtp}
                 keyboardType="number-pad"
                 maxLength={6}
-                prefix="🔐"
+                prefix={<KeyRound size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
                 containerStyle={styles.input}
               />
               <Button
@@ -205,7 +209,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
-                prefix="🔒"
+                prefix={<Lock size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
                 containerStyle={styles.input}
               />
               <Input
@@ -214,7 +218,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
-                prefix="🔒"
+                prefix={<Lock size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
                 containerStyle={styles.input}
               />
               <Button

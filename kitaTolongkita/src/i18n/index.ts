@@ -5,10 +5,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import en from './locales/en.json';
 import bm from './locales/bm.json';
+import zh from './locales/zh.json';
 
 const LANGUAGE_KEY = 'app_language';
 
-const resources = { en: { translation: en }, bm: { translation: bm } };
+export type SupportedLanguage = 'en' | 'bm' | 'zh';
+
+const resources = {
+  en: { translation: en },
+  bm: { translation: bm },
+  zh: { translation: zh },
+};
 
 i18n
   .use(initReactI18next)
@@ -24,13 +31,15 @@ i18n
 export async function initLanguage() {
   try {
     const saved = await AsyncStorage.getItem(LANGUAGE_KEY);
-    if (saved && (saved === 'en' || saved === 'bm')) {
+    if (saved && (saved === 'en' || saved === 'bm' || saved === 'zh')) {
       await i18n.changeLanguage(saved);
       return;
     }
     const deviceLang = Localization.getLocales()[0]?.languageCode;
     if (deviceLang === 'ms') {
       await i18n.changeLanguage('bm');
+    } else if (deviceLang === 'zh') {
+      await i18n.changeLanguage('zh');
     } else {
       await i18n.changeLanguage('en');
     }
@@ -39,7 +48,7 @@ export async function initLanguage() {
   }
 }
 
-export async function setLanguage(lang: 'en' | 'bm') {
+export async function setLanguage(lang: SupportedLanguage) {
   await i18n.changeLanguage(lang);
   await AsyncStorage.setItem(LANGUAGE_KEY, lang);
 }

@@ -12,31 +12,49 @@ import { useNavigation } from '@react-navigation/native';
 import { Button } from '../../components';
 import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
+import {
+  ShoppingBag,
+  ShieldCheck,
+  Truck,
+  Users,
+  MapPin,
+  TrendingDown,
+  Star,
+  Sparkles,
+  ChevronRight,
+  ArrowRight,
+} from 'lucide-react-native';
 
 const SCREENS = [
   {
-    badge: '🤝 Gotong Royong 2.0',
+    badge: 'Gotong Royong 2.0',
+    BadgeIcon: Users,
     title: 'Beli Ramai-Ramai,\nLebih Jimat!',
     subtitle:
       'Pool orders with your neighbours in Bangsar, PJ & beyond to unlock wholesale bulk savings.',
-    illustration: '🛍️',
+    IllustrationIcon: ShoppingBag,
     stat: 'Save up to 45%',
+    StatIcon: TrendingDown,
   },
   {
-    badge: '🛡️ 100% Verified Community',
+    badge: '100% Verified Community',
+    BadgeIcon: ShieldCheck,
     title: 'Selamat & Dipercayai\nTanpa Ragu',
     subtitle:
       'Every host and merchant is community-verified. Safe QR pickup codes and secure transactions.',
-    illustration: '✨',
+    IllustrationIcon: ShieldCheck,
     stat: '4.9 ★ Community Trust',
+    StatIcon: Star,
   },
   {
-    badge: '📦 Hyperlocal Pickup',
+    badge: 'Hyperlocal Pickup',
+    BadgeIcon: MapPin,
     title: 'Ambil Dekat Rumah,\nSifar Caj Penghantaran',
     subtitle:
       'Collect your fresh produce, kuih-muih & gadgets directly from your residential community hub.',
-    illustration: '🏘️',
+    IllustrationIcon: Truck,
     stat: 'RM 0 Delivery Fees',
+    StatIcon: Sparkles,
   },
 ];
 
@@ -63,8 +81,6 @@ export const OnboardingScreen: React.FC = () => {
   const handleExplore = () => {
     navigation.replace('Main');
   };
-
-  const screen = SCREENS[current];
 
   const s = StyleSheet.create({
     container: {
@@ -203,30 +219,39 @@ export const OnboardingScreen: React.FC = () => {
     },
   });
 
+  const screen = SCREENS[current];
+  const { IllustrationIcon, BadgeIcon, StatIcon } = screen;
+
   return (
     <View style={[s.container, { paddingTop: insets.top }]}>
       {/* Top Bar */}
       <View style={s.topBar}>
         <View style={s.brandBadge}>
-          <Text style={s.brandBadgeText}>KitaTolongKita 🤝</Text>
+          <Sparkles size={14} color={colors['primary-container']} strokeWidth={2} style={{ marginRight: 6 }} />
+          <Text style={s.brandBadgeText}>KitaTolongKita</Text>
         </View>
         <TouchableOpacity style={s.skipBtn} onPress={handleSkip}>
-          <Text style={s.skipText}>Sign In ›</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+            <Text style={s.skipText}>Sign In</Text>
+            <ChevronRight size={16} color={colors['on-surface-variant']} strokeWidth={2} />
+          </View>
         </TouchableOpacity>
       </View>
 
       {/* Main Hero Card */}
       <View style={s.heroCard}>
         <View style={s.illustrationRing}>
-          <Text style={s.illustrationText}>{screen.illustration}</Text>
+          <IllustrationIcon size={64} color={colors['primary-container']} strokeWidth={1.5} />
         </View>
-        <View style={s.screenBadge}>
+        <View style={[s.screenBadge, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+          <BadgeIcon size={13} color={colors['secondary']} strokeWidth={2.5} />
           <Text style={s.screenBadgeText}>{screen.badge}</Text>
         </View>
         <Text style={s.title}>{screen.title}</Text>
         <Text style={s.subtitle}>{screen.subtitle}</Text>
-        <View style={s.statPill}>
-          <Text style={s.statPillText}>⚡ {screen.stat}</Text>
+        <View style={[s.statPill, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+          <StatIcon size={14} color="#00695C" strokeWidth={2.5} />
+          <Text style={s.statPillText}>{screen.stat}</Text>
         </View>
       </View>
 
@@ -240,14 +265,14 @@ export const OnboardingScreen: React.FC = () => {
       {/* Action Buttons */}
       <View style={s.actionSection}>
         <Button
-          title={isLast ? 'Get Started 🚀' : 'Next ›'}
+          title={isLast ? 'Get Started' : 'Next'}
           onPress={handleNext}
           fullWidth
           variant="primary"
         />
 
         <TouchableOpacity style={s.exploreBtn} onPress={handleExplore} activeOpacity={0.7}>
-          <Text style={s.exploreBtnText}>👀 Explore Deals as Guest</Text>
+          <Text style={s.exploreBtnText}>Explore Deals as Guest</Text>
         </TouchableOpacity>
       </View>
     </View>

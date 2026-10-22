@@ -20,6 +20,7 @@ import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } f
 import { authApi, setAccessToken, getAccessToken, API_BASE } from '../../api/client';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { ArrowLeft, User, Mail, Lock, Camera, Sparkles } from 'lucide-react-native';
 
 export const SignUpScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -313,7 +314,7 @@ export const SignUpScreen: React.FC = () => {
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
           >
-            <Text style={s.backBtnText}>‹</Text>
+            <ArrowLeft size={20} color={colors['on-surface']} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Create Account</Text>
           <View style={{ width: 40 }} />
@@ -321,7 +322,7 @@ export const SignUpScreen: React.FC = () => {
 
         {/* Branding */}
         <View style={s.branding}>
-          <Text style={s.brandTitle}>Join KitaTolongKita 🤝</Text>
+          <Text style={s.brandTitle}>Join KitaTolongKita</Text>
           <Text style={s.brandSubtitle}>
             Unlock huge community savings on groceries, makan & everyday essentials
           </Text>
@@ -334,11 +335,11 @@ export const SignUpScreen: React.FC = () => {
               <Image source={{ uri: avatarUri }} style={s.avatarImage} />
             ) : (
               <View style={s.avatarPlaceholder}>
-                <Text style={s.avatarPlaceholderIcon}>📷</Text>
+                <User size={38} color={colors['primary-container']} strokeWidth={1.5} />
               </View>
             )}
             <View style={s.avatarCameraBadge}>
-              <Text style={s.avatarCameraIcon}>📸</Text>
+              <Camera size={14} color="#ffffff" strokeWidth={2} />
             </View>
           </TouchableOpacity>
           <Text style={s.avatarHint}>Add a profile photo</Text>
@@ -351,7 +352,7 @@ export const SignUpScreen: React.FC = () => {
             placeholder="e.g. Aiman Harith"
             value={name}
             onChangeText={setName}
-            prefix="👤"
+            prefix={<User size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
             containerStyle={s.input}
           />
           <Input
@@ -361,7 +362,7 @@ export const SignUpScreen: React.FC = () => {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
-            prefix="📧"
+            prefix={<Mail size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
             containerStyle={s.input}
           />
           <Input
@@ -370,7 +371,7 @@ export const SignUpScreen: React.FC = () => {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            prefix="🔒"
+            prefix={<Lock size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
             containerStyle={s.input}
           />
           <Input
@@ -379,7 +380,7 @@ export const SignUpScreen: React.FC = () => {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
-            prefix="🔒"
+            prefix={<Lock size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
             containerStyle={s.input}
           />
           <Button

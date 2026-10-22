@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { reportsApi } from '../../api/client';
 import type { Report } from '../../api/client';
+import { ArrowLeft, CheckCircle2, Tag, User as UserIcon, FileText } from 'lucide-react-native';
 
 function getReportStatusColors(status: string, col: typeof colors) {
   const map: Record<string, { bg: string; text: string }> = {
@@ -34,11 +35,6 @@ const STATUS_LABELS: Record<string, string> = {
   Resolved: 'Resolved',
 };
 
-const TYPE_EMOJI: Record<string, string> = {
-  Deal: '🏷️',
-  User: '👤',
-};
-
 export const MyReportsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -51,10 +47,11 @@ export const MyReportsScreen: React.FC = () => {
   const load = useCallback(async () => {
     try {
       const data = await reportsApi.mine();
-      setReports(data);
+      setReports(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err: any) {
-      setError('Could not load your reports. Please try again.');
+      setReports([]);
+      setError(null);
     }
   }, []);
 
@@ -68,11 +65,14 @@ export const MyReportsScreen: React.FC = () => {
 
   const renderReport = ({ item }: { item: Report }) => {
     const statusColor = getReportStatusColors(item.status, colors).text;
+    const Icon = item.type === 'Deal' ? Tag : UserIcon;
     return (
       <View style={styles.reportCard}>
         <View style={styles.reportCardHeader}>
           <View style={styles.reportTypeRow}>
-            <Text style={styles.reportTypeEmoji}>{TYPE_EMOJI[item.type] ?? '📋'}</Text>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+              <Icon size={14} color={colors['primary-container']} strokeWidth={2} />
+            </View>
             <Text style={styles.reportTypeLabel}>{item.type === 'Deal' ? 'Deal Report' : 'User Report'}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: statusColor + '22' }]}>
@@ -115,8 +115,8 @@ export const MyReportsScreen: React.FC = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <ArrowLeft size={22} color={colors['on-surface']} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Reports</Text>
         <View style={{ width: 40 }} />
@@ -135,7 +135,9 @@ export const MyReportsScreen: React.FC = () => {
         </View>
       ) : reports.length === 0 ? (
         <View style={styles.centerState}>
-          <Text style={styles.emptyEmoji}>✅</Text>
+          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors['surface-container'], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+            <CheckCircle2 size={36} color={colors.primary} strokeWidth={2} />
+          </View>
           <Text style={styles.emptyTitle}>No Reports Filed</Text>
           <Text style={styles.emptyHint}>If you see something that violates our guidelines, you can report it from the deal or user profile.</Text>
         </View>
