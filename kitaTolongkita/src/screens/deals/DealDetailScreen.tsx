@@ -20,6 +20,8 @@ import { useTranslation } from 'react-i18next';
 import { Button, ProgressBar, Avatar, ImageCarousel, ExpandableText, QuickActionsSheet } from '../../components';
 import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../api/authContext';
+import { requireAuth } from '../../utils/authGuard';
 import { dealsApi, savedDealsApi, commentsApi, repostsApi, request, API_BASE } from '../../api/client';
 import { useLocation } from '../../contexts/LocationContext';
 import type { Deal } from '../../api/client';
@@ -355,6 +357,7 @@ export const DealDetailScreen: React.FC = () => {
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { latitude: userLat, longitude: userLon } = useLocation();
 
   const [deal, setDeal] = useState<Deal | null>(null);
@@ -400,7 +403,7 @@ export const DealDetailScreen: React.FC = () => {
           } catch {
             const curated = [
               {
-                id: 'drop-1',
+                id: '11111111-1111-1111-1111-111111110001',
                 title: 'Musang King Durian Fresh Pack (800g Sealed)',
                 description: 'Freshly harvested from Raub, Pahang. Direct farm delivery to community collection hub in Bangsar. Certified Grade A pulp with rich creamy texture.',
                 category: 'Food',
@@ -417,7 +420,7 @@ export const DealDetailScreen: React.FC = () => {
                 createdAt: new Date().toISOString(),
               },
               {
-                id: 'drop-2',
+                id: '22222222-2222-2222-2222-222222220002',
                 title: 'Cameron Highlands Organic Farm Veggie Box (4kg)',
                 description: 'Hydroponic butterhead, Japanese cucumber, cherry tomatoes, baby spinach & sweet corn.',
                 category: 'Groceries',
@@ -433,7 +436,41 @@ export const DealDetailScreen: React.FC = () => {
                 organizerName: 'GreenPastures MY',
                 createdAt: new Date().toISOString(),
               },
-            ].find(d => d.id === dealId);
+              {
+                id: '33333333-3333-3333-3333-333333330003',
+                title: 'Aneka Kuih Muih — Ramadan Family Box (40 pcs)',
+                description: 'Authentic handcrafted Malaysian kuih: Seri Muka, Kuih Lapis, Onde-onde & Pulut Panggang.',
+                category: 'Food',
+                originalPrice: 45,
+                groupPrice: 24,
+                minMembers: 30,
+                maxMembers: 80,
+                membersJoined: 68,
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(),
+                pickupLocation: 'Taman Tun Community Center, KL',
+                imageUrls: ['https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80'],
+                status: 'Active',
+                organizerName: 'Mak Cik Salmah Kitchen',
+                createdAt: new Date().toISOString(),
+              },
+              {
+                id: '44444444-4444-4444-4444-444444440004',
+                title: 'Smart Cordless Vacuum Pro (28,000Pa Cyclone)',
+                description: 'Community bulk factory import deal. 2-year local warranty with doorstep replacement.',
+                category: 'Electronics',
+                originalPrice: 399,
+                groupPrice: 189,
+                minMembers: 25,
+                maxMembers: 60,
+                membersJoined: 54,
+                deadline: new Date(Date.now() + 1000 * 60 * 60 * 18).toISOString(),
+                pickupLocation: 'Damansara Heights Hub',
+                imageUrls: ['https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=600&q=80'],
+                status: 'Active',
+                organizerName: 'TechPals Malaysia',
+                createdAt: new Date().toISOString(),
+              },
+            ].find(d => d.id === dealId || dealId?.includes(d.id.slice(0, 8)));
             setDeal(curated ?? MOCK_DEAL);
           }
         }
@@ -484,6 +521,7 @@ export const DealDetailScreen: React.FC = () => {
 
   const handlePostComment = async () => {
     if (!dealId || !newComment.trim()) return;
+    if (!requireAuth(user, navigation, 'post comments', () => {})) return;
     setPostingComment(true);
     try {
       const res: any = await commentsApi.addComment(dealId, newComment.trim());
@@ -517,11 +555,12 @@ export const DealDetailScreen: React.FC = () => {
 
   const handleRepost = async () => {
     if (!dealId) return;
+    if (!requireAuth(user, navigation, 'repost deals to your profile', () => {})) return;
     try {
       if (hasReposted) {
         await repostsApi.unrepost(dealId);
         setHasReposted(false);
-        setRepostCount(n => n - 1);
+        setRepostCount(n => Math.max(0, n - 1));
       } else {
         await repostsApi.repost(dealId);
         setHasReposted(true);
@@ -532,6 +571,7 @@ export const DealDetailScreen: React.FC = () => {
 
   const handleUpvote = async () => {
     if (!dealId) return;
+    if (!requireAuth(user, navigation, 'upvote deals', () => {})) return;
     setUpvotes((n) => n + (userUpvoted ? -1 : 1));
     setUserUpvoted((v) => !v);
     try {
@@ -553,6 +593,7 @@ export const DealDetailScreen: React.FC = () => {
 
   const handleLike = async () => {
     if (!dealId) return;
+    if (!requireAuth(user, navigation, 'like deals', () => {})) return;
     // Optimistic update
     setLikes((n) => n + (userLiked ? -1 : 1));
     setUserLiked((v) => !v);
@@ -579,8 +620,8 @@ export const DealDetailScreen: React.FC = () => {
     }
   };
 
-
   const handleSave = () => {
+    if (!requireAuth(user, navigation, 'save deals to your favorites list', () => {})) return;
     if (myLists.length === 0) {
       // No lists yet — offer to create one
       if (Platform.OS === 'ios') {
@@ -1181,7 +1222,11 @@ export const DealDetailScreen: React.FC = () => {
           </View>
           <Button
             title={t('deals.joinDeal')}
-            onPress={() => navigation.navigate('Checkout', { deal: displayDeal })}
+            onPress={() => {
+              requireAuth(user, navigation, 'join this group buy and checkout', () => {
+                navigation.navigate('Checkout', { deal: displayDeal });
+              });
+            }}
             variant="primary"
             style={styles.ctaButton}
           />

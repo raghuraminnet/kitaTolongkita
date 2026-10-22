@@ -43,7 +43,7 @@ public class DealService : IDealService
         {
             // Try Elasticsearch first
             var (items, totalCount) = await _es.SearchDealsAsync(request);
-            if (items.Count > 0 || totalCount >= 0)
+            if (items.Count > 0)
             {
                 // Enrich with organizer names from DB
                 var enriched = await EnrichWithOrganizerNamesAsync(items);

@@ -13,6 +13,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Button, Input, ProgressBar } from '../../components';
 import { typography, spacing, borderRadius, shadows } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../api/authContext';
+import { requireAuth } from '../../utils/authGuard';
 import { dealsApi } from '../../api/client';
 import { ArrowLeft, MapPin, CreditCard, Building2, Smartphone, Sparkles } from 'lucide-react-native';
 
@@ -247,6 +249,7 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const deal = route.params?.deal || {
     title: 'Aneka Kuih Muih — Premium Ramadan Set A',
     groupPrice: 25,
@@ -413,13 +416,15 @@ export const CheckoutScreen: React.FC<CheckoutScreenProps> = () => {
         </View>
         <Button
           title="Commit Order"
-          onPress={async () => {
-            try {
-              const order = await dealsApi.join(deal.id, quantity);
-              navigation.navigate('OrderConfirmed', { orderId: order.id, dealId: deal.id, quantity });
-            } catch (err: any) {
-              Alert.alert('Order Failed', err.message || 'Could not join deal. Please try again.');
-            }
+          onPress={() => {
+            requireAuth(user, navigation, 'complete your order and join this group buy', async () => {
+              try {
+                const order = await dealsApi.join(deal.id, quantity);
+                navigation.navigate('OrderConfirmed', { orderId: order.id, dealId: deal.id, quantity });
+              } catch (err: any) {
+                Alert.alert('Order Failed', err.message || 'Could not join deal. Please try again.');
+              }
+            });
           }}
           variant="primary"
           style={styles.ctaButton}

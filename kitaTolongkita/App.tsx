@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { LocationProvider } from './src/contexts/LocationContext';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
+import { AuthProvider } from './src/api/authContext';
 import { initLanguage } from './src/i18n';
 import { colors } from './src/theme';
 
@@ -45,9 +46,11 @@ function AppContent() {
   return (
     <>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <LocationProvider>
-        <AppNavigator />
-      </LocationProvider>
+      <AuthProvider>
+        <LocationProvider>
+          <AppNavigator />
+        </LocationProvider>
+      </AuthProvider>
     </>
   );
 }

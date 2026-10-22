@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../api/authContext';
 import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { authApi, setAccessToken, getAccessToken, API_BASE } from '../../api/client';
 import * as ImagePicker from 'expo-image-picker';
@@ -27,6 +28,7 @@ export const SignUpScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { signIn } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -140,7 +142,7 @@ export const SignUpScreen: React.FC = () => {
     setLoading(true);
     try {
       const res = await authApi.emailSignup({ email, fullName: name, password });
-      await setAccessToken(res.accessToken);
+      await signIn(res.accessToken, res.user as any);
       if (avatarUri) {
         await uploadAvatar(res.user?.id ?? '');
       }

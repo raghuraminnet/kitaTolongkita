@@ -345,9 +345,9 @@ export const ProfileScreen: React.FC = () => {
   });
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const { signOut } = useAuth();
+  const { user: authUser, signOut } = useAuth();
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(authUser);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Deals');
 
@@ -369,6 +369,10 @@ export const ProfileScreen: React.FC = () => {
   const [tabLoading, setTabLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  useEffect(() => {
+    if (authUser) setUser(authUser);
+  }, [authUser]);
+
   useFocusEffect(
     useCallback(() => {
       loadProfile();
@@ -376,30 +380,44 @@ export const ProfileScreen: React.FC = () => {
   );
 
   useEffect(() => {
-    if (!loading) loadTabData(activeTab, true);
-  }, [activeTab, loading]);
+    if (!loading && user) loadTabData(activeTab, true);
+  }, [activeTab, loading, user]);
 
   const loadProfile = async () => {
     try {
       const token = await getAccessToken();
-      if (!token) { setLoading(false); return; }
-      const me = await authApi.getMe();
-      setUser(me);
-      const [ordersResult, myDealsResult] = await Promise.all([
-        dealsApi.getOrders(1, 1),
-        dealsApi.getMyDeals(1, 1),
-      ]);
-      setLookupCount(ordersResult.totalCount);
-      setDealsCount(myDealsResult.totalCount);
+      if (!token) {
+        if (!authUser) setUser(null);
+        setLoading(false);
+        return;
+      }
+      try {
+        const me = await authApi.getMe();
+        if (me) setUser(me);
+      } catch (e) {
+        console.warn('loadProfile getMe error:', e);
+      }
+
+      try {
+        const [ordersResult, myDealsResult] = await Promise.all([
+          dealsApi.getOrders(1, 1),
+          dealsApi.getMyDeals(1, 1),
+        ]);
+        setLookupCount(ordersResult?.totalCount ?? 0);
+        setDealsCount(myDealsResult?.totalCount ?? 0);
+      } catch {}
 
       // Get follow counts
       try {
-        const status = await followApi.getFollowStatus(me.id);
-        setFollowerCount(status.followerCount);
-        setFollowingCount(status.followingCount);
+        const currentId = user?.id || authUser?.id;
+        if (currentId) {
+          const status = await followApi.getFollowStatus(currentId);
+          setFollowerCount(status?.followerCount ?? 0);
+          setFollowingCount(status?.followingCount ?? 0);
+        }
       } catch { /* not critical */ }
     } catch {
-      // Token invalid or API down
+      if (!authUser) setUser(null);
     } finally {
       setLoading(false);
     }
@@ -625,6 +643,20 @@ export const ProfileScreen: React.FC = () => {
       return null;
     };
 
+    if (!user) {
+      return (
+        <View style={[styles.emptyState, { paddingVertical: spacing.xl, alignItems: 'center' }]}>
+          <Text style={[styles.emptyText, { marginBottom: spacing.md }]}>Sign in to view your {activeTab.toLowerCase()} & activity.</Text>
+          <TouchableOpacity
+            style={{ backgroundColor: colors['primary-container'], paddingHorizontal: spacing.xl, paddingVertical: 10, borderRadius: borderRadius.md }}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={{ color: '#ffffff', fontWeight: '700' }}>Log In</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     if (activeTab === 'Deals') {
       if (!tabLoading && (!myDeals || myDeals.length === 0)) return <View style={styles.emptyState}><Text style={styles.emptyText}>You haven't posted any deals yet.</Text></View>;
       return <FlatList data={myDeals ?? []} renderItem={renderDealItem} keyExtractor={d => d.id} scrollEnabled onEndReached={() => handleLoadMore('Deals')} onEndReachedThreshold={0.5} ListFooterComponent={<TabFooter />} />;
@@ -643,8 +675,10 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
-  const displayUser = user;
-  const username = displayUser?.email ? displayUser.email.split('@')[0] : 'ahmad_danial';
+  const currentUser = user || authUser;
+  const isGuest = !currentUser;
+  const displayUser = currentUser;
+  const username = displayUser?.email ? displayUser.email.split('@')[0] : 'guest';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -673,133 +707,187 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.profileCard}>
           {/* Overlapping Avatar */}
           <View style={styles.avatarWrapper}>
-            <Avatar name={displayUser?.fullName ?? 'Ahmad Danial'} uri={displayUser?.avatarUrl} size={84} />
-            <View style={styles.avatarVerifiedBadge}>
-              <ShieldCheck size={14} color="#ffffff" strokeWidth={2.6} />
-            </View>
+            {isGuest ? (
+              <View style={[styles.dealImage, { width: 84, height: 84, borderRadius: 42, backgroundColor: colors['surface-container-high'], alignItems: 'center', justifyContent: 'center' }]}>
+                <UserIcon size={40} color={colors['on-surface-variant']} />
+              </View>
+            ) : (
+              <Avatar name={displayUser?.fullName ?? 'User'} uri={displayUser?.avatarUrl} size={84} />
+            )}
+            {!isGuest && (
+              <View style={styles.avatarVerifiedBadge}>
+                <ShieldCheck size={14} color="#ffffff" strokeWidth={2.6} />
+              </View>
+            )}
           </View>
 
           {/* Profile Identity */}
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{displayUser?.fullName ?? 'Ahmad Danial'}</Text>
-            <Text style={styles.userHandle}>@{username} · Bangsar Community Host</Text>
+            <Text style={styles.userName}>{isGuest ? 'Guest Explorer' : (displayUser?.fullName ?? 'Community User')}</Text>
+            <Text style={styles.userHandle}>@{username} · {isGuest ? 'Community Guest' : 'Bangsar Community Host'}</Text>
 
             {/* Badges Row */}
             <View style={styles.badgesRow}>
-              <View style={styles.roleBadge}>
-                <ShieldCheck size={12} color={colors.secondary} strokeWidth={2.5} />
-                <Text style={styles.roleBadgeText}>JAKIM Verified Host</Text>
-              </View>
-              {displayUser?.isContributor ? (
-                <View style={styles.contributorBadge}>
-                  <Award size={12} color={colors.primary} strokeWidth={2.5} />
-                  <Text style={styles.contributorBadgeText}>Top Contributor</Text>
-                </View>
-              ) : (
+              {isGuest ? (
                 <View style={[styles.roleBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9' }]}>
                   <Sparkles size={12} color={colors['on-surface-variant']} strokeWidth={2.5} />
-                  <Text style={[styles.roleBadgeText, { color: colors['on-surface-variant'] }]}>Community Member</Text>
+                  <Text style={[styles.roleBadgeText, { color: colors['on-surface-variant'] }]}>Guest Mode</Text>
                 </View>
+              ) : (
+                <>
+                  <View style={styles.roleBadge}>
+                    <ShieldCheck size={12} color={colors.secondary} strokeWidth={2.5} />
+                    <Text style={styles.roleBadgeText}>JAKIM Verified Host</Text>
+                  </View>
+                  {displayUser?.isContributor && (
+                    <View style={styles.contributorBadge}>
+                      <Award size={12} color={colors.primary} strokeWidth={2.5} />
+                      <Text style={styles.contributorBadgeText}>Top Contributor</Text>
+                    </View>
+                  )}
+                </>
               )}
             </View>
 
             {/* Bio */}
             <Text style={styles.bioText}>
-              {displayUser?.bio || '🇲🇾 Bangsar Community Organizer · Sourcing farm-fresh produce & wholesale deals direct for neighbours.'}
+              {isGuest
+                ? 'Sign in or create an account to start saving deals, reposting drops, and hosting group buys with neighbours.'
+                : (displayUser?.bio || '🇲🇾 Bangsar Community Organizer · Sourcing farm-fresh produce & wholesale deals direct for neighbours.')}
             </Text>
 
             {/* Location & Website Meta */}
-            <View style={styles.metaRow}>
-              <View style={styles.metaItem}>
-                <MapPin size={12} color={colors['on-surface-variant']} strokeWidth={2.2} />
-                <Text style={styles.metaText}>{displayUser?.city || 'Bangsar, Kuala Lumpur'}</Text>
+            {!isGuest && (
+              <View style={styles.metaRow}>
+                <View style={styles.metaItem}>
+                  <MapPin size={12} color={colors['on-surface-variant']} strokeWidth={2.2} />
+                  <Text style={styles.metaText}>{displayUser?.city || 'Bangsar, Kuala Lumpur'}</Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <Globe size={12} color={colors['on-surface-variant']} strokeWidth={2.2} />
+                  <Text style={styles.metaText}>{displayUser?.website || 'ktk.my/u/community'}</Text>
+                </View>
               </View>
-              <View style={styles.metaItem}>
-                <Globe size={12} color={colors['on-surface-variant']} strokeWidth={2.2} />
-                <Text style={styles.metaText}>{displayUser?.website || 'ktk.my/u/ahmad'}</Text>
-              </View>
-            </View>
+            )}
           </View>
 
           {/* Instagram-style Social Proof Numbers Ribbon */}
-          <View style={styles.followStatsRow}>
-            <TouchableOpacity
-              style={styles.followStatItem}
-              onPress={() => setActiveTab('Deals')}
-            >
-              <Text style={styles.followStatValue}>{dealsCount > 0 ? dealsCount : 4}</Text>
-              <Text style={styles.followStatLabel}>Drops</Text>
-            </TouchableOpacity>
+          {!isGuest && (
+            <View style={styles.followStatsRow}>
+              <TouchableOpacity
+                style={styles.followStatItem}
+                onPress={() => setActiveTab('Deals')}
+              >
+                <Text style={styles.followStatValue}>{dealsCount}</Text>
+                <Text style={styles.followStatLabel}>Drops</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.followStatItem}
-              onPress={() => navigation.navigate('Followers', { userId: user?.id, mode: 'followers' })}
-            >
-              <Text style={styles.followStatValue}>{followerCount > 0 ? followerCount : 148}</Text>
-              <Text style={styles.followStatLabel}>Followers</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.followStatItem}
+                onPress={() => navigation.navigate('Followers', { userId: user?.id, mode: 'followers' })}
+              >
+                <Text style={styles.followStatValue}>{followerCount}</Text>
+                <Text style={styles.followStatLabel}>Followers</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.followStatItem}
-              onPress={() => navigation.navigate('Following', { userId: user?.id })}
-            >
-              <Text style={styles.followStatValue}>{followingCount > 0 ? followingCount : 42}</Text>
-              <Text style={styles.followStatLabel}>Following</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.followStatItem}
+                onPress={() => navigation.navigate('Following', { userId: user?.id })}
+              >
+                <Text style={styles.followStatValue}>{followingCount}</Text>
+                <Text style={styles.followStatLabel}>Following</Text>
+              </TouchableOpacity>
 
-            <View style={styles.followStatItem}>
-              <Text style={[styles.followStatValue, { color: '#EAB308' }]}>★ {displayUser?.contributorRating ? displayUser.contributorRating.toFixed(1) : '4.9'}</Text>
-              <Text style={styles.followStatLabel}>Rating</Text>
+              <View style={styles.followStatItem}>
+                <Text style={[styles.followStatValue, { color: '#EAB308' }]}>★ {displayUser?.contributorRating ? displayUser.contributorRating.toFixed(1) : '5.0'}</Text>
+                <Text style={styles.followStatLabel}>Rating</Text>
+              </View>
             </View>
-          </View>
+          )}
 
           {/* Action Buttons Ribbon */}
           <View style={styles.actionButtonsRow}>
-            <TouchableOpacity
-              style={[
-                styles.actionBtn,
-                {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
-                  borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
-                },
-              ]}
-              onPress={() => navigation.navigate('ProfileSetup')}
-              activeOpacity={0.8}
-            >
-              <UserIcon size={14} color={colors['on-surface']} strokeWidth={2.2} />
-              <Text style={[styles.actionBtnText, { color: colors['on-surface'] }]}>Edit Profile</Text>
-            </TouchableOpacity>
+            {isGuest ? (
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.actionBtn,
+                    {
+                      backgroundColor: colors['primary-container'],
+                      borderColor: colors['primary-container'],
+                      flex: 1,
+                    },
+                  ]}
+                  onPress={() => navigation.navigate('Login')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.actionBtnText, { color: '#ffffff', fontWeight: '700' }]}>Log In</Text>
+                </TouchableOpacity>
 
-            {!displayUser?.isContributor ? (
-              <TouchableOpacity
-                style={[
-                  styles.actionBtn,
-                  {
-                    backgroundColor: colors['primary-container'],
-                    borderColor: colors['primary-container'],
-                  },
-                ]}
-                onPress={() => navigation.navigate('ContributorApply')}
-                activeOpacity={0.8}
-              >
-                <Award size={14} color="#ffffff" strokeWidth={2.2} />
-                <Text style={[styles.actionBtnText, { color: '#ffffff' }]}>Become Host</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.actionBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
+                      borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+                      flex: 1,
+                    },
+                  ]}
+                  onPress={() => navigation.navigate('SignUp')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.actionBtnText, { color: colors['on-surface'], fontWeight: '700' }]}>Sign Up</Text>
+                </TouchableOpacity>
+              </>
             ) : (
-              <TouchableOpacity
-                style={[
-                  styles.actionBtn,
-                  {
-                    backgroundColor: colors['secondary-container'],
-                    borderColor: colors['secondary-container'],
-                  },
-                ]}
-                onPress={() => navigation.navigate('MyDeals')}
-                activeOpacity={0.8}
-              >
-                <Package size={14} color={colors['on-secondary-container']} strokeWidth={2.2} />
-                <Text style={[styles.actionBtnText, { color: colors['on-secondary-container'] }]}>Host Hub</Text>
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.actionBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
+                      borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+                    },
+                  ]}
+                  onPress={() => navigation.navigate('ProfileSetup')}
+                  activeOpacity={0.8}
+                >
+                  <UserIcon size={14} color={colors['on-surface']} strokeWidth={2.2} />
+                  <Text style={[styles.actionBtnText, { color: colors['on-surface'] }]}>Edit Profile</Text>
+                </TouchableOpacity>
+
+                {!displayUser?.isContributor ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.actionBtn,
+                      {
+                        backgroundColor: colors['primary-container'],
+                        borderColor: colors['primary-container'],
+                      },
+                    ]}
+                    onPress={() => navigation.navigate('ContributorApply')}
+                    activeOpacity={0.8}
+                  >
+                    <Award size={14} color="#ffffff" strokeWidth={2.2} />
+                    <Text style={[styles.actionBtnText, { color: '#ffffff' }]}>Become Host</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.actionBtn,
+                      {
+                        backgroundColor: colors['secondary-container'],
+                        borderColor: colors['secondary-container'],
+                      },
+                    ]}
+                    onPress={() => navigation.navigate('MyDeals')}
+                    activeOpacity={0.8}
+                  >
+                    <Package size={14} color={colors['on-secondary-container']} strokeWidth={2.2} />
+                    <Text style={[styles.actionBtnText, { color: colors['on-secondary-container'] }]}>Host Hub</Text>
+                  </TouchableOpacity>
+                )}
+              </>
             )}
           </View>
         </View>

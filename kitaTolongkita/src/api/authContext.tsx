@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authApi, getAccessToken, setAccessToken, clearTokens } from '../api/client';
+import { authApi, getAccessToken, setAccessToken, clearTokens, onUnauthorized } from '../api/client';
 import * as DemoMode from '../api/demoMode';
 import { registerForPushNotifications } from '../api/notifications';
 import type { User } from '../api/client';
@@ -9,7 +9,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   isDemo: boolean;
-  signIn: (token: string) => Promise<void>;
+  signIn: (token: string, directUser?: User) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -29,6 +29,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDemo, setIsDemo] = useState(false);
+
+  // Auto session recovery on 401
+  useEffect(() => {
+    const unsub = onUnauthorized(() => {
+      setUser(null);
+      setToken(null);
+      setIsDemo(false);
+    });
+    return unsub;
+  }, []);
 
   // Boot: init demo data + restore session
   useEffect(() => {
@@ -71,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signIn = useCallback(async (newToken: string) => {
+  const signIn = useCallback(async (newToken: string, directUser?: User) => {
     if (DemoMode.isDemoMode() && newToken.startsWith('demo-token')) {
       setToken(newToken);
       setIsDemo(true);
@@ -82,12 +92,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await setAccessToken(newToken);
     setToken(newToken);
     setIsDemo(false);
+    if (directUser) {
+      setUser(directUser);
+    }
     try {
       const me = await authApi.getMe();
       setUser(me);
       registerForPushNotifications().catch(() => {});
     } catch {
-      setUser(null);
+      if (!directUser) setUser(null);
     }
   }, []);
 

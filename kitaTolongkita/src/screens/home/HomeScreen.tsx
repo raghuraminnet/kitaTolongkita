@@ -25,16 +25,16 @@ const CATEGORIES = ['All', 'Food', 'Groceries', 'Household', 'Electronics', 'Fas
 const PAGE_SIZE = 20;
 
 const STORY_HIGHLIGHTS = [
-  { id: 'story-1', title: 'Raub Durian', organizer: 'Uncle Tan', avatar: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=80', dealId: 'drop-1' },
-  { id: 'story-2', title: 'Cameron Veg', organizer: 'GreenPastures', avatar: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=120&q=80', dealId: 'drop-2' },
-  { id: 'story-3', title: 'TTDI Kuih', organizer: 'Kak Siti', avatar: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=120&q=80', dealId: 'drop-3' },
-  { id: 'story-4', title: 'Bulk Tech', organizer: 'TechPals', avatar: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=120&q=80', dealId: 'drop-4' },
-  { id: 'story-5', title: 'Pasar Segar', organizer: 'Kelang Fresh', avatar: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=120&q=80', dealId: 'drop-1' },
+  { id: 'story-1', title: 'Raub Durian', organizer: 'Uncle Tan', avatar: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=80', dealId: '11111111-1111-1111-1111-111111110001' },
+  { id: 'story-2', title: 'Cameron Veg', organizer: 'GreenPastures', avatar: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=120&q=80', dealId: '22222222-2222-2222-2222-222222220002' },
+  { id: 'story-3', title: 'TTDI Kuih', organizer: 'Kak Siti', avatar: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=120&q=80', dealId: '33333333-3333-3333-3333-333333330003' },
+  { id: 'story-4', title: 'Bulk Tech', organizer: 'TechPals', avatar: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=120&q=80', dealId: '44444444-4444-4444-4444-444444440004' },
+  { id: 'story-5', title: 'Pasar Segar', organizer: 'Kelang Fresh', avatar: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=120&q=80', dealId: '11111111-1111-1111-1111-111111110001' },
 ];
 
 const CURATED_COMMUNITY_DROPS: Deal[] = [
   {
-    id: 'drop-1',
+    id: '11111111-1111-1111-1111-111111110001',
     title: 'Musang King Durian Fresh Pack (800g Sealed)',
     description: 'Freshly harvested from Raub, Pahang. Direct farm delivery to community collection hub in Bangsar.',
     category: 'Food',
@@ -56,7 +56,7 @@ const CURATED_COMMUNITY_DROPS: Deal[] = [
     district: 'Bangsar',
   },
   {
-    id: 'drop-2',
+    id: '22222222-2222-2222-2222-222222220002',
     title: 'Cameron Highlands Organic Farm Veggie Box (4kg)',
     description: 'Hydroponic butterhead, Japanese cucumber, cherry tomatoes, baby spinach & sweet corn.',
     category: 'Groceries',
@@ -78,7 +78,7 @@ const CURATED_COMMUNITY_DROPS: Deal[] = [
     district: 'Petaling Jaya',
   },
   {
-    id: 'drop-3',
+    id: '33333333-3333-3333-3333-333333330003',
     title: 'Premium Aneka Kuih Talam & Lapis Set (36 pcs)',
     description: 'Traditional freshly steamed kuih muih crafted with fresh pandan juice and santan asli.',
     category: 'Food',
@@ -100,7 +100,7 @@ const CURATED_COMMUNITY_DROPS: Deal[] = [
     district: 'TTDI',
   },
   {
-    id: 'drop-4',
+    id: '44444444-4444-4444-4444-444444440004',
     title: 'Smart Cordless Vacuum Pro (28,000Pa Cyclone)',
     description: 'Community bulk factory import deal. 2-year local warranty with doorstep replacement.',
     category: 'Electronics',

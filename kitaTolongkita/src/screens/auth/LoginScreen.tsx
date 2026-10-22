@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Input } from '../../components';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../api/authContext';
 import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { authApi, setAccessToken } from '../../api/client';
 import { signInWithGoogle } from '../../api/googleAuth';
@@ -27,6 +28,7 @@ export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { signIn } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -148,15 +150,19 @@ export const LoginScreen: React.FC = () => {
       if (isDemo) {
         const result = await DemoMode.demoLogin(email, password);
         if (result) {
-          await setAccessToken(result.token);
+          await signIn(result.token);
           navigation.replace('Main');
           return;
         }
       }
       const res = await authApi.emailLogin({ email, password });
-      await setAccessToken(res.accessToken);
+      await signIn(res.accessToken, res.user as any);
       if (res.user?.fullName) {
-        navigation.replace('Main');
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.replace('Main');
+        }
       } else {
         navigation.replace('ProfileSetup');
       }
@@ -179,7 +185,7 @@ export const LoginScreen: React.FC = () => {
     try {
       const result = await DemoMode.demoLogin(demoCreds.email, demoCreds.password);
       if (result) {
-        await setAccessToken(result.token);
+        await signIn(result.token);
         navigation.replace('Main');
       } else {
         Alert.alert('Demo error', 'Demo credentials not configured.');
@@ -202,7 +208,7 @@ export const LoginScreen: React.FC = () => {
       const idToken = await signInWithGoogle();
       if (!idToken) { setLoading(false); return; }
       const res = await authApi.googleAuth(idToken);
-      await setAccessToken(res.accessToken);
+      await signIn(res.accessToken);
       navigation.replace('Main');
     } catch (err: any) {
       Alert.alert('Google sign-in failed', err.message);
