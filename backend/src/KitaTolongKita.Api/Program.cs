@@ -212,15 +212,22 @@ Hellang.Middleware.ProblemDetails.ProblemDetailsExtensions
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
 var allowedOriginsConfig = builder.Configuration["Cors:AllowedOrigins"];
+var defaultAllowedOrigins = new[]
+{
+    "https://admin-ktk.superpose.cloud",
+    "https://api-ktk.superpose.cloud",
+    "http://localhost:3000",
+    "http://localhost:8081"
+};
 var allowedOrigins = !string.IsNullOrWhiteSpace(allowedOriginsConfig)
     ? allowedOriginsConfig.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-    : Array.Empty<string>();
+    : defaultAllowedOrigins;
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowMobile", policy =>
     {
-        if (builder.Environment.IsDevelopment() || allowedOrigins.Length == 0)
+        if (builder.Environment.IsDevelopment())
         {
             policy.SetIsOriginAllowed(_ => true)
                 .AllowAnyHeader()
@@ -238,6 +245,16 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// ── OWASP HTTP Security Headers ───────────────────────────────────────────────
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Append("X-Permitted-Cross-Domain-Policies", "none");
+    await next();
+});
 
 // ── Middleware pipeline ───────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
