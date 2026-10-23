@@ -500,8 +500,8 @@ export const PostDealScreen: React.FC = () => {
         maxMembers: parseInt(maxMembers, 10),
         deadline: deadline.toISOString().split('T')[0],
         pickupLocation: pickupLocation.trim(),
-        latitude: enableLookup ? (capturedLat ?? undefined) : undefined,
-        longitude: enableLookup ? (capturedLon ?? undefined) : undefined,
+        latitude: capturedLat ?? undefined,
+        longitude: capturedLon ?? undefined,
         halalStatus: halalStatus !== 'NotApplicable' ? halalStatus : undefined,
         state: selectedState || undefined,
         district: district.trim() || undefined,
@@ -549,9 +549,13 @@ export const PostDealScreen: React.FC = () => {
       <View style={styles.steps}>
         {[1, 2, 3].map((s) => (
           <View key={s} style={styles.stepRow}>
-            <View style={[styles.stepCircle, step >= s && styles.stepCircleActive]}>
+            <TouchableOpacity
+              style={[styles.stepCircle, step >= s && styles.stepCircleActive]}
+              onPress={() => setStep(s)}
+              activeOpacity={0.7}
+            >
               <Text style={[styles.stepNum, step >= s && styles.stepNumActive]}>{s}</Text>
-            </View>
+            </TouchableOpacity>
             {s < 3 && <View style={[styles.stepLine, step > s && styles.stepLineActive]} />}
           </View>
         ))}
@@ -757,7 +761,8 @@ export const PostDealScreen: React.FC = () => {
               value={pickupLocation}
               initialCoords={capturedLat && capturedLon ? { latitude: capturedLat, longitude: capturedLon } : null}
               onSelectLocation={(loc) => {
-                setPickupLocation(loc.address);
+                const fullAddress = loc.pickupNote ? `${loc.address} (${loc.pickupNote})` : loc.address;
+                setPickupLocation(fullAddress);
                 setCapturedLat(loc.latitude);
                 setCapturedLon(loc.longitude);
                 if (loc.state) {
