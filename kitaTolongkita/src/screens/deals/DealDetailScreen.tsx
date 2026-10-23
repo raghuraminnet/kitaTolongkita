@@ -17,7 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { Button, ProgressBar, Avatar, ImageCarousel, ExpandableText, QuickActionsSheet } from '../../components';
+import { Button, ProgressBar, Avatar, ImageCarousel, ExpandableText, QuickActionsSheet, GoogleMapCard } from '../../components';
 import { typography, spacing, borderRadius, shadows, DISPLAY_FONT, BODY_FONT } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../api/authContext';
@@ -1092,25 +1092,13 @@ export const DealDetailScreen: React.FC = () => {
           <View style={styles.divider} />
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Pickup Location</Text>
-            <View style={styles.locationCard}>
-              <Text style={styles.locationIcon}>📍</Text>
-              <View style={styles.locationInfo}>
-                <Text style={styles.locationName}>{displayDeal.pickupLocation.split(',')[0]}</Text>
-                <Text style={styles.locationAddress}>{displayDeal.pickupLocation}</Text>
-                {distanceFromUser != null && (
-                  <Text style={styles.locationDistance}>
-                    {distanceFromUser < 1
-                      ? `${(distanceFromUser * 1000).toFixed(0)}m from you`
-                      : `${distanceFromUser.toFixed(1)} km from you`}
-                  </Text>
-                )}
-              </View>
-              {dealLat && dealLon && (
-                <TouchableOpacity style={styles.directionsBtn} onPress={handleShowMapOptions}>
-                  <Text style={styles.directionsBtnText}>🧭</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <GoogleMapCard
+              locationName={displayDeal.pickupLocation.split(',')[0]}
+              address={displayDeal.pickupLocation}
+              latitude={dealLat}
+              longitude={dealLon}
+              distanceKm={distanceFromUser}
+            />
           </View>
 
           {/* Comments */}

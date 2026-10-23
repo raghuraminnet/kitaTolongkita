@@ -11,3 +11,5 @@ export { Input } from './Input';
 export { OrderStatusStepper } from './OrderStatusStepper';
 export { ProgressBar } from './ProgressBar';
 export { SkeletonCard, SkeletonLine } from './SkeletonCard';
+export { GoogleMapCard } from './maps/GoogleMapCard';
+export { LocationPicker } from './maps/LocationPicker';

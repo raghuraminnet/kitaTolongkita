@@ -17,7 +17,12 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.kitaTolongkita"
+      "package": "com.anonymous.kitaTolongkita",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSy_REPLACE_WITH_GOOGLE_MAPS_KEY"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,6 +40,7 @@
       "@react-native-community/datetimepicker"
     ],
     "extra": {
+      "googleMapsApiKey": "AIzaSy_REPLACE_WITH_GOOGLE_MAPS_KEY",
       "demoMode": {
         "enabled": false,
         "adminEmail": "admin@demo.com",

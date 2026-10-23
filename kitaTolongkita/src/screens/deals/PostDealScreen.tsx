@@ -18,7 +18,7 @@ import {
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Button, Input } from '../../components';
+import { Button, Input, LocationPicker } from '../../components';
 import { typography, spacing, borderRadius, shadows } from '../../theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { dealsApi } from '../../api/client';
@@ -752,34 +752,22 @@ export const PostDealScreen: React.FC = () => {
             />
 
             {/* Location */}
-            <Text style={styles.sectionTitle}>Pickup Location</Text>
-            <TouchableOpacity style={styles.locationCard} onPress={handleLocationCapture} disabled={locLoading}>
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors['primary-subtle'], alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }}>
-                <MapPin size={20} color={colors['primary-container']} strokeWidth={2} />
-              </View>
-              <View style={styles.locationInfo}>
-                <Text style={styles.locationName}>
-                  {capturedLat && capturedLon ? 'Location captured ✓' : locLoading ? 'Getting location...' : 'Tap to use current location'}
-                </Text>
-                {capturedLat && capturedLon && (
-                  <Text style={styles.locationCoords} numberOfLines={1}>
-                    {pickupLocation}
-                  </Text>
-                )}
-                {accuracy != null && capturedLat && (
-                  <Text style={styles.accuracyText}>±{accuracy.toFixed(0)}m accuracy</Text>
-                )}
-              </View>
-              <Text style={styles.changeBtn}>{capturedLat ? 'Update' : 'Add'}</Text>
-            </TouchableOpacity>
-
-            {/* Manual location override */}
-            <Input
-              label="Pickup Address / Landmark"
+            <Text style={styles.sectionTitle}>Pickup Location & Hub</Text>
+            <LocationPicker
               value={pickupLocation}
-              onChangeText={setPickupLocation}
-              prefix={<MapPin size={18} color={colors['on-surface-variant']} strokeWidth={2} />}
-              containerStyle={styles.input}
+              initialCoords={capturedLat && capturedLon ? { latitude: capturedLat, longitude: capturedLon } : null}
+              onSelectLocation={(loc) => {
+                setPickupLocation(loc.address);
+                setCapturedLat(loc.latitude);
+                setCapturedLon(loc.longitude);
+                if (loc.state) {
+                  const matched = MALAYSIAN_STATES.find(s => loc.state?.toLowerCase().includes(s.toLowerCase()));
+                  if (matched) setSelectedState(matched);
+                }
+                if (loc.district) {
+                  setDistrict(loc.district);
+                }
+              }}
             />
 
             {/* Malaysian State Selection */}
